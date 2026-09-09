@@ -1,0 +1,143 @@
+# Backend systems learning project
+
+A FastAPI project for learning backend architecture and infrastructure. The
+example domain is intentionally simple: create and retrieve titles, leaving room
+to focus on persistence, observability, messaging, workflows, agents, and
+operations.
+
+## Structure
+
+The repository starts as a modular monolith. Tests live beside the files they
+cover as `test_{file_name}.py`; they are omitted from this diagram for clarity.
+Folders are added only when their corresponding capability is implemented.
+
+```text
+app/
+├── __init__.py
+├── main.py                       Application composition root
+├── config.py                     Configuration (planned)
+├── domain.py                     Domain models
+├── service.py                    Use-case orchestration
+│
+├── api/
+│   ├── __init__.py
+│   ├── application.py            FastAPI application factory
+│   ├── schemas.py                HTTP request and response schemas
+│   └── middleware.py             Request ID propagation
+│
+├── db/
+│   ├── __init__.py
+│   ├── models.py                 SQLAlchemy persistence models
+│   ├── repository.py             Repository contracts and implementations
+│   └── session.py                Engine, sessions, and database health
+│
+├── observability/
+│   ├── __init__.py
+│   ├── logging.py                Structured logging
+│   ├── metrics.py                OpenTelemetry domain metrics
+│   └── telemetry.py              OTel providers and OTLP exporters
+│
+├── cache/                         Redis client caching (planned)
+├── messaging/                     Streams, queues, and pub-sub (planned)
+├── workflows/                     Durable sagas and compensations (planned)
+├── workers/                       Background worker pipelines (planned)
+├── search/                        CDC-backed Elasticsearch indexing (planned)
+└── agents/                        Agents, tools, and colocated evals (planned)
+    └── evals/
+
+migrations/                        Alembic schema history
+
+infra/                             Infrastructure configuration (planned)
+├── terraform/                     Terraform modules and environments
+├── otel/                          OpenTelemetry Collector configuration
+└── cdc/                           CDC source and Elasticsearch sink configuration
+
+compose.yaml                       Local development dependencies
+alembic.ini                        Database migration configuration
+pyproject.toml                     Python project and tool configuration
+uv.lock                            Reproducible dependency lockfile
+.pre-commit-config.yaml            Automated repository checks
+```
+
+Entries marked `planned` describe intended additions. Their files and
+directories are deliberately absent until the corresponding capability exists.
+
+The runtime request path is:
+
+```text
+API → Service → TitleRepository → In-memory storage or PostgreSQL
+```
+
+`TitleRepository` is a structural `Protocol`. The two implementations satisfy
+the contract without inheriting from it.
+
+## Quick start
+
+Python 3.11 or newer and
+[uv](https://docs.astral.sh/uv/getting-started/installation/) are required.
+
+```bash
+uv sync
+uv run pre-commit install
+uv run uvicorn app.main:app --reload
+```
+
+`uv sync` creates `.venv`, installs the application dependencies and development
+tools, and uses the committed `uv.lock` file. The project is intentionally not
+installed as a distributable Python package. The pre-commit install command
+enables the configured checks for future commits.
+
+Without `DATABASE_URL`, the application uses an in-memory repository with one
+sample title.
+
+```bash
+curl -i 'http://127.0.0.1:8000/v1/titles/movie-123'
+
+curl -i -X POST 'http://127.0.0.1:8000/v1/titles' \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"movie-456","name":"Another Movie"}'
+```
+
+Interactive API documentation is available at <http://127.0.0.1:8000/docs>.
+
+## OpenTelemetry
+
+FastAPI HTTP traces and metrics are produced by the standard OpenTelemetry
+instrumentation. Domain metrics use the OpenTelemetry metrics API as well. Set
+an OTLP/gRPC collector endpoint to export both signals:
+
+```bash
+export OTEL_SERVICE_NAME=title-api
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+uv run uvicorn app.main:app --reload
+```
+
+The standard per-signal variables
+`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` and
+`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` are also supported. When no endpoint is
+configured, instrumentation remains enabled but no exporter worker is started.
+
+## PostgreSQL
+
+```bash
+docker compose up -d postgres
+export DATABASE_URL='postgresql+asyncpg://postgres:postgres@localhost:5432/backend_interview'
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload
+```
+
+## Checks
+
+```bash
+uv lock --check
+uv run pre-commit run --all-files
+uv run ruff check app migrations
+uv run ruff format --check app migrations
+uv run pytest
+uv run alembic upgrade head --sql
+```
+
+The repository tests are colocated with their implementation and use async
+SQLite, so the SQLAlchemy implementation is exercised without requiring Docker.
+A production project should additionally run the same repository contract tests
+against PostgreSQL in CI.

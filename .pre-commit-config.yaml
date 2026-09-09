@@ -1,0 +1,40 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+
+  # Local hooks so ruff is pinned by our uv lockfile (single source of truth)
+  # rather than a separately-versioned pre-commit mirror.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+
+  # Local hook so yamllint stays pinned by our uv dev dependency (single source
+  # of truth) rather than a separately-versioned pre-commit mirror.
+  - repo: local
+    hooks:
+      - id: yamllint
+        name: yamllint
+        entry: uv run yamllint
+        language: system
+        types: [yaml]
+        # Config inlined here (no .yamllint file): tolerate GitHub's `on:` key,
+        # warn rather than error past 100 cols, and don't require a `---` start.
+        args:
+          - "-d"
+          - >-
+            {extends: default, rules: {truthy: {check-keys: false}, line-length:
+            {max: 100, level: warning}, document-start: disable}}
