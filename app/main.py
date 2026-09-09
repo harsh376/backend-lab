@@ -1,6 +1,5 @@
-"""Application composition root selected by DATABASE_URL."""
+"""Application composition root selected by DB_HOST."""
 
-import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -8,6 +7,7 @@ from fastapi import FastAPI
 
 from app.api.application import create_app
 from app.api.dependencies import ReadinessProbe
+from app.config import Settings
 from app.db.repository import (
     InMemoryTitleRepository,
     PostgresTitleRepository,
@@ -20,16 +20,16 @@ from app.observability.metrics import OpenTelemetryMetrics
 from app.observability.telemetry import configure_telemetry
 from app.service import TitleService
 
-logger = configure_logger()
-telemetry = configure_telemetry()
+settings = Settings()
+logger = configure_logger(settings.otel_service_name)
+telemetry = configure_telemetry(settings)
 metrics = OpenTelemetryMetrics(telemetry.meter_provider)
-database_url = os.getenv("DATABASE_URL")
 database: Database | None = None
 repository: TitleRepository
 readiness_probe: ReadinessProbe | None
 
-if database_url:
-    database = Database(database_url)
+if settings.database_url:
+    database = Database(settings.database_url)
     repository = PostgresTitleRepository(database.sessions)
     readiness_probe = database.is_ready
 else:

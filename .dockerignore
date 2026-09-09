@@ -1,0 +1,13 @@
+.venv
+__pycache__
+**/__pycache__
+*.py[cod]
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.git
+.idea
+.env
+app/Dockerfile
+compose.yaml
+README.md
