@@ -51,7 +51,7 @@ migrations/                        Alembic schema history
 
 infra/                             Infrastructure configuration
 ├── grafana/                       Provisioned Grafana dashboards
-├── terraform/                     Terraform modules and environments (planned)
+├── terraform/                     AWS state-bucket script and environment roots
 └── cdc/                           CDC source and Elasticsearch sink configuration (planned)
 
 compose.yaml                        Local stack: DB, migrations, API, OTEL-LGTM
@@ -62,6 +62,11 @@ uv.lock                             Reproducible dependency lockfile
 
 Entries marked `planned` describe intended additions. Their files and
 directories are deliberately absent until the corresponding capability exists.
+
+The Terraform setup runs locally and stores remote state in a private,
+versioned S3 bucket with native state locking. See
+[`infra/terraform/README.md`](infra/terraform/README.md) for the state-bucket
+setup and development-environment workflow.
 
 The runtime request path is:
 

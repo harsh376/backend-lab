@@ -7,3 +7,14 @@ __pycache__/
 .venv/
 *.egg-info/
 .idea/
+
+# Terraform local data, state, plans, and uncommitted input values
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+crash.log
+crash.*.log
+
+!*.tfvars.example
