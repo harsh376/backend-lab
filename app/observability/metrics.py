@@ -9,7 +9,7 @@ from opentelemetry.metrics import Counter, MeterProvider
 class Metrics(Protocol):
     def record_title_operation(self, operation: str, outcome: str) -> None: ...
 
-    def record_repository_failure(self) -> None: ...
+    def record_repository_failure(self, operation: str) -> None: ...
 
 
 class OpenTelemetryMetrics:
@@ -37,5 +37,5 @@ class OpenTelemetryMetrics:
             },
         )
 
-    def record_repository_failure(self) -> None:
-        self._repository_failures.add(1)
+    def record_repository_failure(self, operation: str) -> None:
+        self._repository_failures.add(1, {"title.operation": operation})

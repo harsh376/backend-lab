@@ -10,8 +10,7 @@ _ENV_VARS = (
     "DB_PASSWORD",
     "OTEL_SERVICE_NAME",
     "OTEL_EXPORTER_OTLP_ENDPOINT",
-    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
-    "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
+    "OTEL_METRIC_EXPORT_INTERVAL",
 )
 
 
@@ -26,9 +25,9 @@ def test_defaults_when_unset(monkeypatch) -> None:
     settings = Settings(_env_file=None)
 
     assert settings.database_url is None
-    assert settings.otel_service_name == "title-api"
-    assert settings.trace_otlp_enabled is False
-    assert settings.metric_otlp_enabled is False
+    assert settings.otel_service_name == "api"
+    assert settings.otlp_enabled is False
+    assert settings.otel_metric_export_interval == 60_000
 
 
 def test_reads_environment_variables(monkeypatch) -> None:
@@ -40,20 +39,12 @@ def test_reads_environment_variables(monkeypatch) -> None:
     monkeypatch.setenv("DB_PASSWORD", "p")
     monkeypatch.setenv("OTEL_SERVICE_NAME", "custom-service")
     monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://collector:4317")
+    monkeypatch.setenv("OTEL_METRIC_EXPORT_INTERVAL", "20000")
 
     settings = Settings(_env_file=None)
 
     assert settings.database_url == "postgresql+asyncpg://u:p@host:6543/db"
     assert settings.otel_service_name == "custom-service"
-    assert settings.trace_otlp_enabled is True
-    assert settings.metric_otlp_enabled is True
-
-
-def test_per_signal_otlp_endpoint_enables_independently(monkeypatch) -> None:
-    _clear_env(monkeypatch)
-    monkeypatch.setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://collector:4317")
-
-    settings = Settings(_env_file=None)
-
-    assert settings.trace_otlp_enabled is True
-    assert settings.metric_otlp_enabled is False
+    assert settings.otlp_enabled is True
+    assert settings.otel_exporter_otlp_endpoint == "http://collector:4317"
+    assert settings.otel_metric_export_interval == 20_000

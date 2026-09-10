@@ -1,5 +1,6 @@
 """Application configuration loaded from environment variables."""
 
+from pydantic import PositiveInt
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,10 +13,9 @@ class Settings(BaseSettings):
     db_user: str = "postgres"
     db_password: str = "postgres"
 
-    otel_service_name: str = "title-api"
+    otel_service_name: str = "api"
     otel_exporter_otlp_endpoint: str | None = None
-    otel_exporter_otlp_traces_endpoint: str | None = None
-    otel_exporter_otlp_metrics_endpoint: str | None = None
+    otel_metric_export_interval: PositiveInt = 60000
 
     @property
     def database_url(self) -> str | None:
@@ -28,13 +28,5 @@ class Settings(BaseSettings):
         )
 
     @property
-    def trace_otlp_enabled(self) -> bool:
-        return bool(
-            self.otel_exporter_otlp_endpoint or self.otel_exporter_otlp_traces_endpoint
-        )
-
-    @property
-    def metric_otlp_enabled(self) -> bool:
-        return bool(
-            self.otel_exporter_otlp_endpoint or self.otel_exporter_otlp_metrics_endpoint
-        )
+    def otlp_enabled(self) -> bool:
+        return self.otel_exporter_otlp_endpoint is not None

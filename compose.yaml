@@ -27,12 +27,14 @@ services:
       postgres:
         condition: service_healthy
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.114.0
-    command: ["--config=/etc/otel-collector-config.yaml"]
+  otel-lgtm:
+    image: grafana/otel-lgtm:0.32.1
     volumes:
-      - ./infra/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+      - otel-lgtm-data:/data
+      - ./infra/grafana/dashboards:/var/lib/grafana/custom-dashboards:ro
+      - ./infra/grafana/provisioning/api.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/api.yaml:ro
     ports:
+      - "3000:3000"
       - "4317:4317"
       - "4318:4318"
 
@@ -48,15 +50,20 @@ services:
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME}
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-api}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
+      OTEL_METRIC_EXPORT_INTERVAL: "20000"
+      OTEL_SEMCONV_STABILITY_OPT_IN: http
     depends_on:
       migrations:
         condition: service_completed_successfully
-      otel-collector:
+      otel-lgtm:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')\""]
       interval: 5s
       timeout: 3s
       retries: 10
+
+volumes:
+  otel-lgtm-data:

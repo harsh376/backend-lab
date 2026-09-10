@@ -21,8 +21,8 @@ from app.observability.telemetry import configure_telemetry
 from app.service import TitleService
 
 settings = Settings()
-logger = configure_logger(settings.otel_service_name)
 telemetry = configure_telemetry(settings)
+logger = configure_logger(settings.otel_service_name, telemetry.logger_provider)
 metrics = OpenTelemetryMetrics(telemetry.meter_provider)
 database: Database | None = None
 repository: TitleRepository

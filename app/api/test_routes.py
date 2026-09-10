@@ -151,19 +151,24 @@ async def test_otel_fastapi_instrumentation_emits_trace_and_metric() -> None:
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        response = await client.get("/v1/titles/movie-123")
+        response = await client.get(
+            "/v1/titles/movie-123",
+            headers={"X-Request-ID": "request-otel-123"},
+        )
 
     assert response.status_code == 200
-    assert any(
-        span.name == "GET /v1/titles/{title_id}"
+    server_span = next(
+        span
         for span in span_exporter.get_finished_spans()
+        if span.name == "GET /v1/titles/{title_id}"
     )
+    assert server_span.attributes["app.request.id"] == "request-otel-123"
     metric_names = {
         metric.name
         for resource_metrics in metric_reader.get_metrics_data().resource_metrics
         for scope_metrics in resource_metrics.scope_metrics
         for metric in scope_metrics.metrics
     }
-    assert "http.server.duration" in metric_names
+    assert "http.server.request.duration" in metric_names
     tracer_provider.shutdown()
     meter_provider.shutdown()
