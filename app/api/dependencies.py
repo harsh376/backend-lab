@@ -21,6 +21,13 @@ class ApplicationDependencies:
     readiness_probe: ReadinessProbe | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class RequestContext:
+    """Context associated with a single HTTP request."""
+
+    request_id: str
+
+
 def get_application_dependencies(request: Request) -> ApplicationDependencies:
     return cast(ApplicationDependencies, request.app.state.dependencies)
 
@@ -28,6 +35,10 @@ def get_application_dependencies(request: Request) -> ApplicationDependencies:
 ApplicationDependenciesDependency = Annotated[
     ApplicationDependencies, Depends(get_application_dependencies)
 ]
+
+
+def get_request_context(request: Request) -> RequestContext:
+    return RequestContext(request_id=request.state.request_id)
 
 
 def get_title_service(
@@ -46,6 +57,7 @@ def get_readiness_probe(
     return dependencies.readiness_probe
 
 
+RequestContextDependency = Annotated[RequestContext, Depends(get_request_context)]
 TitleServiceDependency = Annotated[TitleService, Depends(get_title_service)]
 LoggerDependency = Annotated[logging.Logger, Depends(get_logger)]
 ReadinessProbeDependency = Annotated[

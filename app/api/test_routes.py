@@ -11,6 +11,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
 )
 
 from app.api.application import create_app
+from app.api.dependencies import ApplicationDependencies
 from app.db.repository import InMemoryTitleRepository, RepositoryUnavailableError
 from app.domain import Title
 from app.observability.metrics import OpenTelemetryMetrics
@@ -33,7 +34,12 @@ def make_app(repository=None, readiness_probe=None):
     logger = logging.getLogger(f"test-{id(metrics)}")
     logger.addHandler(logging.NullHandler())
     service = TitleService(repository, metrics, logger)
-    return create_app(service, logger, readiness_probe)
+    dependencies = ApplicationDependencies(
+        service=service,
+        logger=logger,
+        readiness_probe=readiness_probe,
+    )
+    return create_app(dependencies)
 
 
 @pytest.fixture
@@ -141,9 +147,9 @@ async def test_otel_fastapi_instrumentation_emits_trace_and_metric() -> None:
     application_metrics = OpenTelemetryMetrics(meter_provider)
     logger = logging.getLogger("test-otel-instrumentation")
     service = TitleService(repository, application_metrics, logger)
+    dependencies = ApplicationDependencies(service=service, logger=logger)
     app = create_app(
-        service,
-        logger,
+        dependencies,
         tracer_provider=tracer_provider,
         meter_provider=meter_provider,
     )

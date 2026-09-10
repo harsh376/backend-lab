@@ -2,10 +2,14 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Request, status
+from fastapi import APIRouter, Body, status
 from fastapi.responses import JSONResponse
 
-from app.api.dependencies import LoggerDependency, TitleServiceDependency
+from app.api.dependencies import (
+    LoggerDependency,
+    RequestContextDependency,
+    TitleServiceDependency,
+)
 from app.api.schemas import ErrorResponse, error_response
 from app.db.repository import (
     RepositoryUnavailableError,
@@ -24,29 +28,29 @@ router = APIRouter(prefix="/titles", tags=["titles"])
 )
 async def get_title(
     title_id: str,
-    request: Request,
+    context: RequestContextDependency,
     title_service: TitleServiceDependency,
     logger: LoggerDependency,
 ) -> Title | JSONResponse:
     try:
-        return await title_service.get(title_id, request.state.request_id)
+        return await title_service.get(title_id, context.request_id)
     except TitleNotFoundError:
         return error_response(
             status_code=404,
             code="TITLE_NOT_FOUND",
             message="The requested title does not exist",
-            request_id=request.state.request_id,
+            request_id=context.request_id,
         )
     except RepositoryUnavailableError:
         logger.exception(
             "title_repository_unavailable",
-            extra={"request_id": request.state.request_id, "title_id": title_id},
+            extra={"request_id": context.request_id, "title_id": title_id},
         )
         return error_response(
             status_code=503,
             code="SERVICE_UNAVAILABLE",
             message="The title could not be loaded",
-            request_id=request.state.request_id,
+            request_id=context.request_id,
         )
 
 
@@ -58,27 +62,27 @@ async def get_title(
 )
 async def create_title(
     title: Annotated[Title, Body()],
-    request: Request,
+    context: RequestContextDependency,
     title_service: TitleServiceDependency,
     logger: LoggerDependency,
 ) -> Title | JSONResponse:
     try:
-        return await title_service.create(title, request.state.request_id)
+        return await title_service.create(title, context.request_id)
     except TitleAlreadyExistsError:
         return error_response(
             status_code=409,
             code="TITLE_ALREADY_EXISTS",
             message="A title with this ID already exists",
-            request_id=request.state.request_id,
+            request_id=context.request_id,
         )
     except RepositoryUnavailableError:
         logger.exception(
             "title_repository_unavailable",
-            extra={"request_id": request.state.request_id, "title_id": title.id},
+            extra={"request_id": context.request_id, "title_id": title.id},
         )
         return error_response(
             status_code=503,
             code="SERVICE_UNAVAILABLE",
             message="The title could not be created",
-            request_id=request.state.request_id,
+            request_id=context.request_id,
         )

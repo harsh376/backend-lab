@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.application import create_app
-from app.api.dependencies import ReadinessProbe
+from app.api.dependencies import ApplicationDependencies, ReadinessProbe
 from app.config import Settings
 from app.db.repository import (
     InMemoryTitleRepository,
@@ -45,10 +45,13 @@ else:
     readiness_probe = None
 
 service = TitleService(repository, metrics, logger)
+dependencies = ApplicationDependencies(
+    service=service,
+    logger=logger,
+    readiness_probe=readiness_probe,
+)
 app = create_app(
-    service,
-    logger,
-    readiness_probe,
+    dependencies,
     tracer_provider=telemetry.tracer_provider,
     meter_provider=telemetry.meter_provider,
 )
