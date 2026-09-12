@@ -7,7 +7,7 @@ __pycache__
 .ruff_cache
 .git
 .idea
-.env
-app/Dockerfile
-compose.yaml
+**/.env
+apps/api/Dockerfile
+compose/
 README.md
