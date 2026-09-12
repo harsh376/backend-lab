@@ -13,47 +13,9 @@ applications live in `apps`, while reusable technical infrastructure lives in
 owns them. Tests live beside the files they cover as `test_{file_name}.py` and
 are omitted from this diagram for clarity.
 
-```text
-apps/
-└── api/
-    ├── main.py                   Application composition root
-    ├── config.py                 Environment-driven settings
-    ├── application.py            FastAPI application factory
-    ├── dependencies.py           FastAPI dependency providers
-    ├── middleware.py             Request ID propagation
-    ├── schemas.py                HTTP error schemas
-    ├── domain.py                 Title domain model
-    ├── service.py                Title use-case orchestration
-    ├── metrics.py                Title-specific OpenTelemetry metrics
-    ├── Dockerfile                API container image
-    ├── alembic.ini               Database migration configuration
-    ├── routers/                  Health and title endpoints
-    └── db/
-        ├── models.py             Title SQLAlchemy model
-        ├── repository.py         Repository contract and implementations
-        └── migrations/           API-owned schema history
-
-shared/
-├── database/
-│   └── session.py                Engine, sessions, and database health
-└── observability/
-    ├── logging.py                Structured logging
-    └── telemetry.py              OTel providers and OTLP exporters
-
-infra/                             Infrastructure configuration
-├── grafana/                       Provisioned Grafana dashboards
-└── terraform/                     AWS state-bucket script and environment roots
-
-compose/base.yaml                   Base stack: DB, migrations, API, OTEL-LGTM
-pyproject.toml                      Python project and tool configuration
-uv.lock                             Reproducible dependency lockfile
-.pre-commit-config.yaml             Automated repository checks
-```
-
 The Terraform setup runs locally and stores remote state in a private,
-versioned S3 bucket with native state locking. See
-[`infra/terraform/README.md`](infra/terraform/README.md) for the state-bucket
-setup and development-environment workflow.
+versioned S3 bucket with native state locking. Run `bin/terraform.sh help` for the
+state-bucket setup and development-environment workflow.
 
 The runtime request path is:
 
