@@ -38,12 +38,20 @@ Compose starts PostgreSQL, applies migrations, starts the API, and starts the
 local observability stack. The API uses an in-memory repository only in tests
 that explicitly construct it that way.
 
-```bash
-curl -i 'http://127.0.0.1:8000/v1/titles/movie-123'
+### Sample requests
 
+```bash
+# Check that the process is running and its dependencies are ready.
+curl -i 'http://127.0.0.1:8000/health/live'
+curl -i 'http://127.0.0.1:8000/health/ready'
+
+# Create a title.
 curl -i -X POST 'http://127.0.0.1:8000/v1/titles' \
   -H 'Content-Type: application/json' \
-  -d '{"id":"movie-456","name":"Another Movie"}'
+  -d '{"id":"movie-456","name":"Another Movie","description":"An example title."}'
+
+# Retrieve the title that was just created.
+curl -i 'http://127.0.0.1:8000/v1/titles/movie-456'
 ```
 
 Interactive API documentation is available at <http://127.0.0.1:8000/docs>.
@@ -82,6 +90,23 @@ only PostgreSQL:
 docker compose -f compose/base.yaml up -d postgres
 ```
 
+### Alembic migrations
+
+With PostgreSQL running, generate a migration from changes to the SQLAlchemy
+models, inspect the database's currently applied migration, and apply all
+available migrations with:
+
+```bash
+uv run alembic -c apps/api/alembic.ini revision --autogenerate -m "describe change"
+uv run alembic -c apps/api/alembic.ini current
+uv run alembic -c apps/api/alembic.ini upgrade head
+```
+
+Run `uv run alembic -c apps/api/alembic.ini heads` to see the newest migration
+available in the repository. Alembic uses the local PostgreSQL defaults from
+`apps/api/alembic.ini`; set the `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and
+`DB_PASSWORD` environment variables to target a different database.
+
 ## Docker
 
 `docker compose -f compose/base.yaml up --build` runs the full stack:
@@ -114,11 +139,14 @@ traces. Search for the `api` service after generating API traffic. Metric
 exports occur every 20 seconds in the Docker Compose stack, so new metric data
 can take up to 20 seconds to appear.
 
-Grafana provisions the version-controlled `API — HTTP Overview` dashboard
-from `infra/grafana`. It covers request rate, client and server error percentage,
-active requests, latency percentiles, status-code rates, and a latency heatmap.
-Grafana polls the dashboard file for changes every 30 seconds; restart the
-`otel-lgtm` service after changing the provider configuration itself.
+Grafana provisions the version-controlled `API — HTTP Overview` and
+`Application` dashboards in its `API` folder from `infra/grafana`. The HTTP
+dashboard covers request rate, client and server error percentage, active
+requests, latency percentiles, status-code rates, and a latency heatmap. The
+application dashboard covers title operation rates, outcomes, success
+percentage, and repository failures. Grafana polls the dashboard files for
+changes every 30 seconds; restart the `otel-lgtm` service after changing the
+provider configuration itself.
 
 ## Checks
 
