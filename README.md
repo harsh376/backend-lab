@@ -188,10 +188,16 @@ this PostgreSQL variant in CI.
 
 Request model → Router → ORM model → Database → ORM model → Router → Response model
 
-## Phase 2: Extract business logic into a service
+## Phase 2: Add production behavior
+
+- Log exceptions and errors using structured logging
+- Add metrics to `OpenTelemetryMetrics` and record in api handler
+- Verify metrics in Grafana
+
+## Phase 3: Extract business logic
 
 Request model → Router → Service → ORM model → Database → ORM model → Service → Domain model → Router → Response model
 
-## Phase 3: Extract persistence into a repository
+## Phase 4: Extract persistence
 
 Request model → Router → Service → Repository → ORM model → Database → ORM model → Repository → Domain model → Service → Router → Response model

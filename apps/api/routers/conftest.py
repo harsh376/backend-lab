@@ -29,6 +29,7 @@ async def make_app(repository=None, readiness_probe=None, user_list_repository=N
         service=service,
         user_list_service=user_list_service,
         logger=logger,
+        metrics=metrics,
         readiness_probe=readiness_probe,
     )
     return create_app(dependencies)

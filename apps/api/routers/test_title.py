@@ -105,7 +105,10 @@ async def test_otel_fastapi_instrumentation_emits_trace_and_metric() -> None:
     await user_list_repository.initialize()
     user_list_service = UserListService(user_list_repository, logger)
     dependencies = ApplicationDependencies(
-        service=service, user_list_service=user_list_service, logger=logger
+        service=service,
+        user_list_service=user_list_service,
+        logger=logger,
+        metrics=application_metrics,
     )
     app = create_app(
         dependencies,

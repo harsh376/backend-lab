@@ -7,6 +7,7 @@ from typing import Annotated, cast
 
 from fastapi import Depends, Header, HTTPException, Request, status
 
+from apps.api.metrics import OpenTelemetryMetrics
 from apps.api.services.title import TitleService
 from apps.api.services.user_list import UserListService
 
@@ -20,6 +21,7 @@ class ApplicationDependencies:
     service: TitleService
     user_list_service: UserListService
     logger: logging.Logger
+    metrics: OpenTelemetryMetrics
     readiness_probe: ReadinessProbe | None = None
 
 
@@ -59,6 +61,12 @@ def get_logger(dependencies: ApplicationDependenciesDependency) -> logging.Logge
     return dependencies.logger
 
 
+def get_metrics(
+    dependencies: ApplicationDependenciesDependency,
+) -> OpenTelemetryMetrics:
+    return dependencies.metrics
+
+
 def get_readiness_probe(
     dependencies: ApplicationDependenciesDependency,
 ) -> ReadinessProbe | None:
@@ -79,6 +87,7 @@ RequestContextDependency = Annotated[RequestContext, Depends(get_request_context
 TitleServiceDependency = Annotated[TitleService, Depends(get_title_service)]
 UserListServiceDependency = Annotated[UserListService, Depends(get_user_list_service)]
 LoggerDependency = Annotated[logging.Logger, Depends(get_logger)]
+MetricsDependency = Annotated[OpenTelemetryMetrics, Depends(get_metrics)]
 ReadinessProbeDependency = Annotated[
     ReadinessProbe | None, Depends(get_readiness_probe)
 ]

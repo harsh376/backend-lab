@@ -63,6 +63,7 @@ dependencies = ApplicationDependencies(
     service=service,
     user_list_service=user_list_service,
     logger=logger,
+    metrics=metrics,
     readiness_probe=readiness_probe,
 )
 app = create_app(
