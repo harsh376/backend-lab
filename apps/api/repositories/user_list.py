@@ -2,16 +2,13 @@
 
 from typing import Protocol
 
-from sqlalchemy import delete, event, select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
     AsyncSession,
     async_sessionmaker,
-    create_async_engine,
 )
 
-from apps.api.db.models import Base
 from apps.api.db.models import Content as ContentRow
 from apps.api.db.models import User as UserRow
 from apps.api.db.models import UserList as UserListRow
@@ -201,51 +198,6 @@ class PostgresUserListRepository:
         if row is None:
             raise UserListNotFoundError(user_list_id)
         return row
-
-
-class SqliteUserListRepository(PostgresUserListRepository):
-    """A UserListRepository backed by SQLite with foreign keys enforced.
-
-    Used as a dependency-free fallback when no external database is
-    configured, and in tests that need real constraint enforcement (a bad
-    user_id or content_id fails like it would against Postgres) without
-    standing up a Postgres instance. `initialize()` must be awaited once
-    before use, and `close()` when done with it.
-    """
-
-    def __init__(self, database_url: str = "sqlite+aiosqlite:///:memory:") -> None:
-        self._engine: AsyncEngine = create_async_engine(database_url)
-        event.listens_for(self._engine.sync_engine, "connect")(
-            _enable_sqlite_foreign_keys
-        )
-        super().__init__(async_sessionmaker(self._engine, expire_on_commit=False))
-
-    async def initialize(self) -> None:
-        async with self._engine.begin() as connection:
-            await connection.run_sync(Base.metadata.create_all)
-
-    async def close(self) -> None:
-        await self._engine.dispose()
-
-    async def seed_user(self, user_id: int, name: str = "Test User") -> None:
-        async with self._sessions() as session, session.begin():
-            session.add(UserRow(id=user_id, name=name))
-
-    async def seed_content(self, content_id: int, title: str | None = None) -> None:
-        async with self._sessions() as session, session.begin():
-            session.add(
-                ContentRow(
-                    id=content_id,
-                    title=title or f"Test Content {content_id}",
-                    description="",
-                )
-            )
-
-
-def _enable_sqlite_foreign_keys(dbapi_connection, connection_record) -> None:
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
 
 
 def _user_list_to_domain(row: UserListRow) -> UserList:

@@ -2,13 +2,13 @@
 
 import logging
 from dataclasses import dataclass, field
+from unittest.mock import AsyncMock
 
 import pytest
 
 from apps.api.domains.title import Title
 from apps.api.repositories import RepositoryUnavailableError
 from apps.api.repositories.title import (
-    InMemoryTitleRepository,
     TitleAlreadyExistsError,
     TitleNotFoundError,
 )
@@ -43,9 +43,12 @@ def make_service(repository) -> tuple[TitleService, RecordingMetrics]:
 
 
 async def test_get_records_success_and_not_found() -> None:
-    service, metrics = make_service(
-        InMemoryTitleRepository([Title(id="movie-123", name="Example Movie")])
-    )
+    repository = AsyncMock()
+    repository.get_by_id.side_effect = [
+        Title(id="movie-123", name="Example Movie"),
+        TitleNotFoundError("missing"),
+    ]
+    service, metrics = make_service(repository)
 
     await service.get("movie-123", "request-1")
     with pytest.raises(TitleNotFoundError):
@@ -55,8 +58,10 @@ async def test_get_records_success_and_not_found() -> None:
 
 
 async def test_create_records_success_and_already_exists() -> None:
-    service, metrics = make_service(InMemoryTitleRepository())
     title = Title(id="movie-123", name="Example Movie")
+    repository = AsyncMock()
+    repository.create.side_effect = [title, TitleAlreadyExistsError(title.id)]
+    service, metrics = make_service(repository)
 
     await service.create(title, "request-1")
     with pytest.raises(TitleAlreadyExistsError):

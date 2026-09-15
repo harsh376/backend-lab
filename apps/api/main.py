@@ -7,19 +7,10 @@ from fastapi import FastAPI
 
 from apps.api.application import create_app
 from apps.api.config import Settings
-from apps.api.dependencies import ApplicationDependencies, ReadinessProbe
-from apps.api.domains.title import Title
+from apps.api.dependencies import ApplicationDependencies
 from apps.api.metrics import OpenTelemetryMetrics
-from apps.api.repositories.title import (
-    InMemoryTitleRepository,
-    PostgresTitleRepository,
-    TitleRepository,
-)
-from apps.api.repositories.user_list import (
-    PostgresUserListRepository,
-    SqliteUserListRepository,
-    UserListRepository,
-)
+from apps.api.repositories.title import PostgresTitleRepository
+from apps.api.repositories.user_list import PostgresUserListRepository
 from apps.api.services.title import TitleService
 from apps.api.services.user_list import UserListService
 from shared.database.session import Database
@@ -34,29 +25,9 @@ telemetry = configure_telemetry(
 )
 logger = configure_logger(settings.otel_service_name, telemetry.logger_provider)
 metrics = OpenTelemetryMetrics(telemetry.meter_provider)
-database: Database | None = None
-repository: TitleRepository
-user_list_repository: UserListRepository
-readiness_probe: ReadinessProbe | None
-
-if settings.database_url:
-    database = Database(settings.database_url)
-    repository = PostgresTitleRepository(database.sessions)
-    user_list_repository = PostgresUserListRepository(database.sessions)
-    readiness_probe = database.is_ready
-else:
-    repository = InMemoryTitleRepository(
-        [
-            Title(
-                id="movie-123",
-                name="Example Movie",
-                description="Sample data used when PostgreSQL is not configured.",
-            )
-        ]
-    )
-    user_list_repository = SqliteUserListRepository()
-    readiness_probe = None
-
+database = Database(settings.database_url)
+repository = PostgresTitleRepository(database.sessions)
+user_list_repository = PostgresUserListRepository(database.sessions)
 service = TitleService(repository, metrics, logger)
 user_list_service = UserListService(user_list_repository, logger)
 dependencies = ApplicationDependencies(
@@ -64,7 +35,8 @@ dependencies = ApplicationDependencies(
     user_list_service=user_list_service,
     logger=logger,
     metrics=metrics,
-    readiness_probe=readiness_probe,
+    database_sessions=database.sessions,
+    readiness_probe=database.is_ready,
 )
 app = create_app(
     dependencies,
@@ -75,17 +47,10 @@ app = create_app(
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-    if isinstance(user_list_repository, SqliteUserListRepository):
-        await user_list_repository.initialize()
-        await user_list_repository.seed_user(1, name="Sample User")
-        await user_list_repository.seed_content(1, title="Sample Content")
     try:
         yield
     finally:
-        if database is not None:
-            await database.close()
-        if isinstance(user_list_repository, SqliteUserListRepository):
-            await user_list_repository.close()
+        await database.close()
         telemetry.shutdown()
 
 

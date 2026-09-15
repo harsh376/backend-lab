@@ -13,12 +13,17 @@ async def test_health_endpoints(client: AsyncClient) -> None:
     assert readiness_response.json() == {"status": "ready"}
 
 
-async def test_readiness_reports_an_unavailable_dependency() -> None:
+async def test_readiness_reports_an_unavailable_dependency(sqlalchemy_sessions) -> None:
     async def unavailable() -> bool:
         return False
 
     async with AsyncClient(
-        transport=ASGITransport(app=await make_app(readiness_probe=unavailable)),
+        transport=ASGITransport(
+            app=await make_app(
+                sqlalchemy_sessions,
+                readiness_probe=unavailable,
+            )
+        ),
         base_url="http://test",
     ) as client:
         response = await client.get("/health/ready")

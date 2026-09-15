@@ -14,8 +14,8 @@ from apps.api.dependencies import ApplicationDependencies
 from apps.api.domains.title import Title
 from apps.api.metrics import OpenTelemetryMetrics
 from apps.api.repositories import RepositoryUnavailableError
-from apps.api.repositories.title import InMemoryTitleRepository
-from apps.api.repositories.user_list import SqliteUserListRepository
+from apps.api.repositories.title import PostgresTitleRepository
+from apps.api.repositories.user_list import PostgresUserListRepository
 from apps.api.routers.conftest import make_app
 from apps.api.services.title import TitleService
 from apps.api.services.user_list import UserListService
@@ -80,9 +80,14 @@ async def test_invalid_title_returns_400(client: AsyncClient) -> None:
     assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
 
 
-async def test_repository_failure_returns_503() -> None:
+async def test_repository_failure_returns_503(sqlalchemy_sessions) -> None:
     async with AsyncClient(
-        transport=ASGITransport(app=await make_app(UnavailableRepository())),
+        transport=ASGITransport(
+            app=await make_app(
+                sqlalchemy_sessions,
+                repository=UnavailableRepository(),
+            )
+        ),
         base_url="http://test",
     ) as client:
         response = await client.get("/v1/titles/movie-123")
@@ -90,25 +95,28 @@ async def test_repository_failure_returns_503() -> None:
     assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
 
 
-async def test_otel_fastapi_instrumentation_emits_trace_and_metric() -> None:
+async def test_otel_fastapi_instrumentation_emits_trace_and_metric(
+    sqlalchemy_sessions,
+) -> None:
     span_exporter = InMemorySpanExporter()
     tracer_provider = TracerProvider()
     tracer_provider.add_span_processor(SimpleSpanProcessor(span_exporter))
     metric_reader = InMemoryMetricReader()
     meter_provider = MeterProvider(metric_readers=[metric_reader])
 
-    repository = InMemoryTitleRepository([Title(id="movie-123", name="Example Movie")])
+    repository = PostgresTitleRepository(sqlalchemy_sessions)
+    await repository.create(Title(id="movie-123", name="Example Movie"))
     application_metrics = OpenTelemetryMetrics(meter_provider)
     logger = logging.getLogger("test-otel-instrumentation")
     service = TitleService(repository, application_metrics, logger)
-    user_list_repository = SqliteUserListRepository()
-    await user_list_repository.initialize()
+    user_list_repository = PostgresUserListRepository(sqlalchemy_sessions)
     user_list_service = UserListService(user_list_repository, logger)
     dependencies = ApplicationDependencies(
         service=service,
         user_list_service=user_list_service,
         logger=logger,
         metrics=application_metrics,
+        database_sessions=sqlalchemy_sessions,
     )
     app = create_app(
         dependencies,

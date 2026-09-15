@@ -4,13 +4,15 @@ import logging
 
 import pytest
 
+from apps.api.db.models import Content as ContentRow
+from apps.api.db.models import User as UserRow
 from apps.api.domains.user_list import UserList, UserListContent
 from apps.api.repositories import RepositoryUnavailableError
 from apps.api.repositories.user_list import (
     ContentAlreadyInListError,
     ContentNotFoundError,
     ContentNotInListError,
-    SqliteUserListRepository,
+    PostgresUserListRepository,
     UserListAlreadyExistsError,
     UserListNotFoundError,
 )
@@ -60,13 +62,17 @@ class RecordingHandler(logging.Handler):
 
 
 @pytest.fixture
-async def repository():
-    repository = SqliteUserListRepository()
-    await repository.initialize()
-    await repository.seed_user(USER_ID)
-    await repository.seed_content(CONTENT_ID)
-    yield repository
-    await repository.close()
+async def repository(sqlalchemy_sessions):
+    async with sqlalchemy_sessions.begin() as session:
+        session.add(UserRow(id=USER_ID, name="Test User"))
+        session.add(
+            ContentRow(
+                id=CONTENT_ID,
+                title="Test Content",
+                description="",
+            )
+        )
+    return PostgresUserListRepository(sqlalchemy_sessions)
 
 
 def make_service(repository) -> tuple[UserListService, RecordingHandler]:
@@ -78,7 +84,7 @@ def make_service(repository) -> tuple[UserListService, RecordingHandler]:
 
 
 async def test_create_user_list_records_success_and_already_exists(
-    repository: SqliteUserListRepository,
+    repository: PostgresUserListRepository,
 ) -> None:
     service, handler = make_service(repository)
 
@@ -96,7 +102,7 @@ async def test_create_user_list_records_success_and_already_exists(
 
 
 async def test_retrieve_user_lists_records_success(
-    repository: SqliteUserListRepository,
+    repository: PostgresUserListRepository,
 ) -> None:
     service, handler = make_service(repository)
     existing = await repository.create_user_list(USER_ID, "Favorites")
@@ -108,7 +114,7 @@ async def test_retrieve_user_lists_records_success(
 
 
 async def test_get_user_list_records_success_and_not_found(
-    repository: SqliteUserListRepository,
+    repository: PostgresUserListRepository,
 ) -> None:
     service, handler = make_service(repository)
     existing = await repository.create_user_list(USER_ID, "Favorites")
@@ -126,7 +132,7 @@ async def test_get_user_list_records_success_and_not_found(
 
 
 async def test_add_user_list_content_records_all_outcomes(
-    repository: SqliteUserListRepository,
+    repository: PostgresUserListRepository,
 ) -> None:
     service, handler = make_service(repository)
     existing = await repository.create_user_list(USER_ID, "Favorites")
@@ -161,7 +167,7 @@ async def test_add_user_list_content_records_all_outcomes(
 
 
 async def test_remove_user_list_content_records_all_outcomes(
-    repository: SqliteUserListRepository,
+    repository: PostgresUserListRepository,
 ) -> None:
     service, handler = make_service(repository)
     existing = await repository.create_user_list(USER_ID, "Favorites")

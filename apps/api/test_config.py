@@ -24,7 +24,9 @@ def test_defaults_when_unset(monkeypatch) -> None:
 
     settings = Settings(_env_file=None)
 
-    assert settings.database_url is None
+    assert settings.database_url == (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/my_db"
+    )
     assert settings.otel_service_name == "api"
     assert settings.otlp_enabled is False
     assert settings.otel_metric_export_interval == 60_000

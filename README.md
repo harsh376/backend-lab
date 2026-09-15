@@ -20,11 +20,11 @@ state-bucket setup and development-environment workflow.
 The runtime request path is:
 
 ```text
-API → Service → TitleRepository → In-memory storage or PostgreSQL
+API → Service → Repository → PostgreSQL
 ```
 
-`TitleRepository` is a structural `Protocol`. The two implementations satisfy
-the contract without inheriting from it.
+Repository contracts are structural `Protocol` types. Runtime implementations
+persist through SQLAlchemy to PostgreSQL.
 
 ## Quick start
 
@@ -35,8 +35,7 @@ docker compose -f compose/base.yaml up --build
 ```
 
 Compose starts PostgreSQL, applies migrations, starts the API, and starts the
-local observability stack. The API uses an in-memory repository only in tests
-that explicitly construct it that way.
+local observability stack.
 
 ### Sample requests
 
@@ -184,19 +183,30 @@ this PostgreSQL variant in CI.
 
 # Steps to creating a new API
 
-## Phase 1: Get the happy path working end to end
+## Phase 1: Complete the API behavior
 
 Request model → Router → ORM model → Database → ORM model → Router → Response model
 
-## Phase 2: Add production behavior
+- Define request and response models next to the router
+- Use ORM models directly; do not import or create domain models in this phase
+- Deliver the endpoint's functional requirements end to end
+- Validate requests and authorization context
+- Map expected errors and exceptions to stable response codes
+- Log errors and exceptions with structured context
+- Test successful and failure paths
 
-- Log exceptions and errors using structured logging
+## Phase 2: Integrate observability
+
 - Add metrics to `OpenTelemetryMetrics` and record in api handler
-- Verify metrics in Grafana
+- Export logs, metrics, and traces to the OTEL-LGTM stack
+- Verify telemetry in Grafana
 
 ## Phase 3: Extract business logic
 
 Request model → Router → Service → ORM model → Database → ORM model → Service → Domain model → Router → Response model
+
+- Introduce domain models when the service layer needs representations that are
+  independent of HTTP schemas and persistence models
 
 ## Phase 4: Extract persistence
 

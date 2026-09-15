@@ -1,6 +1,5 @@
-"""Title repository contract with in-memory and PostgreSQL implementations."""
+"""Title repository contract and PostgreSQL implementation."""
 
-import asyncio
 from typing import Protocol
 
 from sqlalchemy import select
@@ -24,25 +23,6 @@ class TitleRepository(Protocol):
     async def get_by_id(self, title_id: str) -> Title: ...
 
     async def create(self, title: Title) -> Title: ...
-
-
-class InMemoryTitleRepository:
-    def __init__(self, titles: list[Title] | None = None) -> None:
-        self._titles = {title.id: title for title in titles or []}
-        self._lock = asyncio.Lock()
-
-    async def get_by_id(self, title_id: str) -> Title:
-        title = self._titles.get(title_id)
-        if title is None:
-            raise TitleNotFoundError(title_id)
-        return title
-
-    async def create(self, title: Title) -> Title:
-        async with self._lock:
-            if title.id in self._titles:
-                raise TitleAlreadyExistsError(title.id)
-            self._titles[title.id] = title
-        return title
 
 
 class PostgresTitleRepository:

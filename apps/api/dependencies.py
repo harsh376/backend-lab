@@ -1,11 +1,12 @@
 """FastAPI dependency providers for application-level services."""
 
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 from typing import Annotated, cast
 
 from fastapi import Depends, Header, HTTPException, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from apps.api.metrics import OpenTelemetryMetrics
 from apps.api.services.title import TitleService
@@ -22,6 +23,7 @@ class ApplicationDependencies:
     user_list_service: UserListService
     logger: logging.Logger
     metrics: OpenTelemetryMetrics
+    database_sessions: async_sessionmaker[AsyncSession] | None = None
     readiness_probe: ReadinessProbe | None = None
 
 
@@ -73,6 +75,19 @@ def get_readiness_probe(
     return dependencies.readiness_probe
 
 
+async def get_async_database_session(
+    dependencies: ApplicationDependenciesDependency,
+) -> AsyncIterator[AsyncSession]:
+    if dependencies.database_sessions is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database sessions are unavailable",
+        )
+
+    async with dependencies.database_sessions() as session:
+        yield session
+
+
 def get_user_id(x_user_id: Annotated[int | None, Header()] = None) -> int:
     """Authentication is out of scope; the caller passes their user ID directly."""
     if x_user_id is None:
@@ -90,5 +105,8 @@ LoggerDependency = Annotated[logging.Logger, Depends(get_logger)]
 MetricsDependency = Annotated[OpenTelemetryMetrics, Depends(get_metrics)]
 ReadinessProbeDependency = Annotated[
     ReadinessProbe | None, Depends(get_readiness_probe)
+]
+AsyncDatabaseSessionDependency = Annotated[
+    AsyncSession, Depends(get_async_database_session)
 ]
 UserIdDependency = Annotated[int, Depends(get_user_id)]
