@@ -184,24 +184,14 @@ this PostgreSQL variant in CI.
 
 # Steps to creating a new API
 
-API → Service → Repository → In-memory storage or PostgreSQL
+## Phase 1: Get the happy path working end to end
 
-Domain <-> Model
+Request model → Router → ORM model → Database → ORM model → Router → Response model
 
-1. Model Domain objects
-2. Domain → Create DB Models
-3. Create DB repository methods: Use ORM to query DB
-4. Add tests for DB Repository methods
-5. Create Service
-   - Call Repository methods
-   - Catch Repository exceptions
-   - Return Domain objects
-   - Log exceptions, record metrics
-6. Add tests for Service
-7. Add router and API endpoints
-   - Add router in `apps/api/application.py`
-   - Routes use dependency injection to get Service. Defined in `app/api/dependencies.py`
-8. Add tests for API endpoints
-9. Add DB migrations
-10. Run tests against Postgres DB
-11. QA API endpoints
+## Phase 2: Extract business logic into a service
+
+Request model → Router → Service → ORM model → Database → ORM model → Service → Domain model → Router → Response model
+
+## Phase 3: Extract persistence into a repository
+
+Request model → Router → Service → Repository → ORM model → Database → ORM model → Repository → Domain model → Service → Router → Response model
