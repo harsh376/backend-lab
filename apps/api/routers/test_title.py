@@ -1,6 +1,5 @@
 import logging
 
-import pytest
 from httpx import ASGITransport, AsyncClient
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import InMemoryMetricReader
@@ -11,14 +10,15 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
 )
 
 from apps.api.application import create_app
-from apps.api.db.repository import (
-    InMemoryTitleRepository,
-    RepositoryUnavailableError,
-)
 from apps.api.dependencies import ApplicationDependencies
-from apps.api.domain import Title
+from apps.api.domains.title import Title
 from apps.api.metrics import OpenTelemetryMetrics
-from apps.api.service import TitleService
+from apps.api.repositories import RepositoryUnavailableError
+from apps.api.repositories.title import InMemoryTitleRepository
+from apps.api.repositories.user_list import SqliteUserListRepository
+from apps.api.routers.conftest import make_app
+from apps.api.services.title import TitleService
+from apps.api.services.user_list import UserListService
 
 
 class UnavailableRepository:
@@ -27,31 +27,6 @@ class UnavailableRepository:
 
     async def create(self, title: Title) -> Title:
         raise RepositoryUnavailableError("database unavailable")
-
-
-def make_app(repository=None, readiness_probe=None):
-    repository = repository or InMemoryTitleRepository(
-        [Title(id="movie-123", name="Example Movie")]
-    )
-    metrics = OpenTelemetryMetrics()
-    logger = logging.getLogger(f"test-{id(metrics)}")
-    logger.addHandler(logging.NullHandler())
-    service = TitleService(repository, metrics, logger)
-    dependencies = ApplicationDependencies(
-        service=service,
-        logger=logger,
-        readiness_probe=readiness_probe,
-    )
-    return create_app(dependencies)
-
-
-@pytest.fixture
-async def client():
-    async with AsyncClient(
-        transport=ASGITransport(app=make_app()),
-        base_url="http://test",
-    ) as value:
-        yield value
 
 
 async def test_get_title(client: AsyncClient) -> None:
@@ -107,36 +82,12 @@ async def test_invalid_title_returns_400(client: AsyncClient) -> None:
 
 async def test_repository_failure_returns_503() -> None:
     async with AsyncClient(
-        transport=ASGITransport(app=make_app(UnavailableRepository())),
+        transport=ASGITransport(app=await make_app(UnavailableRepository())),
         base_url="http://test",
     ) as client:
         response = await client.get("/v1/titles/movie-123")
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
-
-
-async def test_health_endpoints(client: AsyncClient) -> None:
-    liveness_response = await client.get("/health/live")
-    readiness_response = await client.get("/health/ready")
-
-    assert liveness_response.status_code == 200
-    assert liveness_response.json() == {"status": "ok"}
-    assert readiness_response.status_code == 200
-    assert readiness_response.json() == {"status": "ready"}
-
-
-async def test_readiness_reports_an_unavailable_dependency() -> None:
-    async def unavailable() -> bool:
-        return False
-
-    async with AsyncClient(
-        transport=ASGITransport(app=make_app(readiness_probe=unavailable)),
-        base_url="http://test",
-    ) as client:
-        response = await client.get("/health/ready")
-
-    assert response.status_code == 503
-    assert response.json() == {"status": "unavailable"}
 
 
 async def test_otel_fastapi_instrumentation_emits_trace_and_metric() -> None:
@@ -150,7 +101,12 @@ async def test_otel_fastapi_instrumentation_emits_trace_and_metric() -> None:
     application_metrics = OpenTelemetryMetrics(meter_provider)
     logger = logging.getLogger("test-otel-instrumentation")
     service = TitleService(repository, application_metrics, logger)
-    dependencies = ApplicationDependencies(service=service, logger=logger)
+    user_list_repository = SqliteUserListRepository()
+    await user_list_repository.initialize()
+    user_list_service = UserListService(user_list_repository, logger)
+    dependencies = ApplicationDependencies(
+        service=service, user_list_service=user_list_service, logger=logger
+    )
     app = create_app(
         dependencies,
         tracer_provider=tracer_provider,

@@ -165,6 +165,43 @@ uv run alembic -c apps/api/alembic.ini upgrade head --sql
 ```
 
 The repository tests are colocated with their implementation and use async
-SQLite, so the SQLAlchemy implementation is exercised without requiring Docker.
-A production project should additionally run the same repository contract tests
-against PostgreSQL in CI.
+SQLite by default, so the SQLAlchemy implementation is exercised without
+requiring Docker. The same tests can also run against real PostgreSQL:
+
+```bash
+docker compose -f compose/test.yaml up -d
+TEST_DATABASE_URL=postgresql+asyncpg://test:test@localhost:5433/test_db uv run pytest
+docker compose -f compose/test.yaml down -v
+```
+
+`compose/test.yaml` starts an isolated, disk-backed-in-tmpfs PostgreSQL
+instance under its own Compose project (`my-app-test`) on port `5433`, so it
+never collides with the `compose/base.yaml` dev stack. Each repository test
+fixture drops and recreates the schema before running, so tests stay isolated
+whichever backend is selected. A production project should additionally run
+this PostgreSQL variant in CI.
+
+
+# Steps to creating a new API
+
+API → Service → Repository → In-memory storage or PostgreSQL
+
+Domain <-> Model
+
+1. Model Domain objects
+2. Domain → Create DB Models
+3. Create DB repository methods: Use ORM to query DB
+4. Add tests for DB Repository methods
+5. Create Service
+   - Call Repository methods
+   - Catch Repository exceptions
+   - Return Domain objects
+   - Log exceptions, record metrics
+6. Add tests for Service
+7. Add router and API endpoints
+   - Add router in `apps/api/application.py`
+   - Routes use dependency injection to get Service. Defined in `app/api/dependencies.py`
+8. Add tests for API endpoints
+9. Add DB migrations
+10. Run tests against Postgres DB
+11. QA API endpoints

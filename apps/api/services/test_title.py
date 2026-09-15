@@ -5,14 +5,14 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from apps.api.db.repository import (
+from apps.api.domains.title import Title
+from apps.api.repositories import RepositoryUnavailableError
+from apps.api.repositories.title import (
     InMemoryTitleRepository,
-    RepositoryUnavailableError,
     TitleAlreadyExistsError,
     TitleNotFoundError,
 )
-from apps.api.domain import Title
-from apps.api.service import TitleService
+from apps.api.services.title import TitleService
 
 
 @dataclass

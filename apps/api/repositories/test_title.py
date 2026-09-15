@@ -1,26 +1,16 @@
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from apps.api.db.models import Base
-from apps.api.db.repository import (
+from apps.api.domains.title import Title
+from apps.api.repositories.title import (
     PostgresTitleRepository,
     TitleAlreadyExistsError,
     TitleNotFoundError,
 )
-from apps.api.domain import Title
 
 
 @pytest.fixture
-async def repository():
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.create_all)
-
-    repository = PostgresTitleRepository(
-        async_sessionmaker(engine, expire_on_commit=False)
-    )
-    yield repository
-    await engine.dispose()
+async def repository(sqlalchemy_sessions):
+    return PostgresTitleRepository(sqlalchemy_sessions)
 
 
 async def test_create_and_get_title(repository: PostgresTitleRepository) -> None:

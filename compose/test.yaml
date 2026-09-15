@@ -1,0 +1,32 @@
+---
+# A standalone PostgreSQL instance for running the repository test suite
+# against real PostgreSQL instead of the default async-SQLite fixtures.
+#
+# Usage:
+#   docker compose -f compose/test.yaml up -d
+#   TEST_DATABASE_URL=postgresql+asyncpg://test:test@localhost:5433/test_db \
+#     uv run pytest
+#   docker compose -f compose/test.yaml down -v
+#
+# Uses its own project name so it never shares a network or gets treated as
+# orphaned alongside the compose/base.yaml dev stack. Credentials are fixed
+# (not read from compose/.env) so this file never picks up the dev stack's
+# POSTGRES_DB/POSTGRES_USER/POSTGRES_PASSWORD, which Compose would otherwise
+# auto-load from compose/.env since it lives in the same directory.
+name: my-app-test
+services:
+  postgres-test:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+    tmpfs:
+      - /var/lib/postgresql/data

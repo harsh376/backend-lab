@@ -1,4 +1,4 @@
-"""Repository contract with in-memory and PostgreSQL implementations."""
+"""Title repository contract with in-memory and PostgreSQL implementations."""
 
 import asyncio
 from typing import Protocol
@@ -8,11 +8,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from apps.api.db.models import TitleRow
-from apps.api.domain import Title
-
-
-class RepositoryError(Exception):
-    pass
+from apps.api.domains.title import Title
+from apps.api.repositories import RepositoryError, RepositoryUnavailableError
 
 
 class TitleNotFoundError(RepositoryError):
@@ -20,10 +17,6 @@ class TitleNotFoundError(RepositoryError):
 
 
 class TitleAlreadyExistsError(RepositoryError):
-    pass
-
-
-class RepositoryUnavailableError(RepositoryError):
     pass
 
 

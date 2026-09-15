@@ -5,17 +5,14 @@ from typing import Annotated
 from fastapi import APIRouter, Body, status
 from fastapi.responses import JSONResponse
 
-from apps.api.db.repository import (
-    RepositoryUnavailableError,
-    TitleAlreadyExistsError,
-    TitleNotFoundError,
-)
 from apps.api.dependencies import (
     LoggerDependency,
     RequestContextDependency,
     TitleServiceDependency,
 )
-from apps.api.domain import Title
+from apps.api.domains.title import Title
+from apps.api.repositories import RepositoryUnavailableError
+from apps.api.repositories.title import TitleAlreadyExistsError, TitleNotFoundError
 from apps.api.schemas import ErrorResponse, error_response
 
 router = APIRouter(prefix="/titles", tags=["titles"])

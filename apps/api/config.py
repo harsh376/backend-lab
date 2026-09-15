@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     db_name: str = "my_db"
     db_user: str = "postgres"
     db_password: str = "postgres"
+    test_database_url: str = "sqlite+aiosqlite:///:memory:"
 
     otel_service_name: str = "api"
     otel_exporter_otlp_endpoint: str | None = None

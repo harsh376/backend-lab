@@ -1,1 +1,1 @@
-"""API persistence models and repositories."""
+"""API persistence models and migrations."""

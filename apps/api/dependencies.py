@@ -5,9 +5,10 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Annotated, cast
 
-from fastapi import Depends, Request
+from fastapi import Depends, Header, HTTPException, Request, status
 
-from apps.api.service import TitleService
+from apps.api.services.title import TitleService
+from apps.api.services.user_list import UserListService
 
 ReadinessProbe = Callable[[], Awaitable[bool]]
 
@@ -17,6 +18,7 @@ class ApplicationDependencies:
     """Dependencies shared by the application's request handlers."""
 
     service: TitleService
+    user_list_service: UserListService
     logger: logging.Logger
     readiness_probe: ReadinessProbe | None = None
 
@@ -47,6 +49,12 @@ def get_title_service(
     return dependencies.service
 
 
+def get_user_list_service(
+    dependencies: ApplicationDependenciesDependency,
+) -> UserListService:
+    return dependencies.user_list_service
+
+
 def get_logger(dependencies: ApplicationDependenciesDependency) -> logging.Logger:
     return dependencies.logger
 
@@ -57,9 +65,21 @@ def get_readiness_probe(
     return dependencies.readiness_probe
 
 
+def get_user_id(x_user_id: Annotated[int | None, Header()] = None) -> int:
+    """Authentication is out of scope; the caller passes their user ID directly."""
+    if x_user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-User-Id header is required",
+        )
+    return x_user_id
+
+
 RequestContextDependency = Annotated[RequestContext, Depends(get_request_context)]
 TitleServiceDependency = Annotated[TitleService, Depends(get_title_service)]
+UserListServiceDependency = Annotated[UserListService, Depends(get_user_list_service)]
 LoggerDependency = Annotated[logging.Logger, Depends(get_logger)]
 ReadinessProbeDependency = Annotated[
     ReadinessProbe | None, Depends(get_readiness_probe)
 ]
+UserIdDependency = Annotated[int, Depends(get_user_id)]

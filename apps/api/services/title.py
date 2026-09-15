@@ -1,15 +1,13 @@
-"""Application service coordinating persistence and observability."""
-
 import logging
 
-from apps.api.db.repository import (
-    RepositoryUnavailableError,
+from apps.api.domains.title import Title
+from apps.api.metrics import Metrics
+from apps.api.repositories import RepositoryUnavailableError
+from apps.api.repositories.title import (
     TitleAlreadyExistsError,
     TitleNotFoundError,
     TitleRepository,
 )
-from apps.api.domain import Title
-from apps.api.metrics import Metrics
 
 
 class TitleService:
