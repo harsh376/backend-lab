@@ -211,3 +211,120 @@ Request model → Router → Service → ORM model → Database → ORM model �
 ## Phase 4: Extract persistence
 
 Request model → Router → Service → Repository → ORM model → Database → ORM model → Repository → Domain model → Service → Router → Response model
+
+# To do
+
+The topics are ordered by learning priority. After the performance baseline is
+in place, every infrastructure phase should follow the same loop:
+
+```text
+Baseline → make one change → repeat the workload → explain the result
+```
+
+1. Python async programming
+   - Event loop, coroutines, and tasks
+   - `asyncio` and AnyIO
+   - Structured concurrency using `TaskGroup`
+   - Cancellation, deadlines, and timeouts
+   - Bounded concurrency and backpressure
+   - Async queues and synchronization primitives
+   - Async generators, iterators, and context managers
+   - Thread pools for blocking I/O
+   - Process pools for CPU-bound work
+   - Concurrency versus parallelism
+
+2. Performance engineering using Locust and OTEL-LGTM
+   - Model realistic API workloads and seed deterministic test data
+   - Establish PostgreSQL-only latency, throughput, and resource baselines
+   - Run load, stress, spike, and soak tests
+   - Track request rate, errors, and p50/p95/p99 latency in Locust
+   - Export application metrics, logs, and traces using OpenTelemetry
+   - Collect container CPU, memory, network, and throttling metrics using
+     cAdvisor
+   - Collect PostgreSQL and later dependency metrics using OpenTelemetry
+     receivers or Prometheus exporters
+   - Visualize application and resource saturation in Grafana
+   - Record the commit, workload, dataset, configuration, and run time for each
+     experiment
+
+3. Caching using Redis
+   - Cache-aside reads
+   - TTL and TTL jitter
+   - Cache invalidation
+   - Negative caching
+   - Stampede protection and single-flight request coalescing
+   - Versioned keys
+   - Eviction policies, including approximate LRU
+   - Pre-warming
+   - Redis failure behavior
+   - Sharding
+   - Compare cold-cache, warm-cache, expiration, and unavailable-cache
+     workloads
+
+4. Messaging foundations using SQS and SNS
+   - At-least-once delivery
+   - Standard versus FIFO queues
+   - Visibility timeout and extension
+   - Idempotent handlers
+   - Retries with exponential backoff and jitter
+   - Poison messages and DLQs
+   - Long polling and batching
+   - Partial batch failures
+   - SNS-to-SQS pub/sub and fan-out
+   - Transactional outbox pattern
+   - Measure enqueue latency, queue depth, oldest-message age, processing
+     throughput, retries, and duplicate effects
+
+5. Event streaming using Kafka
+   - Topics, partitions, offsets, and ordering
+   - Consumer groups and rebalancing
+   - Key selection and partition skew
+   - At-least-once processing
+   - Idempotent consumers
+   - Consumer lag and backpressure
+   - Batching and throughput-versus-latency tradeoffs
+   - Retry topics and DLQs
+   - Retention and compaction
+   - Producer acknowledgements and idempotence
+   - Schema evolution
+   - Exactly-once processing and its transactional boundaries
+   - Compare Kafka pub/sub with SNS and Redis pub/sub
+
+6. Search using Elasticsearch
+   - Mappings and field types
+   - Indexing and bulk indexing
+   - Exact filters versus full-text search
+   - Analyzers and tokenization
+   - Relevance and scoring
+   - Aggregations and faceted search
+   - Auto-complete and auto-suggest
+   - Pagination
+   - Index aliases and zero-downtime reindexing
+   - CDC or outbox-driven PostgreSQL synchronization
+   - Stale-result and failure behavior
+   - Sharding, replication, and segments
+   - Nested and parent-child modeling
+   - Geospatial queries
+
+7. Inter-service communication using gRPC
+   - Protobuf contracts and compatibility
+   - Deadlines and cancellation
+   - Retries and idempotency
+   - Streaming
+   - Load balancing and observability
+
+8. Real-time delivery
+   - Server-sent events
+   - WebSockets
+   - Connection lifecycle and backpressure
+   - Reconnection and missed-event handling
+   - Connection-count and message-rate load tests
+
+9. Durable workflows using Temporal
+   - Workflows versus activities
+   - Retries, timeouts, heartbeats, and cancellation
+   - Durable timers
+   - Determinism and workflow versioning
+   - Signals, queries, and updates
+   - Compensation and sagas
+   - End-to-end workflow latency and backlog measurements
