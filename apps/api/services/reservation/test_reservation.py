@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
-from apps.api.services.reservation import ReservationService, SlotFullError
+from apps.api.services.reservation.reservation import ReservationService, SlotFullError
 
 
 def test_thread_safe():
