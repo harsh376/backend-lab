@@ -1,3 +1,5 @@
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 from apps.api.services.job_scheduler.job_scheduler import (
@@ -120,7 +122,7 @@ def test_retries_terminal_failure(service):
     )
 
 
-def test_executor_mutation_does_not_affect_job_object():
+def test_executor_cannot_mutate_payload():
     def executor(payload: Payload):
         payload["name"] = "joe"
 
@@ -131,12 +133,51 @@ def test_executor_mutation_does_not_affect_job_object():
         {},
         10,
     )
-    assert service.run_due(10) == (["job1"], [])
-    assert service.get_job("job1") == Job(
-        id_="job1",
-        payload={},
-        scheduled_time=10,
-        status="successful",
-        attempts=1,
-        last_error=None,
+    assert service.run_due(10) == ([], ["job1"])
+    job = service.get_job("job1")
+    assert job.payload == {}
+    assert job.attempts == 1
+    assert "does not support item assignment" in job.last_error
+
+
+def test_mutating_original_payload_does_not_affect_job(service):
+    payload = {"name": "joe"}
+    service.schedule(
+        "job1",
+        payload,
+        10,
     )
+    payload["name"] = "jane"
+
+    assert service.get_job("job1").payload == {"name": "joe"}
+
+
+def test_get_job_result_is_immutable(service):
+    service.schedule(
+        "job1",
+        {"name": "joe"},
+        10,
+    )
+    job = service.get_job("job1")
+
+    with pytest.raises(FrozenInstanceError):
+        job.status = "cancelled"
+    with pytest.raises(TypeError):
+        job.payload["name"] = "jane"
+
+    assert service.get_job("job1") == Job(
+        id_="job1", payload={"name": "joe"}, scheduled_time=10, status="pending"
+    )
+
+
+def test_earlier_snapshots_keep_their_state_after_transitions(service):
+    service.schedule(
+        "job1",
+        {},
+        10,
+    )
+    before = service.get_job("job1")
+    service.run_due(10)
+
+    assert before.status == "pending"
+    assert service.get_job("job1").status == "successful"

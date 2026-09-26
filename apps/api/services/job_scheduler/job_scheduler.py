@@ -1,16 +1,16 @@
-from collections.abc import Callable
-from copy import deepcopy
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, replace
+from types import MappingProxyType
 from typing import Literal
 
 type JobID = str
 type Time = int
 type JobStatus = Literal["pending", "successful", "failed", "cancelled"]
-type Payload = dict
+type Payload = Mapping
 type Executor = Callable[[Payload], None]
 
 
-@dataclass
+@dataclass(frozen=True)
 class Job:
     id_: JobID
     payload: Payload
@@ -45,7 +45,7 @@ class JobSchedulerService:
 
         new_job = Job(
             id_=job_id,
-            payload=deepcopy(payload),
+            payload=MappingProxyType(dict(payload)),
             scheduled_time=run_at,
             status="pending",
         )
@@ -61,7 +61,7 @@ class JobSchedulerService:
         if job.status != "pending":
             raise NotAPendingJobException
 
-        job.status = "cancelled"
+        self.jobs[job_id] = replace(job, status="cancelled")
         return job_id
 
     def run_due(
@@ -76,19 +76,28 @@ class JobSchedulerService:
 
         success, failed = [], []
         for job in pending_jobs:
+            attempts = job.attempts + 1
             try:
-                job.attempts += 1
-                self.executor(deepcopy(job.payload))
-                job.status = "successful"
-                job.last_error = None
-                success.append(job.id_)
+                self.executor(job.payload)
             except Exception as e:
                 failed.append(job.id_)
-                job.last_error = str(e)
-                if job.attempts < self.max_attempts:
-                    job.scheduled_time = now + self.retry_delay
+                if attempts < self.max_attempts:
+                    job = replace(
+                        job,
+                        attempts=attempts,
+                        last_error=str(e),
+                        scheduled_time=now + self.retry_delay,
+                    )
                 else:
-                    job.status = "failed"
+                    job = replace(
+                        job, attempts=attempts, last_error=str(e), status="failed"
+                    )
+            else:
+                success.append(job.id_)
+                job = replace(
+                    job, attempts=attempts, last_error=None, status="successful"
+                )
+            self.jobs[job.id_] = job
 
         return success, failed
 
@@ -96,4 +105,4 @@ class JobSchedulerService:
         job = self.jobs.get(job_id)
         if job is None:
             raise JobDoesNotExist
-        return deepcopy(job)
+        return job
