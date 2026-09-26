@@ -1,7 +1,7 @@
-from collections.abc import Hashable
-from copy import deepcopy
-from dataclasses import dataclass
+from collections.abc import Hashable, Mapping
+from dataclasses import dataclass, replace
 from itertools import count
+from types import MappingProxyType
 from typing import Literal
 
 type ProductID = str
@@ -9,7 +9,7 @@ type RequestType = Literal["RESERVE", "COMMIT", "RELEASE"]
 type ReservationStatus = Literal["ACTIVE", "COMMITTED", "RELEASED"]
 
 
-@dataclass
+@dataclass(frozen=True)
 class Stock:
     id_: ProductID
     on_hand: int
@@ -20,15 +20,15 @@ class Stock:
         return self.on_hand - self.reserved
 
 
-@dataclass
+@dataclass(frozen=True)
 class Reservation:
     id_: int
     request_id: str
-    items: dict[ProductID, int]
+    items: Mapping[ProductID, int]
     status: ReservationStatus
 
 
-@dataclass
+@dataclass(frozen=True)
 class Request:
     id_: str
     type_: RequestType
@@ -41,7 +41,7 @@ class InventoryService:
         self.stock: dict[ProductID, Stock] = {}
         self.reservation_sequence = count()
 
-        # Preserve successful response snapshots independently of live reservations.
+        # Records are immutable, so they can be returned and cached without copying.
         self.requests: dict[str, Request] = {}
         self.reservations: dict[int, Reservation] = {}
 
@@ -57,12 +57,13 @@ class InventoryService:
                 reserved=0,
             )
         else:
-            self.stock[product_id].on_hand += quantity
-        return deepcopy(self.stock[product_id])
+            self.stock[product_id] = replace(
+                product, on_hand=product.on_hand + quantity
+            )
+        return self.stock[product_id]
 
     def get_stock(self, product_id: ProductID) -> Stock | None:
-        stock = self.stock.get(product_id)
-        return deepcopy(stock) if stock is not None else None
+        return self.stock.get(product_id)
 
     def reserve(self, items: dict[ProductID, int], request_id: str) -> Reservation:
         self._validate_id(request_id, "request_id")
@@ -78,13 +79,13 @@ class InventoryService:
         new_reservation = Reservation(
             id_=reservation_id,
             request_id=request_id,
-            items=validated_items,
+            items=MappingProxyType(validated_items),
             status="ACTIVE",
         )
         # Update state
         for product_id, qty in validated_items.items():
             stock = self.stock[product_id]
-            stock.reserved += qty
+            self.stock[product_id] = replace(stock, reserved=stock.reserved + qty)
         self.reservations[reservation_id] = new_reservation
         return self._record_request(request_id, "RESERVE", payload, new_reservation)
 
@@ -104,9 +105,13 @@ class InventoryService:
         if reservation.status == "ACTIVE":
             for product_id, quantity in reservation.items.items():
                 stock = self.stock[product_id]
-                stock.reserved -= quantity
-                stock.on_hand -= quantity
-            reservation.status = "COMMITTED"
+                self.stock[product_id] = replace(
+                    stock,
+                    reserved=stock.reserved - quantity,
+                    on_hand=stock.on_hand - quantity,
+                )
+            reservation = replace(reservation, status="COMMITTED")
+            self.reservations[reservation_id] = reservation
 
         # Successful no-ops also claim their request IDs.
         return self._record_request(request_id, "COMMIT", reservation_id, reservation)
@@ -127,8 +132,11 @@ class InventoryService:
         if reservation.status == "ACTIVE":
             for product_id, quantity in reservation.items.items():
                 stock = self.stock[product_id]
-                stock.reserved -= quantity
-            reservation.status = "RELEASED"
+                self.stock[product_id] = replace(
+                    stock, reserved=stock.reserved - quantity
+                )
+            reservation = replace(reservation, status="RELEASED")
+            self.reservations[reservation_id] = reservation
 
         # Successful no-ops also claim their request IDs.
         return self._record_request(request_id, "RELEASE", reservation_id, reservation)
@@ -137,7 +145,7 @@ class InventoryService:
         reservation = self.reservations.get(reservation_id)
         if reservation is None:
             raise Exception("Reservation doesn't exist")
-        return deepcopy(reservation)
+        return reservation
 
     @staticmethod
     def _validate_id(value: str, name: str) -> None:
@@ -180,7 +188,7 @@ class InventoryService:
             raise Exception(
                 "Idempotency conflict: request_id was used with a different payload"
             )
-        return deepcopy(request.result)
+        return request.result
 
     def _record_request(
         self,
@@ -189,11 +197,10 @@ class InventoryService:
         payload: Hashable,
         result: Reservation,
     ) -> Reservation:
-        """Keep live state, cached responses, and caller snapshots independent."""
         self.requests[request_id] = Request(
             id_=request_id,
             type_=operation,
             payload=payload,
-            result=deepcopy(result),
+            result=result,
         )
-        return deepcopy(result)
+        return result

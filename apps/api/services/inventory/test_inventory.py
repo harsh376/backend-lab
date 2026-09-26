@@ -1,3 +1,5 @@
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 from apps.api.services.inventory.inventory import InventoryService
@@ -61,9 +63,10 @@ class TestReceiveStock:
 
         assert service.get_stock("apple") is None
 
-    def test_returns_snapshot(self, service):
+    def test_returns_immutable_stock(self, service):
         snapshot = service.receive_stock("apple", 1)
-        snapshot.on_hand = 999
+        with pytest.raises(FrozenInstanceError):
+            snapshot.on_hand = 999
 
         assert stock_tuple(service, "apple") == (6, 0, 6)
 
@@ -73,10 +76,12 @@ class TestGetStock:
         assert service.get_stock("banana") is None
         assert "banana" not in service.stock
 
-    def test_returns_snapshot(self, service):
+    def test_returns_immutable_stock(self, service):
         snapshot = service.get_stock("apple")
-        snapshot.on_hand = 999
-        snapshot.reserved = 999
+        with pytest.raises(FrozenInstanceError):
+            snapshot.on_hand = 999
+        with pytest.raises(FrozenInstanceError):
+            snapshot.reserved = 999
 
         assert stock_tuple(service, "apple") == (5, 0, 5)
 
@@ -441,11 +446,20 @@ class TestSnapshotIsolation:
 
         assert service.get_reservation(reservation.id_).items == {"apple": 3}
 
-    def test_mutating_reserve_response_does_not_affect_state_or_replay(self, service):
+    def test_earlier_responses_keep_their_status_after_transitions(self, service):
+        reserved = service.reserve({"apple": 3}, "cart-1")
+        service.commit(reserved.id_, "purchase-1")
+
+        assert reserved.status == "ACTIVE"
+        assert service.reserve({"apple": 3}, "cart-1").status == "ACTIVE"
+
+    def test_reserve_response_is_immutable(self, service):
         response = service.reserve({"apple": 3}, "cart-1")
 
-        response.items["apple"] = 99
-        response.status = "RELEASED"
+        with pytest.raises(TypeError):
+            response.items["apple"] = 99
+        with pytest.raises(FrozenInstanceError):
+            response.status = "RELEASED"
 
         assert service.get_reservation(response.id_).items == {"apple": 3}
         assert service.get_reservation(response.id_).status == "ACTIVE"
@@ -453,32 +467,37 @@ class TestSnapshotIsolation:
         assert replay.items == {"apple": 3}
         assert replay.status == "ACTIVE"
 
-    def test_mutating_replayed_response_does_not_affect_future_replays(self, service):
+    def test_replayed_response_is_immutable(self, service):
         service.reserve({"apple": 3}, "cart-1")
         replay = service.reserve({"apple": 3}, "cart-1")
 
-        replay.items["apple"] = 99
-        replay.status = "COMMITTED"
+        with pytest.raises(TypeError):
+            replay.items["apple"] = 99
+        with pytest.raises(FrozenInstanceError):
+            replay.status = "COMMITTED"
 
         again = service.reserve({"apple": 3}, "cart-1")
         assert again.items == {"apple": 3}
         assert again.status == "ACTIVE"
 
-    def test_mutating_get_reservation_result_does_not_affect_state(self, service):
+    def test_get_reservation_result_is_immutable(self, service):
         reservation = service.reserve({"apple": 3}, "cart-1")
 
         snapshot = service.get_reservation(reservation.id_)
-        snapshot.items["apple"] = 99
-        snapshot.status = "COMMITTED"
+        with pytest.raises(TypeError):
+            snapshot.items["apple"] = 99
+        with pytest.raises(FrozenInstanceError):
+            snapshot.status = "COMMITTED"
 
         assert service.get_reservation(reservation.id_).items == {"apple": 3}
         assert service.get_reservation(reservation.id_).status == "ACTIVE"
 
-    def test_mutating_commit_response_does_not_affect_replay(self, service):
+    def test_commit_response_is_immutable(self, service):
         reservation = service.reserve({"apple": 3}, "cart-1")
         response = service.commit(reservation.id_, "purchase-1")
 
-        response.status = "RELEASED"
+        with pytest.raises(FrozenInstanceError):
+            response.status = "RELEASED"
 
         assert service.commit(reservation.id_, "purchase-1").status == "COMMITTED"
         assert service.get_reservation(reservation.id_).status == "COMMITTED"
