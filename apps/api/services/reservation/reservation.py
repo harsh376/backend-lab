@@ -1,5 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, replace
 from threading import RLock
+from typing import Self
 
 type HoldID = int
 type ReservationID = int
@@ -39,50 +40,48 @@ class HoldNotFoundError(ReservationServiceError):
     """The requested hold does not exist or has expired."""
 
 
-@dataclass
+@dataclass(frozen=True)
 class Hold:
     id_: HoldID
     slot_id: SlotID
     expires_at: Time
 
 
-@dataclass
+@dataclass(frozen=True)
 class Reservation:
     id_: ReservationID
     slot_id: SlotID
 
 
-@dataclass
+@dataclass(frozen=True)
 class Slot:
     id_: SlotID
     start: Time
     end: Time
     capacity: int
 
-    reservations: set[ReservationID] = field(default_factory=set)
-    holds: list[Hold] = field(default_factory=list)
+    reservations: frozenset[ReservationID] = frozenset()
+    holds: tuple[Hold, ...] = ()
 
     def is_full(self, now: Time) -> bool:
         return (
             len(self.reservations) + len(self._list_valid_holds(now)) >= self.capacity
         )
 
-    def expire_holds(self, now: Time) -> None:
-        self.holds = self._list_valid_holds(now)
+    def expire_holds(self, now: Time) -> Self:
+        return replace(self, holds=self._list_valid_holds(now))
 
-    def _list_valid_holds(self, now: Time) -> list[Hold]:
-        result = []
-        for hold in self.holds:
-            if now < hold.expires_at:
-                result.append(hold)
-        return result
+    def _list_valid_holds(self, now: Time) -> tuple[Hold, ...]:
+        return tuple(hold for hold in self.holds if now < hold.expires_at)
 
     @property
     def num_reservations(self) -> int:
         return len(self.reservations)
 
-    def remove_hold(self, hold_id: HoldID):
-        self.holds = [hold for hold in self.holds if hold.id_ != hold_id]
+    def remove_hold(self, hold_id: HoldID) -> Self:
+        return replace(
+            self, holds=tuple(hold for hold in self.holds if hold.id_ != hold_id)
+        )
 
 
 class ReservationService:
@@ -123,7 +122,9 @@ class ReservationService:
                 slot_id=slot_id,
             )
             self.reservation_id_cursor += 1
-            slot.reservations.add(reservation_id)
+            self.slots[slot_id] = replace(
+                slot, reservations=slot.reservations | {reservation_id}
+            )
             return reservation_id
 
     def remove_reservation(
@@ -137,7 +138,9 @@ class ReservationService:
 
             reservation = self.reservations.pop(reservation_id)
             slot = self.slots[reservation.slot_id]
-            slot.reservations.remove(reservation_id)
+            self.slots[slot.id_] = replace(
+                slot, reservations=slot.reservations - {reservation_id}
+            )
             return True
 
     def list_available_slots(self, now: Time) -> list[SlotID]:
@@ -175,7 +178,7 @@ class ReservationService:
                 expires_at=expires_at,
             )
             self.holds[hold_id] = hold
-            slot.holds.append(hold)
+            self.slots[slot_id] = replace(slot, holds=slot.holds + (hold,))
             self.hold_id_cursor += 1
             return hold_id
 
@@ -202,17 +205,22 @@ class ReservationService:
                 return False
 
             old_slot = self.slots[reservation.slot_id]
-            old_slot.reservations.remove(reservation_id)
-            new_slot.reservations.add(reservation_id)
-            reservation.slot_id = new_slot_id
+            self.slots[old_slot.id_] = replace(
+                old_slot, reservations=old_slot.reservations - {reservation_id}
+            )
+            self.slots[new_slot_id] = replace(
+                new_slot, reservations=new_slot.reservations | {reservation_id}
+            )
+            self.reservations[reservation_id] = replace(
+                reservation, slot_id=new_slot_id
+            )
             return True
 
     def _expire_holds(self, now: Time) -> None:
         self.holds = {
             hid: hold for hid, hold in self.holds.items() if now < hold.expires_at
         }
-        for slot in self.slots.values():
-            slot.expire_holds(now)
+        self.slots = {sid: slot.expire_holds(now) for sid, slot in self.slots.items()}
 
     def confirm_hold(self, hold_id: HoldID, now: Time) -> ReservationID:
         with self._lock:
@@ -232,5 +240,5 @@ class ReservationService:
                 raise HoldNotFoundError("Hold doesn't exist")
 
             slot = self.slots[hold.slot_id]
-            slot.remove_hold(hold_id)
+            self.slots[slot.id_] = slot.remove_hold(hold_id)
             self.holds.pop(hold_id)
