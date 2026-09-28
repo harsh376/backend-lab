@@ -4,26 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>React Counter</title>
-    <!-- This SCSS file uses plain CSS syntax, so no Sass compiler is needed. -->
-    <script>
-      fetch("./style.scss")
-        .then(response => {
-          if (!response.ok) throw new Error("Could not load styles");
-          return response.text();
-        })
-        .then(css => {
-          const style = document.createElement("style");
-          style.textContent = css;
-          document.head.appendChild(style);
-        })
-        .catch(console.error);
-    </script>
+    <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.26.9/babel.min.js"></script>
-    <script type="text/babel" data-presets="react" src="./main.js"></script>
+    <div class="container">
+        <div class="main">
+            <input id="query" />
+            <select id="genre">
+                <option value="">All genres</option>
+                <option value="horror">Horror</option>
+                <option value="comedy">Comedy</option>
+            </select>
+            <button id="btn">Search</button>
+        </div>
+
+        <p id="loading" role="status" hidden>Loading…</p>
+        <p id="error" class="error" role="alert" hidden></p>
+        <ul id="results" class="results"></ul>
+
+        <div id="state"></div>
+    </div>
+    <script src="./main.js"></script>
   </body>
 </html>

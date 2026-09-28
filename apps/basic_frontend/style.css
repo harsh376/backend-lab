@@ -1,0 +1,29 @@
+body {
+    margin: 0;
+}
+
+.container {
+    margin: 0;
+    background-color: #99E4FF;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+button {
+    font-size: 24px;
+    margin: 24px;
+}
+
+.error {
+    color: #b42318;
+}
+
+.results {
+    padding: 0;
+    list-style: none;
+    font-size: 20px;
+}
