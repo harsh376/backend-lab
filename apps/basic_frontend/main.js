@@ -8,6 +8,38 @@ const resultsEl = document.getElementById("results");
 
 // TODO: point this at the real search endpoint
 const SEARCH_URL = "http://localhost:8000/search";
+const USE_MOCK = true;
+
+const BOOKS = [
+  { title: "The Shining", genre: "horror" },
+  { title: "Dracula", genre: "horror" },
+  { title: "Frankenstein", genre: "horror" },
+  { title: "The Haunting of Hill House", genre: "horror" },
+  { title: "Good Omens", genre: "comedy" },
+  { title: "Catch-22", genre: "comedy" },
+  { title: "The Hitchhiker's Guide to the Galaxy", genre: "comedy" },
+  { title: "Three Men in a Boat", genre: "comedy" },
+];
+
+// stands in for the real endpoint: filters BOOKS by q/genre after a random delay
+async function mockFetch(url) {
+  const params = new URL(url).searchParams;
+  const q = (params.get("q") ?? "").toLowerCase();
+  const genre = params.get("genre");
+
+  await new Promise((resolve) => setTimeout(resolve, 300 + Math.random() * 700));
+
+  const results = BOOKS.filter(
+    (book) =>
+      book.title.toLowerCase().includes(q) && (!genre || book.genre === genre),
+  );
+  return new Response(JSON.stringify(results), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+const fetchBooks = USE_MOCK ? mockFetch : fetch;
 
 let state = {
   query: "",
@@ -71,7 +103,7 @@ async function search({ query, genre }) {
 
   setState({ loading: true, error: null });
   try {
-    const response = await fetch(`${SEARCH_URL}?${params}`);
+    const response = await fetchBooks(`${SEARCH_URL}?${params}`);
     if (!response.ok) {
       throw new Error(`Response status: ${response.status}`);
     }
