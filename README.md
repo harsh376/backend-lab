@@ -328,3 +328,20 @@ Baseline → make one change → repeat the workload → explain the result
    - Signals, queries, and updates
    - Compensation and sagas
    - End-to-end workflow latency and backlog measurements
+
+
+- [ ] Timestamped key-value store
+- [x] LRU cache
+- In-memory file system
+- The prompt was about a book/library management system where users felt the frontend table was too long and hard to use. After chatting with the AI PM, I figured out that the requested feature involved adding two dropdowns and a text input for search/filtering. search/filter UI for the library/book management system. The PM had also mentioned that full unit test and integration test coverage was expected.
+-  The feature involved a notification system in the library management app. The requirements included both frontend and backend changes, idempotency, and full test coverage.
+- https://www.interviewdb.io/question/instacart
+- https://github.com/liquidslr/leetcode-company-wise-problems/blob/main/Instacart/5.%20All.csv
+- Leetcode
+  - Travelling salesman
+  - Knapsack
+- For CodeSignal it was implementing a cache key store with timestamps. Started with basic setting and getting, then evolved into more advanced code. 4 different parts. Writing a lot of code for this. For the LLM interview you work with a company called Karat. You are giving an VS code like workspace and an ai to help. You have 50 minutes. They then dump a large project in your space. For me it was a bus route simulator. I was then asked to implement a feature : Have the system prioritize Priority Pass people. I used the LLM to track down the code and implement it, but it was difficult to test in code that is unknown to me. The next feature was implementing wheelchairs for the bus which requires special capacity checks.
+- https://www.reddit.com/r/InterviewDB/comments/1uduryw/instacart_fullstack_engineer_assessment_on/
+- https://www.reddit.com/r/OfferEngineering/comments/1wpecgm/instacart_software_engineer_swe_oa_onsite/
+- https://www.jointaro.com/interviews/questions/average-waiting-time/?company=instacart
+- https://www.jointaro.com/interviews/questions/find-first-and-last-position-of-element-in-sorted-array/?company=instacart
