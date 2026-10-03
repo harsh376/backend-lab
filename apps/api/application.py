@@ -7,6 +7,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.metrics import MeterProvider
 from opentelemetry.trace import TracerProvider
 
+from apps.api.background import routes as background_routes
 from apps.api.dependencies import ApplicationDependencies
 from apps.api.middleware import install_request_id_middleware
 from apps.api.routers import health, title, user_list, user_list_flat
@@ -34,6 +35,7 @@ def create_app(
         )
 
     app.include_router(health.router)
+    app.include_router(background_routes.router, prefix="/v1/background")
     app.include_router(title.router, prefix="/v1")
     app.include_router(user_list.router, prefix="/v1")
     app.include_router(user_list_flat.router, prefix="/v1")

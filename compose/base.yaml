@@ -1,5 +1,23 @@
 ---
 services:
+  redis:
+    image: redis:7.4-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis-data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
   postgres:
     image: postgres:17-alpine
     environment:
@@ -51,24 +69,79 @@ services:
       DB_NAME: ${POSTGRES_DB:-my_db}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
       OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-api}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
       OTEL_METRIC_EXPORT_INTERVAL: "20000"
       OTEL_SEMCONV_STABILITY_OPT_IN: http
     depends_on:
+      redis:
+        condition: service_healthy
       migrations:
         condition: service_completed_successfully
       otel-lgtm:
         condition: service_started
     healthcheck:
       test:
-        - CMD-SHELL
+        - CMD
+        - python
+        - -c
         - >-
-          python -c "import urllib.request;
-          urllib.request.urlopen('http://localhost:8000/health/live')"
+          import urllib.request;
+          urllib.request.urlopen('http://localhost:8000/health/live')
       interval: 5s
       timeout: 3s
       retries: 10
 
+  api-worker:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    command:
+      - celery
+      - -A
+      - apps.api.background.celery_app:celery_app
+      - worker
+      - --loglevel=INFO
+      - --concurrency=${CELERY_WORKER_CONCURRENCY:-2}
+      - --queues=api
+    stop_grace_period: 90s
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-my_db}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      OTEL_SERVICE_NAME: api-worker
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
+      OTEL_METRIC_EXPORT_INTERVAL: "20000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+      otel-lgtm:
+        condition: service_started
+
+  frontend:
+    image: node:22-alpine
+    working_dir: /app
+    command: >-
+      sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173 --strictPort"
+    ports:
+      - "5173:5173"
+    environment:
+      API_PROXY_TARGET: http://api:8000
+      VITE_USE_POLLING: "true"
+    volumes:
+      - ../apps/frontend:/app
+      - frontend-node-modules:/app/node_modules
+    depends_on:
+      api:
+        condition: service_started
+
 volumes:
+  redis-data:
   otel-lgtm-data:
+  frontend-node-modules:

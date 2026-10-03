@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     db_password: str = "postgres"
     test_database_url: str = "sqlite+aiosqlite:///:memory:"
 
+    celery_broker_url: str = "redis://localhost:6379/0"
+
     otel_service_name: str = "api"
     otel_exporter_otlp_endpoint: str | None = None
     otel_metric_export_interval: PositiveInt = 60000

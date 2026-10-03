@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 from typing import Annotated, cast
 
+from celery import Celery
 from fastapi import Depends, Header, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -25,6 +26,7 @@ class ApplicationDependencies:
     metrics: OpenTelemetryMetrics
     database_sessions: async_sessionmaker[AsyncSession] | None = None
     readiness_probe: ReadinessProbe | None = None
+    task_queue: Celery | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from apps.api.application import create_app
+from apps.api.background.celery_app import celery_app
 from apps.api.config import Settings
 from apps.api.dependencies import ApplicationDependencies
 from apps.api.metrics import OpenTelemetryMetrics
@@ -37,6 +38,7 @@ dependencies = ApplicationDependencies(
     metrics=metrics,
     database_sessions=database.sessions,
     readiness_probe=database.is_ready,
+    task_queue=celery_app,
 )
 app = create_app(
     dependencies,
@@ -50,6 +52,7 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
+        celery_app.close()
         await database.close()
         telemetry.shutdown()
 

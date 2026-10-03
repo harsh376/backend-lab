@@ -98,3 +98,9 @@ class UserListContent(Base):
             name="uq_user_list_contents_user_list_id_content_id",
         ),
     )
+
+
+class CatalogItem(Base):
+    __tablename__ = "catalog_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
