@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from apps.api.services.order_analytics.order_analytics import (
+from apps.api.services.in_memory.order_analytics.order_analytics import (
     AnalyticsReport,
     Order,
     OrderAnalyticsService,

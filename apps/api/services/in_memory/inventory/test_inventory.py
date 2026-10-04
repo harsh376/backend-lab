@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from apps.api.services.inventory.inventory import InventoryService
+from apps.api.services.in_memory.inventory.inventory import InventoryService
 
 
 @pytest.fixture

@@ -1,0 +1,123 @@
+.catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 3rem;
+  text-align: left;
+}
+
+.catalog-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.catalog-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+
+.catalog-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--social-bg);
+}
+
+.catalog-field {
+  display: flex;
+  flex: 1 1 10rem;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.catalog-field-search {
+  flex: 2 1 16rem;
+}
+
+.catalog-field span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.catalog input,
+.catalog select,
+.catalog button {
+  box-sizing: border-box;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+}
+
+.catalog input,
+.catalog select {
+  width: 100%;
+}
+
+.catalog input::placeholder {
+  color: var(--text);
+}
+
+.catalog button {
+  padding-inline: 1.5rem;
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.catalog button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.catalog button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.catalog input:focus-visible,
+.catalog select:focus-visible,
+.catalog button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.catalog-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.catalog-items li {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  color: var(--text-h);
+  overflow-wrap: anywhere;
+}
+
+.catalog-error {
+  padding: 1rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 0.75rem;
+  color: var(--text-h);
+  background: var(--accent-bg);
+}

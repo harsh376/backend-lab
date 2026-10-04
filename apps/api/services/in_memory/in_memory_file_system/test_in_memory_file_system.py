@@ -1,6 +1,6 @@
 import pytest
 
-from apps.api.services.in_memory_file_system.in_memory_file_system import (
+from apps.api.services.in_memory.in_memory_file_system.in_memory_file_system import (
     DuplicateFileError,
     FileDoesNotExistError,
     InMemoryFileSystem,

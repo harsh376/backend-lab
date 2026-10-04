@@ -1,6 +1,7 @@
 import logging
 
 import pytest
+from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from apps.api.application import create_app
@@ -18,7 +19,7 @@ async def make_app(
     repository=None,
     readiness_probe=None,
     user_list_repository=None,
-):
+) -> FastAPI:
     repository = repository or PostgresTitleRepository(database_sessions)
     user_list_repository = user_list_repository or PostgresUserListRepository(
         database_sessions

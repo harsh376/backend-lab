@@ -1,6 +1,6 @@
 import pytest
 
-from apps.api.services.lru_cache.lru_cache import LRUCache
+from apps.api.services.in_memory.lru_cache.lru_cache import LRUCache
 
 
 @pytest.mark.parametrize("capacity", [0, -1])

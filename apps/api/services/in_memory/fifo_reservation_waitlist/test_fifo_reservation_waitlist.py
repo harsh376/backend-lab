@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from apps.api.services.fifo_reservation_waitlist.fifo_reservation_waitlist import (
+from apps.api.services.in_memory.fifo_reservation_waitlist.fifo_reservation_waitlist import (  # noqa: E501
     FIFOReservationWaitlistService,
 )
 

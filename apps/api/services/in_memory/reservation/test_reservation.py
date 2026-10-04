@@ -4,7 +4,7 @@ from threading import Barrier
 
 import pytest
 
-from apps.api.services.reservation.reservation import (
+from apps.api.services.in_memory.reservation.reservation import (
     Hold,
     ReservationService,
     SlotFullError,

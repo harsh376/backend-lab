@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from apps.api.services.idempotent_checkout.idempotent_checkout import (
+from apps.api.services.in_memory.idempotent_checkout.idempotent_checkout import (
     Book,
     IdempotentCheckoutService,
     Loan,

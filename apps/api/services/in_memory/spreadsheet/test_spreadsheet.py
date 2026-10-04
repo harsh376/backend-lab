@@ -1,6 +1,6 @@
 import pytest
 
-from apps.api.services.spreadsheet.spreadsheet import (
+from apps.api.services.in_memory.spreadsheet.spreadsheet import (
     CellNotFoundException,
     CycleFoundException,
     SpreadsheetService,

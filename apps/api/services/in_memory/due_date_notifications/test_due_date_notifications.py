@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from apps.api.services.due_date_notifications.due_date_notifications import (
+from apps.api.services.in_memory.due_date_notifications.due_date_notifications import (
     DueDateNotificationsService,
     InvalidProcessingTime,
     InvalidRegisteredAt,

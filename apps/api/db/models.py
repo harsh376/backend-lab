@@ -1,8 +1,19 @@
 """SQLAlchemy persistence models."""
 
+import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -100,7 +111,136 @@ class UserListContent(Base):
     )
 
 
+class CatalogItemType(enum.Enum):
+    DEVICE = "device"
+    BOOK = "book"
+    MOVIE = "movie"
+
+
 class CatalogItem(Base):
     __tablename__ = "catalog_items"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column()
+    category: Mapped[str] = mapped_column()
+    item_type: Mapped[CatalogItemType] = mapped_column()
+    quantity: Mapped[int] = mapped_column()
+
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "category",
+            "item_type",
+            name="uq_catalog_items__name_category_item_type",
+        ),
+        CheckConstraint(
+            "quantity >= 0",
+            name="ck_catalog_items_quantity_nonnegative",
+        ),
+    )
+
+
+class Patron(Base):
+    __tablename__ = "patrons"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column()
+
+
+class Status(enum.Enum):
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+
+
+class CatalogItemReservation(Base):
+    __tablename__ = "reservations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    catalog_item_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            column="catalog_items.id",
+            name="fk_reservations__catalog_item_id",
+            ondelete="CASCADE",
+        )
+    )
+    patron_id: Mapped[int] = mapped_column(
+        ForeignKey(column="patrons.id", name="fk_reservations__patron_id")
+    )
+    status: Mapped[Status] = mapped_column()
+
+    __table_args__ = (
+        Index(
+            "uq_reservations__catalog_item_id_patron_id_status",
+            "catalog_item_id",
+            "patron_id",
+            "status",
+            unique=True,
+            postgresql_where=text("status = 'CONFIRMED'"),
+            sqlite_where=text("status = 'CONFIRMED'"),
+        ),
+    )
+
+
+class HoldStatus(enum.Enum):
+    CONFIRMED = "confirmed"
+    CANCELLED = "cancelled"
+    EXPIRED = "expired"
+
+
+class Hold(Base):
+    __tablename__ = "item_holds"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    catalog_item_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            column="catalog_items.id",
+            name="fk_item_holds__catalog_item_id",
+            ondelete="CASCADE",
+        )
+    )
+    patron_id: Mapped[int] = mapped_column(
+        ForeignKey(column="patrons.id", name="fk_item_holds__patron_id")
+    )
+    status: Mapped[HoldStatus] = mapped_column()
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        Index(
+            "uq_item_holds__catalog_item_id_patron_id_status",
+            "catalog_item_id",
+            "patron_id",
+            "status",
+            unique=True,
+            postgresql_where=text("status = 'CONFIRMED'"),
+            sqlite_where=text("status = 'CONFIRMED'"),
+        ),
+    )
+
+
+class WaitlistRecord(Base):
+    __tablename__ = "wait_list_records"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    catalog_item_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            column="catalog_items.id",
+            name="fk_wait_list_records__catalog_item_id",
+            ondelete="CASCADE",
+        )
+    )
+    patron_id: Mapped[int] = mapped_column(
+        ForeignKey(column="patrons.id", name="fk_wait_list_records__patron_id")
+    )
+    is_active: Mapped[bool] = mapped_column()
+
+    __table_args__ = (
+        Index(
+            "uq_wait_list_records__catalog_item_id_patron_id_is_active",
+            "catalog_item_id",
+            "patron_id",
+            "is_active",
+            unique=True,
+            postgresql_where=(is_active.is_(True)),
+            sqlite_where=(is_active.is_(True)),
+        ),
+    )

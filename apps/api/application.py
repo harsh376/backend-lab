@@ -10,7 +10,7 @@ from opentelemetry.trace import TracerProvider
 from apps.api.background import routes as background_routes
 from apps.api.dependencies import ApplicationDependencies
 from apps.api.middleware import install_request_id_middleware
-from apps.api.routers import health, title, user_list, user_list_flat
+from apps.api.routers import catalog_item, health, title, user_list, user_list_flat
 from apps.api.schemas import error_response
 
 
@@ -39,6 +39,7 @@ def create_app(
     app.include_router(title.router, prefix="/v1")
     app.include_router(user_list.router, prefix="/v1")
     app.include_router(user_list_flat.router, prefix="/v1")
+    app.include_router(catalog_item.router, prefix="/v1")
 
     FastAPIInstrumentor.instrument_app(
         app,

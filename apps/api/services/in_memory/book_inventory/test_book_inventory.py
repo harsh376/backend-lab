@@ -1,6 +1,6 @@
 import pytest
 
-from apps.api.services.book_inventory.book_inventory import (
+from apps.api.services.in_memory.book_inventory.book_inventory import (
     Book,
     BookAlreadyExists,
     BookInventoryService,

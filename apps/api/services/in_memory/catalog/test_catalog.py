@@ -1,6 +1,6 @@
 import pytest
 
-from apps.api.services.catalog.catalog import (
+from apps.api.services.in_memory.catalog.catalog import (
     CatalogService,
     Product,
     ProductAlreadyExistsException,

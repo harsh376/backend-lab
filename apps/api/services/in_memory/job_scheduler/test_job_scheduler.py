@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from apps.api.services.job_scheduler.job_scheduler import (
+from apps.api.services.in_memory.job_scheduler.job_scheduler import (
     Job,
     JobDoesNotExist,
     JobSchedulerService,

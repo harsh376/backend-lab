@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 
-type Status = 'all' | 'available' | 'not_available'
-type ItemType = 'all' | 'book' | 'device'
+type ItemStatus = 'all' | 'available' | 'not_available'
+type ItemType = 'all' | 'device' | 'book' | 'movie'
 type Item = {
   id: number
   name: string
-  item_type: Exclude<ItemType, 'all'>
-  status: Exclude<Status, 'all'>
+  item_type: Exclude<ItemType, 'ALL'>
+  item_status: Exclude<ItemStatus, 'all'>
 }
 
 const fetchItems = async (url: string): Promise<Item[]> => {
@@ -20,7 +20,7 @@ const fetchItems = async (url: string): Promise<Item[]> => {
 
 function App() {
   const [query, setQuery] = useState('')
-  const [status, setStatus] = useState<Status>('all')
+  const [itemStatus, setItemStatus] = useState<ItemStatus>('all')
   const [itemType, setItemType] = useState<ItemType>('all')
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,12 +29,14 @@ function App() {
   const loadItems = async () => {
     const params = new URLSearchParams()
     const trimmedQuery = query.trim()
-    if (trimmedQuery) params.set('query', trimmedQuery)
-    if (status !== 'all') params.set('status', status)
+    if (trimmedQuery) params.set('search_query', trimmedQuery)
+    if (itemStatus !== 'all') params.set('item_status', itemStatus)
     if (itemType !== 'all') params.set('item_type', itemType)
 
     const queryString = params.toString()
-    const url = queryString ? `/api/items?${queryString}` : '/api/items'
+    const url = queryString
+      ? `/api/v1/catalog-items?${queryString}`
+      : '/api/v1/catalog-items'
 
     setLoading(true)
     setError(false)
@@ -56,48 +58,70 @@ function App() {
   }, [])
 
   return (
-    <div>
-      <input
-        aria-label="Search items"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+    <main className="catalog">
+      <header className="catalog-header">
+        <h1>Item catalog</h1>
+        <p>Find an item and check its availability.</p>
+      </header>
 
-      <select
-        aria-label="Item type"
-        value={itemType}
-        onChange={(e) => setItemType(e.target.value as ItemType)}
-      >
-        <option value="all">All</option>
-        <option value="book">Book</option>
-        <option value="device">Device</option>
-      </select>
+      <div className="catalog-filters">
+        <label className="catalog-field catalog-field-search">
+          <span>Search items</span>
+          <input
+            placeholder="Search by name…"
+            aria-label="Search items"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
 
-      <select
-        aria-label="Status"
-        value={status}
-        onChange={(e) => setStatus(e.target.value as Status)}
-      >
-        <option value="all">All</option>
-        <option value="available">Available</option>
-        <option value="not_available">Unavailable</option>
-      </select>
+        <label className="catalog-field">
+          <span>Item type</span>
+          <select
+            aria-label="Item type"
+            value={itemType}
+            onChange={(e) => setItemType(e.target.value as ItemType)}
+          >
+            <option value="all">All</option>
+            <option value="device">Device</option>
+            <option value="book">Book</option>
+            <option value="movie">Movie</option>
+          </select>
+        </label>
 
-      <button onClick={loadItems} disabled={loading}>
-        {loading ? 'Loading…' : 'Search'}
-      </button>
+        <label className="catalog-field">
+          <span>Status</span>
+          <select
+            aria-label="Status"
+            value={itemStatus}
+            onChange={(e) => setItemStatus(e.target.value as ItemStatus)}
+          >
+            <option value="all">All</option>
+            <option value="available">Available</option>
+            <option value="not_available">Unavailable</option>
+          </select>
+        </label>
 
-      {error && <p>Couldn't load items.</p>}
+        <button aria-label="Search" onClick={loadItems} disabled={loading}>
+          {loading ? 'Loading…' : 'Search'}
+        </button>
+      </div>
 
-      <ul>
+      {error && (
+        <p className="catalog-error" role="alert">
+          Couldn't load items.
+        </p>
+      )}
+
+      <ul className="catalog-items" aria-label="Catalog items">
         {items.map((item) => (
           <li key={item.id}>
             {item.name} — {item.item_type},{' '}
-            {item.status === 'available' ? 'Available' : 'Unavailable'}
+            {item.item_status === 'available' ? 'Available' : 'Unavailable'}
           </li>
         ))}
       </ul>
-    </div>
+    </main>
   )
 }
 

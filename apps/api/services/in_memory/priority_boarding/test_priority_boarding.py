@@ -2,7 +2,7 @@ from collections import deque
 
 import pytest
 
-from apps.api.services.priority_boarding.priority_boarding import (
+from apps.api.services.in_memory.priority_boarding.priority_boarding import (
     Bus,
     DuplicateBus,
     DuplicateStop,

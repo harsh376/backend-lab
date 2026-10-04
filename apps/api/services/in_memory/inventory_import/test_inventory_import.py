@@ -3,7 +3,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from apps.api.services.inventory_import.inventory_import import (
+from apps.api.services.in_memory.inventory_import.inventory_import import (
     InventoryImportService,
     Product,
 )

@@ -34,8 +34,9 @@ Docker with the Compose plugin is required to run the application.
 docker compose -f compose/base.yaml up --build
 ```
 
-Compose starts PostgreSQL, applies migrations, starts the API, and starts the
-local observability stack.
+Compose starts PostgreSQL, applies migrations, starts the API and React frontend,
+and starts the local observability stack. The frontend is available at
+<http://localhost:5173> with hot reload for source edits.
 
 ### Sample requests
 
@@ -54,6 +55,19 @@ curl -i 'http://127.0.0.1:8000/v1/titles/movie-456'
 ```
 
 Interactive API documentation is available at <http://127.0.0.1:8000/docs>.
+
+### React frontend
+
+The Vite + React + TypeScript app lives in `apps/frontend`:
+
+```bash
+cd apps/frontend
+npm ci
+npm run dev
+```
+
+See [the frontend README](apps/frontend/README.md) for requirements, checks, and
+the development proxy for connecting to FastAPI.
 
 ## OpenTelemetry
 
@@ -345,3 +359,39 @@ Baseline → make one change → repeat the workload → explain the result
 - https://www.reddit.com/r/OfferEngineering/comments/1wpecgm/instacart_software_engineer_swe_oa_onsite/
 - https://www.jointaro.com/interviews/questions/average-waiting-time/?company=instacart
 - https://www.jointaro.com/interviews/questions/find-first-and-last-position-of-element-in-sorted-array/?company=instacart
+
+## Celery background workers
+
+The base Compose stack also runs Redis and an `api-worker` service using the
+same image as the API. The API publishes JSON tasks to the `api` queue; workers
+execute them independently. Redis uses append-only persistence and a named
+volume, with eviction disabled. No task result backend or scheduler is enabled.
+
+```bash
+docker compose -f compose/base.yaml up -d --build
+curl -X POST http://localhost:8000/v1/background/ping
+docker compose -f compose/base.yaml logs -f api-worker
+```
+
+The smoke-test endpoint returns HTTP 202 with a task ID after enqueueing; look
+for `background_ping_completed` and the request ID in worker logs. HTTP 202
+means accepted, not completed. Broker connection failures return HTTP 503.
+There is no task-status polling endpoint. Worker application logs are also
+exported to OTEL-LGTM under `api-worker`.
+
+Set `CELERY_BROKER_URL` for both API and worker deployments. Compose defaults
+to `redis://redis:6379/0`; host Python processes default to
+`redis://localhost:6379/0`. Redis's local port is bound to loopback. Configure
+worker concurrency with `CELERY_WORKER_CONCURRENCY` (default 2). Workers have
+60-second soft and 75-second hard task limits and 90 seconds for graceful
+container shutdown; review these limits when introducing real workloads.
+
+Define tasks in `apps/api/background/tasks.py`. Pass IDs or JSON values, and create any
+database sessions inside the worker task, never from the API request. The ping
+task uses normal early acknowledgment; durable business jobs need explicit
+idempotency, retry, and acknowledgment policies. Database writes and publishing
+are not atomic; use an outbox when a committed change must reliably enqueue work.
+
+In production, deploy the API and workers separately and point both at a private
+Redis service with appropriate authentication/TLS. Use a separate Redis instance
+for caching so cache eviction and memory usage cannot affect queued jobs.
