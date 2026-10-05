@@ -22,7 +22,7 @@ async def make_client(sessions) -> AsyncClient:
 
 async def test_create_catalog_item(sqlalchemy_sessions) -> None:
     async with await make_client(sqlalchemy_sessions) as client:
-        response = await client.post("/v1/catalog_items", json=BOOK)
+        response = await client.post("/v1/catalog-items", json=BOOK)
 
     assert response.status_code == 201
     assert response.json() == {"id": 1, **BOOK}
@@ -30,7 +30,7 @@ async def test_create_catalog_item(sqlalchemy_sessions) -> None:
 
 async def test_create_catalog_item_persists_row(sqlalchemy_sessions) -> None:
     async with await make_client(sqlalchemy_sessions) as client:
-        response = await client.post("/v1/catalog_items", json=BOOK)
+        response = await client.post("/v1/catalog-items", json=BOOK)
 
     async with sqlalchemy_sessions() as session:
         row = await session.get(CatalogItemRow, response.json()["id"])
@@ -44,8 +44,8 @@ async def test_create_catalog_item_persists_row(sqlalchemy_sessions) -> None:
 
 async def test_create_duplicate_catalog_item_returns_409(sqlalchemy_sessions) -> None:
     async with await make_client(sqlalchemy_sessions) as client:
-        await client.post("/v1/catalog_items", json=BOOK)
-        response = await client.post("/v1/catalog_items", json={**BOOK, "quantity": 5})
+        await client.post("/v1/catalog-items", json=BOOK)
+        response = await client.post("/v1/catalog-items", json={**BOOK, "quantity": 5})
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "CATALOG_ITEM_ALREADY_EXISTS"
@@ -63,8 +63,8 @@ async def test_create_catalog_item_differing_in_unique_field_succeeds(
     sqlalchemy_sessions, changes
 ) -> None:
     async with await make_client(sqlalchemy_sessions) as client:
-        await client.post("/v1/catalog_items", json=BOOK)
-        response = await client.post("/v1/catalog_items", json={**BOOK, **changes})
+        await client.post("/v1/catalog-items", json=BOOK)
+        response = await client.post("/v1/catalog-items", json={**BOOK, **changes})
 
     assert response.status_code == 201
     assert response.json() == {"id": 2, **BOOK, **changes}
@@ -87,7 +87,7 @@ async def test_create_invalid_catalog_item_returns_400(
     sqlalchemy_sessions, body
 ) -> None:
     async with await make_client(sqlalchemy_sessions) as client:
-        response = await client.post("/v1/catalog_items", json=body)
+        response = await client.post("/v1/catalog-items", json=body)
 
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "INVALID_ARGUMENT"
@@ -104,7 +104,7 @@ async def test_create_catalog_item_returns_503_when_database_fails(
         )
 
     async with await make_client(sqlalchemy_sessions) as client:
-        response = await client.post("/v1/catalog_items", json=BOOK)
+        response = await client.post("/v1/catalog-items", json=BOOK)
 
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
@@ -112,7 +112,7 @@ async def test_create_catalog_item_returns_503_when_database_fails(
 
 async def test_get_catalog_items_empty(sqlalchemy_sessions):
     async with await make_client(sqlalchemy_sessions) as client:
-        response = await client.get("/v1/catalog_items")
+        response = await client.get("/v1/catalog-items")
     assert response.status_code == 200
     assert response.json() == []
 
@@ -183,7 +183,7 @@ async def test_get_catalog_items_filters_and_status(sqlalchemy_sessions):
             ]
         )
     async with await make_client(sqlalchemy_sessions) as client:
-        response = await client.get("/v1/catalog_items")
+        response = await client.get("/v1/catalog-items")
         assert response.status_code == 200
         assert [(r["id"], r["item_status"]) for r in response.json()] == [
             (1, "available"),
@@ -207,7 +207,7 @@ async def test_get_catalog_items_filters_and_status(sqlalchemy_sessions):
                 [1],
             ),
         ]:
-            response = await client.get("/v1/catalog_items", params=params)
+            response = await client.get("/v1/catalog-items", params=params)
             assert response.status_code == 200
             assert [r["id"] for r in response.json()] == expected
 
@@ -220,6 +220,92 @@ async def test_get_catalog_items_database_failure(sqlalchemy_sessions):
             )
         )
     async with await make_client(sqlalchemy_sessions) as client:
-        response = await client.get("/v1/catalog_items")
+        response = await client.get("/v1/catalog-items")
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+
+
+class TestCreateCatalogItemReservation:
+    async def test_missing_item_raises_404(self, sqlalchemy_sessions):
+        async with await make_client(sqlalchemy_sessions) as client:
+            response = await client.post(
+                url="/v1/catalog-items/123/reservations",
+                json={
+                    "patron_id": 1,
+                },
+            )
+            assert response.status_code == 404
+            assert response.json()["error"]["code"] == "CATALOG_ITEM_NOT_FOUND"
+
+    async def test_missing_patron_raises_404(self, sqlalchemy_sessions):
+        async with sqlalchemy_sessions.begin() as session:
+            session.add(
+                models.CatalogItem(
+                    id=1,
+                    **{**BOOK, "quantity": 1, "item_type": models.CatalogItemType.BOOK},
+                )
+            )
+
+        async with await make_client(sqlalchemy_sessions) as client:
+            response = await client.post(
+                url="/v1/catalog-items/1/reservations",
+                json={
+                    "patron_id": 1,
+                },
+            )
+            assert response.status_code == 404
+            assert response.json()["error"]["code"] == "PATRON_NOT_FOUND"
+
+    async def test_unavailable_item_raises_409(self, sqlalchemy_sessions):
+        async with sqlalchemy_sessions.begin() as session:
+            session.add(
+                models.CatalogItem(
+                    id=1,
+                    **{**BOOK, "quantity": 0, "item_type": models.CatalogItemType.BOOK},
+                )
+            )
+            session.add(models.Patron(id=1, name="Patron1"))
+
+        async with await make_client(sqlalchemy_sessions) as client:
+            response = await client.post(
+                url="/v1/catalog-items/1/reservations",
+                json={
+                    "patron_id": 1,
+                },
+            )
+            assert response.status_code == 409
+            assert response.json()["error"]["code"] == "CATALOG_ITEM_NOT_AVAILABLE"
+
+    async def test_reservation_created_successfully(self, sqlalchemy_sessions):
+        async with sqlalchemy_sessions.begin() as session:
+            session.add(
+                models.CatalogItem(
+                    id=1,
+                    **{**BOOK, "quantity": 2, "item_type": models.CatalogItemType.BOOK},
+                )
+            )
+            session.add(models.Patron(id=1, name="Patron1"))
+
+        async with await make_client(sqlalchemy_sessions) as client:
+            response = await client.post(
+                url="/v1/catalog-items/1/reservations",
+                json={
+                    "patron_id": 1,
+                },
+            )
+            assert response.status_code == 201
+            assert response.json() == {
+                "catalog_item_id": 1,
+                "id": 1,
+                "patron_id": 1,
+                "status": "confirmed",
+            }
+
+            response = await client.post(
+                url="/v1/catalog-items/1/reservations",
+                json={
+                    "patron_id": 1,
+                },
+            )
+            assert response.status_code == 409
+            assert response.json()["error"]["code"] == "RESERVATION_ALREADY_EXISTS"

@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Body, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from starlette.responses import JSONResponse
 
@@ -15,6 +15,52 @@ from apps.api.dependencies import (
 from apps.api.schemas import ErrorResponse, error_response
 
 router = APIRouter(prefix="/catalog-items", tags=["catalog-items"])
+
+
+def catalog_items_with_availability(
+    now: datetime | None = None,
+) -> Select[tuple[models.CatalogItem, int]]:
+    """Count remaining copies, excluding cancelled reservations and inactive holds.
+
+    Writers must lock the catalog item before checking and consuming capacity.
+    """
+    now = now if now is not None else datetime.now(UTC)
+    reservation_counts = (
+        select(
+            models.CatalogItemReservation.catalog_item_id,
+            func.count().label("count"),
+        )
+        .where(models.CatalogItemReservation.status == models.Status.CONFIRMED)
+        .group_by(models.CatalogItemReservation.catalog_item_id)
+        .cte("reservation_counts")
+    )
+    hold_counts = (
+        select(models.Hold.catalog_item_id, func.count().label("count"))
+        .where(
+            models.Hold.status == models.HoldStatus.CONFIRMED,
+            models.Hold.expires_at > now,
+        )
+        .group_by(models.Hold.catalog_item_id)
+        .cte("hold_counts")
+    )
+
+    available_count = (
+        models.CatalogItem.quantity
+        - func.coalesce(reservation_counts.c.count, 0)
+        - func.coalesce(hold_counts.c.count, 0)
+    )
+    stmt = (
+        select(
+            models.CatalogItem,
+            available_count.label("available_count"),
+        )
+        .outerjoin(
+            reservation_counts,
+            reservation_counts.c.catalog_item_id == models.CatalogItem.id,
+        )
+        .outerjoin(hold_counts, hold_counts.c.catalog_item_id == models.CatalogItem.id)
+    )
+    return stmt
 
 
 class CreateCatalogItemRequest(BaseModel):
@@ -107,44 +153,8 @@ async def get_catalog_items(
     ] = None,
 ) -> list[GetCatalogItemResponse] | JSONResponse:
     try:
-        now = datetime.now(UTC)
-        reservation_counts = (
-            select(
-                models.CatalogItemReservation.catalog_item_id,
-                func.count().label("count"),
-            )
-            .where(models.CatalogItemReservation.status == models.Status.CONFIRMED)
-            .group_by(models.CatalogItemReservation.catalog_item_id)
-            .cte("reservation_counts")
-        )
-        hold_counts = (
-            select(models.Hold.catalog_item_id, func.count().label("count"))
-            .where(
-                models.Hold.status == models.HoldStatus.CONFIRMED,
-                models.Hold.expires_at > now,
-            )
-            .group_by(models.Hold.catalog_item_id)
-            .cte("hold_counts")
-        )
-
-        available_count = (
-            models.CatalogItem.quantity
-            - func.coalesce(reservation_counts.c.count, 0)
-            - func.coalesce(hold_counts.c.count, 0)
-        )
-        stmt = (
-            select(
-                models.CatalogItem,
-                available_count.label("available_count"),
-            )
-            .outerjoin(
-                reservation_counts,
-                reservation_counts.c.catalog_item_id == models.CatalogItem.id,
-            )
-            .outerjoin(
-                hold_counts, hold_counts.c.catalog_item_id == models.CatalogItem.id
-            )
-        )
+        stmt = catalog_items_with_availability()
+        available_count = stmt.selected_columns.available_count
         if search_query is not None:
             stmt = stmt.where(
                 models.CatalogItem.name.icontains(search_query, autoescape=True)
@@ -180,4 +190,97 @@ async def get_catalog_items(
             code="SERVICE_UNAVAILABLE",
             message="Catalog items could not be fetched",
             request_id=context.request_id,
+        )
+
+
+class CreateReservationRequest(BaseModel):
+    patron_id: int
+
+
+class CreateReservationResponse(BaseModel):
+    id: int
+    catalog_item_id: int
+    patron_id: int
+    status: models.Status
+
+
+@router.post(
+    path="/{catalog_item_id}/reservations",
+    response_model=CreateReservationResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {"model": ErrorResponse},
+        409: {"model": ErrorResponse},
+        503: {"model": ErrorResponse},
+    },
+)
+async def create_catalog_item_reservation(
+    catalog_item_id: int,
+    body: Annotated[CreateReservationRequest, Body()],
+    session: AsyncDatabaseSessionDependency,
+    request_context: RequestContextDependency,
+) -> CreateReservationResponse | JSONResponse:
+    try:
+        async with session.begin():
+            # Lock before checking capacity to serialize reservation writers.
+            result = await session.execute(
+                select(models.CatalogItem)
+                .where(models.CatalogItem.id == catalog_item_id)
+                .with_for_update()
+            )
+            item = result.scalar_one_or_none()
+            if item is None:
+                return error_response(
+                    status_code=404,
+                    code="CATALOG_ITEM_NOT_FOUND",
+                    message="Catalog item does not exist",
+                    request_id=request_context.request_id,
+                )
+            if await session.get(models.Patron, body.patron_id) is None:
+                return error_response(
+                    status_code=404,
+                    code="PATRON_NOT_FOUND",
+                    message="Patron does not exist",
+                    request_id=request_context.request_id,
+                )
+            result = await session.execute(
+                catalog_items_with_availability().where(
+                    models.CatalogItem.id == catalog_item_id
+                )
+            )
+            _, available_count = result.one()
+            if available_count <= 0:
+                return error_response(
+                    status_code=409,
+                    code="CATALOG_ITEM_NOT_AVAILABLE",
+                    message="Catalog item is not available",
+                    request_id=request_context.request_id,
+                )
+            reservation = models.CatalogItemReservation(
+                catalog_item_id=catalog_item_id,
+                patron_id=body.patron_id,
+                status=models.Status.CONFIRMED,
+            )
+            session.add(reservation)
+            await session.flush()
+            response = CreateReservationResponse(
+                id=reservation.id,
+                catalog_item_id=reservation.catalog_item_id,
+                patron_id=reservation.patron_id,
+                status=reservation.status,
+            )
+        return response
+    except IntegrityError:
+        return error_response(
+            status_code=409,
+            code="RESERVATION_ALREADY_EXISTS",
+            message="Patron already has a confirmed reservation for this item",
+            request_id=request_context.request_id,
+        )
+    except SQLAlchemyError:
+        return error_response(
+            status_code=503,
+            code="SERVICE_UNAVAILABLE",
+            message="Reservation could not be created",
+            request_id=request_context.request_id,
         )
