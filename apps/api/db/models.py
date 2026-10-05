@@ -147,12 +147,19 @@ class Patron(Base):
     name: Mapped[str] = mapped_column()
 
 
-class Status(enum.Enum):
-    CONFIRMED = "confirmed"
+class ReservationStatus(enum.Enum):
+    ACTIVE = "active"
     CANCELLED = "cancelled"
+    RETURNED = "returned"
 
 
-class CatalogItemReservation(Base):
+class Reservation(Base):
+    hold_id: Mapped[int | None] = mapped_column(
+        ForeignKey("item_holds.id", name="fk_reservations__hold_id"),
+        unique=True,
+        nullable=True,
+    )
+
     __tablename__ = "reservations"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -166,7 +173,7 @@ class CatalogItemReservation(Base):
     patron_id: Mapped[int] = mapped_column(
         ForeignKey(column="patrons.id", name="fk_reservations__patron_id")
     )
-    status: Mapped[Status] = mapped_column()
+    status: Mapped[ReservationStatus] = mapped_column()
 
     __table_args__ = (
         Index(
@@ -175,14 +182,16 @@ class CatalogItemReservation(Base):
             "patron_id",
             "status",
             unique=True,
-            postgresql_where=text("status = 'CONFIRMED'"),
-            sqlite_where=text("status = 'CONFIRMED'"),
+            postgresql_where=text("status = 'ACTIVE'"),
+            sqlite_where=text("status = 'ACTIVE'"),
         ),
     )
 
 
 class HoldStatus(enum.Enum):
-    CONFIRMED = "confirmed"
+    WAITING = "waiting"
+    ALLOCATED = "allocated"
+    CONVERTED = "converted"
     CANCELLED = "cancelled"
     EXPIRED = "expired"
 
@@ -211,36 +220,7 @@ class Hold(Base):
             "patron_id",
             "status",
             unique=True,
-            postgresql_where=text("status = 'CONFIRMED'"),
-            sqlite_where=text("status = 'CONFIRMED'"),
-        ),
-    )
-
-
-class WaitlistRecord(Base):
-    __tablename__ = "wait_list_records"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    catalog_item_id: Mapped[int] = mapped_column(
-        ForeignKey(
-            column="catalog_items.id",
-            name="fk_wait_list_records__catalog_item_id",
-            ondelete="CASCADE",
-        )
-    )
-    patron_id: Mapped[int] = mapped_column(
-        ForeignKey(column="patrons.id", name="fk_wait_list_records__patron_id")
-    )
-    is_active: Mapped[bool] = mapped_column()
-
-    __table_args__ = (
-        Index(
-            "uq_wait_list_records__catalog_item_id_patron_id_is_active",
-            "catalog_item_id",
-            "patron_id",
-            "is_active",
-            unique=True,
-            postgresql_where=(is_active.is_(True)),
-            sqlite_where=(is_active.is_(True)),
+            postgresql_where=text("status = 'ALLOCATED'"),
+            sqlite_where=text("status = 'ALLOCATED'"),
         ),
     )

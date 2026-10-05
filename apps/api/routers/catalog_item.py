@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Body, Query, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Body, Query, Response, status
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Select, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from starlette.responses import JSONResponse
@@ -10,9 +10,11 @@ from starlette.responses import JSONResponse
 from apps.api.db import models
 from apps.api.dependencies import (
     AsyncDatabaseSessionDependency,
+    ItemReservationServiceDependency,
     RequestContextDependency,
 )
 from apps.api.schemas import ErrorResponse, error_response
+from apps.api.services.item_reservation.item_reservation import ReservationError
 
 router = APIRouter(prefix="/catalog-items", tags=["catalog-items"])
 
@@ -27,17 +29,17 @@ def catalog_items_with_availability(
     now = now if now is not None else datetime.now(UTC)
     reservation_counts = (
         select(
-            models.CatalogItemReservation.catalog_item_id,
+            models.Reservation.catalog_item_id,
             func.count().label("count"),
         )
-        .where(models.CatalogItemReservation.status == models.Status.CONFIRMED)
-        .group_by(models.CatalogItemReservation.catalog_item_id)
+        .where(models.Reservation.status == models.ReservationStatus.ACTIVE)
+        .group_by(models.Reservation.catalog_item_id)
         .cte("reservation_counts")
     )
     hold_counts = (
         select(models.Hold.catalog_item_id, func.count().label("count"))
         .where(
-            models.Hold.status == models.HoldStatus.CONFIRMED,
+            models.Hold.status == models.HoldStatus.ALLOCATED,
             models.Hold.expires_at > now,
         )
         .group_by(models.Hold.catalog_item_id)
@@ -193,94 +195,175 @@ async def get_catalog_items(
         )
 
 
-class CreateReservationRequest(BaseModel):
-    patron_id: int
-
-
-class CreateReservationResponse(BaseModel):
-    id: int
-    catalog_item_id: int
-    patron_id: int
-    status: models.Status
-
-
-@router.post(
-    path="/{catalog_item_id}/reservations",
-    response_model=CreateReservationResponse,
-    status_code=status.HTTP_201_CREATED,
-    responses={
-        404: {"model": ErrorResponse},
-        409: {"model": ErrorResponse},
-        503: {"model": ErrorResponse},
-    },
-)
-async def create_catalog_item_reservation(
-    catalog_item_id: int,
-    body: Annotated[CreateReservationRequest, Body()],
-    session: AsyncDatabaseSessionDependency,
-    request_context: RequestContextDependency,
-) -> CreateReservationResponse | JSONResponse:
-    try:
-        async with session.begin():
-            # Lock before checking capacity to serialize reservation writers.
-            result = await session.execute(
-                select(models.CatalogItem)
-                .where(models.CatalogItem.id == catalog_item_id)
-                .with_for_update()
-            )
-            item = result.scalar_one_or_none()
-            if item is None:
-                return error_response(
-                    status_code=404,
-                    code="CATALOG_ITEM_NOT_FOUND",
-                    message="Catalog item does not exist",
-                    request_id=request_context.request_id,
-                )
-            if await session.get(models.Patron, body.patron_id) is None:
-                return error_response(
-                    status_code=404,
-                    code="PATRON_NOT_FOUND",
-                    message="Patron does not exist",
-                    request_id=request_context.request_id,
-                )
-            result = await session.execute(
-                catalog_items_with_availability().where(
-                    models.CatalogItem.id == catalog_item_id
-                )
-            )
-            _, available_count = result.one()
-            if available_count <= 0:
-                return error_response(
-                    status_code=409,
-                    code="CATALOG_ITEM_NOT_AVAILABLE",
-                    message="Catalog item is not available",
-                    request_id=request_context.request_id,
-                )
-            reservation = models.CatalogItemReservation(
-                catalog_item_id=catalog_item_id,
-                patron_id=body.patron_id,
-                status=models.Status.CONFIRMED,
-            )
-            session.add(reservation)
-            await session.flush()
-            response = CreateReservationResponse(
-                id=reservation.id,
-                catalog_item_id=reservation.catalog_item_id,
-                patron_id=reservation.patron_id,
-                status=reservation.status,
-            )
-        return response
-    except IntegrityError:
+def workflow_error(exc: Exception, request_id: str) -> JSONResponse:
+    if isinstance(exc, ReservationError):
+        return error_response(
+            status_code=exc.status_code,
+            code=exc.code,
+            message=str(exc),
+            request_id=request_id,
+        )
+    if isinstance(exc, IntegrityError):
         return error_response(
             status_code=409,
             code="RESERVATION_ALREADY_EXISTS",
-            message="Patron already has a confirmed reservation for this item",
-            request_id=request_context.request_id,
+            message="Patron already has an active reservation or hold",
+            request_id=request_id,
         )
-    except SQLAlchemyError:
-        return error_response(
-            status_code=503,
-            code="SERVICE_UNAVAILABLE",
-            message="Reservation could not be created",
-            request_id=request_context.request_id,
+    return error_response(
+        status_code=503,
+        code="SERVICE_UNAVAILABLE",
+        message="Reservation operation could not be completed",
+        request_id=request_id,
+    )
+
+
+class ReserveRequest(BaseModel):
+    patron_id: int = Field(gt=0)
+
+
+class ReservationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    catalog_item_id: int
+    patron_id: int
+    status: models.ReservationStatus
+
+
+class HoldResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    catalog_item_id: int
+    patron_id: int
+    status: models.HoldStatus
+    expires_at: datetime
+
+
+WORKFLOW_RESPONSES = {
+    404: {"model": ErrorResponse},
+    409: {"model": ErrorResponse},
+    503: {"model": ErrorResponse},
+}
+
+
+@router.post(
+    "/{catalog_item_id}/reserve",
+    response_model=ReservationResponse | HoldResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=WORKFLOW_RESPONSES,
+)
+async def reserve_catalog_item(
+    catalog_item_id: int,
+    body: ReserveRequest,
+    response: Response,
+    service: ItemReservationServiceDependency,
+    context: RequestContextDependency,
+) -> ReservationResponse | HoldResponse | JSONResponse:
+    try:
+        row = await service.reserve(catalog_item_id, body.patron_id)
+        if isinstance(row, models.Hold):
+            response.headers["Location"] = (
+                f"/v1/catalog-items/{catalog_item_id}/holds/{row.id}"
+            )
+            return HoldResponse.model_validate(row)
+        response.headers["Location"] = (
+            f"/v1/catalog-items/{catalog_item_id}/reservations/{row.id}"
         )
+        return ReservationResponse.model_validate(row)
+    except (ReservationError, SQLAlchemyError) as exc:
+        return workflow_error(exc, context.request_id)
+
+
+@router.post(
+    "/{catalog_item_id}/holds/allocate",
+    response_model=list[HoldResponse],
+    responses=WORKFLOW_RESPONSES,
+)
+async def allocate_catalog_item_holds(
+    catalog_item_id: int,
+    service: ItemReservationServiceDependency,
+    context: RequestContextDependency,
+) -> list[HoldResponse] | JSONResponse:
+    try:
+        rows = await service.allocate_holds(catalog_item_id)
+        return [HoldResponse.model_validate(row) for row in rows]
+    except (ReservationError, SQLAlchemyError) as exc:
+        return workflow_error(exc, context.request_id)
+
+
+@router.post(
+    "/{catalog_item_id}/holds/{hold_id}/cancel",
+    response_model=HoldResponse,
+    responses=WORKFLOW_RESPONSES,
+)
+async def cancel_hold_for_catalog_item(
+    catalog_item_id: int,
+    hold_id: int,
+    service: ItemReservationServiceDependency,
+    context: RequestContextDependency,
+) -> HoldResponse | JSONResponse:
+    try:
+        row = await service.cancel_hold(hold_id, catalog_item_id=catalog_item_id)
+        return HoldResponse.model_validate(row)
+    except (ReservationError, SQLAlchemyError) as exc:
+        return workflow_error(exc, context.request_id)
+
+
+@router.post(
+    "/{catalog_item_id}/holds/{hold_id}/confirm",
+    response_model=ReservationResponse,
+    responses=WORKFLOW_RESPONSES,
+)
+async def confirm_hold_for_catalog_item(
+    catalog_item_id: int,
+    hold_id: int,
+    service: ItemReservationServiceDependency,
+    context: RequestContextDependency,
+) -> ReservationResponse | JSONResponse:
+    try:
+        row = await service.confirm_hold(hold_id, catalog_item_id=catalog_item_id)
+        return ReservationResponse.model_validate(row)
+    except (ReservationError, SQLAlchemyError) as exc:
+        return workflow_error(exc, context.request_id)
+
+
+@router.post(
+    "/{catalog_item_id}/reservations/{reservation_id}/cancel",
+    response_model=ReservationResponse,
+    responses=WORKFLOW_RESPONSES,
+)
+async def cancel_reservation_for_catalog_item(
+    catalog_item_id: int,
+    reservation_id: int,
+    service: ItemReservationServiceDependency,
+    context: RequestContextDependency,
+) -> ReservationResponse | JSONResponse:
+    try:
+        row = await service.cancel_reservation(
+            reservation_id, catalog_item_id=catalog_item_id
+        )
+        return ReservationResponse.model_validate(row)
+    except (ReservationError, SQLAlchemyError) as exc:
+        return workflow_error(exc, context.request_id)
+
+
+@router.post(
+    "/{catalog_item_id}/reservations/{reservation_id}/return",
+    response_model=ReservationResponse,
+    responses=WORKFLOW_RESPONSES,
+)
+async def return_reservation_for_catalog_item(
+    catalog_item_id: int,
+    reservation_id: int,
+    service: ItemReservationServiceDependency,
+    context: RequestContextDependency,
+) -> ReservationResponse | JSONResponse:
+    try:
+        row = await service.return_reservation(
+            reservation_id, catalog_item_id=catalog_item_id
+        )
+        return ReservationResponse.model_validate(row)
+    except (ReservationError, SQLAlchemyError) as exc:
+        return workflow_error(exc, context.request_id)

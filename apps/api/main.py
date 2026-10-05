@@ -12,6 +12,7 @@ from apps.api.dependencies import ApplicationDependencies
 from apps.api.metrics import OpenTelemetryMetrics
 from apps.api.repositories.title import PostgresTitleRepository
 from apps.api.repositories.user_list import PostgresUserListRepository
+from apps.api.services.item_reservation.item_reservation import ItemReservation
 from apps.api.services.title import TitleService
 from apps.api.services.user_list import UserListService
 from shared.database.session import Database
@@ -39,6 +40,7 @@ dependencies = ApplicationDependencies(
     database_sessions=database.sessions,
     readiness_probe=database.is_ready,
     task_queue=celery_app,
+    item_reservation_service=ItemReservation(database.sessions),
 )
 app = create_app(
     dependencies,

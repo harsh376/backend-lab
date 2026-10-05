@@ -10,6 +10,7 @@ from fastapi import Depends, Header, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from apps.api.metrics import OpenTelemetryMetrics
+from apps.api.services.item_reservation.item_reservation import ItemReservation
 from apps.api.services.title import TitleService
 from apps.api.services.user_list import UserListService
 
@@ -27,6 +28,7 @@ class ApplicationDependencies:
     database_sessions: async_sessionmaker[AsyncSession] | None = None
     readiness_probe: ReadinessProbe | None = None
     task_queue: Celery | None = None
+    item_reservation_service: ItemReservation | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,3 +114,18 @@ AsyncDatabaseSessionDependency = Annotated[
     AsyncSession, Depends(get_async_database_session)
 ]
 UserIdDependency = Annotated[int, Depends(get_user_id)]
+
+
+def get_item_reservation_service(
+    dependencies: ApplicationDependenciesDependency,
+) -> ItemReservation:
+    if dependencies.item_reservation_service is None:
+        raise HTTPException(
+            status_code=503, detail="Item reservation service unavailable"
+        )
+    return dependencies.item_reservation_service
+
+
+ItemReservationServiceDependency = Annotated[
+    ItemReservation, Depends(get_item_reservation_service)
+]

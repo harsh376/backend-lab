@@ -10,6 +10,7 @@ from apps.api.domains.title import Title
 from apps.api.metrics import OpenTelemetryMetrics
 from apps.api.repositories.title import PostgresTitleRepository
 from apps.api.repositories.user_list import PostgresUserListRepository
+from apps.api.services.item_reservation.item_reservation import ItemReservation
 from apps.api.services.title import TitleService
 from apps.api.services.user_list import UserListService
 
@@ -19,6 +20,7 @@ async def make_app(
     repository=None,
     readiness_probe=None,
     user_list_repository=None,
+    item_reservation_service=None,
 ) -> FastAPI:
     repository = repository or PostgresTitleRepository(database_sessions)
     user_list_repository = user_list_repository or PostgresUserListRepository(
@@ -36,6 +38,11 @@ async def make_app(
         metrics=metrics,
         database_sessions=database_sessions,
         readiness_probe=readiness_probe,
+        item_reservation_service=(
+            item_reservation_service
+            if item_reservation_service is not None
+            else ItemReservation(database_sessions)
+        ),
     )
     return create_app(dependencies)
 

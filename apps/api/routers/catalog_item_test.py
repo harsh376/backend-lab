@@ -149,22 +149,26 @@ async def test_get_catalog_items_filters_and_status(sqlalchemy_sessions):
         await session.flush()
         session.add_all(
             [
-                models.CatalogItemReservation(
-                    catalog_item_id=1, patron_id=1, status=models.Status.CONFIRMED
+                models.Reservation(
+                    catalog_item_id=1,
+                    patron_id=1,
+                    status=models.ReservationStatus.ACTIVE,
                 ),
-                models.CatalogItemReservation(
-                    catalog_item_id=1, patron_id=2, status=models.Status.CANCELLED
+                models.Reservation(
+                    catalog_item_id=1,
+                    patron_id=2,
+                    status=models.ReservationStatus.CANCELLED,
                 ),
                 models.Hold(
                     catalog_item_id=1,
                     patron_id=3,
-                    status=models.HoldStatus.CONFIRMED,
+                    status=models.HoldStatus.ALLOCATED,
                     expires_at=now + timedelta(days=1),
                 ),
                 models.Hold(
                     catalog_item_id=1,
                     patron_id=4,
-                    status=models.HoldStatus.CONFIRMED,
+                    status=models.HoldStatus.ALLOCATED,
                     expires_at=now - timedelta(days=1),
                 ),
                 models.Hold(
@@ -179,7 +183,6 @@ async def test_get_catalog_items_filters_and_status(sqlalchemy_sessions):
                     status=models.HoldStatus.EXPIRED,
                     expires_at=now + timedelta(days=1),
                 ),
-                models.WaitlistRecord(catalog_item_id=1, patron_id=6, is_active=True),
             ]
         )
     async with await make_client(sqlalchemy_sessions) as client:
@@ -298,7 +301,7 @@ class TestCreateCatalogItemReservation:
                 "catalog_item_id": 1,
                 "id": 1,
                 "patron_id": 1,
-                "status": "confirmed",
+                "status": "active",
             }
 
             response = await client.post(
