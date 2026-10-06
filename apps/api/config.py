@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     db_password: str = "postgres"
     test_database_url: str = "sqlite+aiosqlite:///:memory:"
 
+    hold_reminder_window_minutes: PositiveInt = 120
+    hold_notification_interval_seconds: PositiveInt = 600
+    hold_notification_batch_size: PositiveInt = 200
+
     celery_broker_url: str = "redis://localhost:6379/0"
 
     otel_service_name: str = "api"

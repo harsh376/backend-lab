@@ -365,7 +365,8 @@ Baseline → make one change → repeat the workload → explain the result
 The base Compose stack also runs Redis and an `api-worker` service using the
 same image as the API. The API publishes JSON tasks to the `api` queue; workers
 execute them independently. Redis uses append-only persistence and a named
-volume, with eviction disabled. No task result backend or scheduler is enabled.
+volume, with eviction disabled. No task result backend is enabled. A separate
+`api-beat` scheduler enqueues hold notification processing every 10 minutes.
 
 ```bash
 docker compose -f compose/base.yaml up -d --build
@@ -395,3 +396,49 @@ are not atomic; use an outbox when a committed change must reliably enqueue work
 In production, deploy the API and workers separately and point both at a private
 Redis service with appropriate authentication/TLS. Use a separate Redis instance
 for caching so cache eviction and memory usage cannot affect queued jobs.
+
+
+### Hold notifications
+
+Migration `0007` adds persistent notifications. `api.create_hold_notifications`
+creates one `HOLD_EXPIRING` reminder per allocated hold in the final two hours,
+and one `HOLD_CONVERTED` confirmation per converted hold with a linked
+reservation. Reminders tell patrons to confirm their holds; this task never
+converts holds or changes availability. Notifications are database records;
+email/push delivery and a notification API are separate future work.
+
+Configure `HOLD_REMINDER_WINDOW_MINUTES` (default 120) and
+`HOLD_NOTIFICATION_BATCH_SIZE` (default 200 candidates per kind) on workers.
+Configure `HOLD_NOTIFICATION_INTERVAL_SECONDS` (default 600) on Beat. Run only
+one Beat instance. Outside Compose, run:
+
+```bash
+alembic -c apps/api/alembic.ini upgrade head
+celery -A apps.api.background.celery_app:celery_app beat --loglevel=INFO
+```
+
+Workers log `hold_notifications_created` with `expiring` and `converted` counts.
+Database uniqueness makes overlapping ticks and retries safe. Each candidate
+is rechecked under the catalog item lock used by the reservation service.
+Missed runs catch up while holds remain unexpired; expired reminders are
+skipped. Conversion confirmations catch up even if the reservation was later
+cancelled or returned. Existing reminders remain historical after conversion.
+Per-candidate transactions preserve progress if a later candidate fails.
+The task uses late acknowledgment and retries database operational errors with
+backoff; later periodic ticks also recover unfinished work.
+
+The service tests use SQLite by default. Set `TEST_DATABASE_URL` to a test
+PostgreSQL database to also run the concurrent-worker row-lock test.
+
+
+To request an immediate sweep through the API:
+
+```bash
+curl -X POST http://localhost:8000/v1/background/hold-notifications
+```
+
+The endpoint returns HTTP 202 with `task_id` and `status: "queued"`, or HTTP 503
+if the queue is unavailable. Worker execution is asynchronous; Beat's regular
+schedule continues independently. Like the existing ping endpoint, this route
+uses the app's current access policy; restrict access at your deployment boundary
+if the API is publicly exposed.

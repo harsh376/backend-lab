@@ -12,6 +12,12 @@ celery_app = Celery(
     "api", broker=settings.celery_broker_url, include=["apps.api.background.tasks"]
 )
 celery_app.conf.update(
+    beat_schedule={
+        "create-hold-notifications": {
+            "task": "api.create_hold_notifications",
+            "schedule": float(settings.hold_notification_interval_seconds),
+        },
+    },
     task_default_queue="api",
     task_serializer="json",
     accept_content=["json"],

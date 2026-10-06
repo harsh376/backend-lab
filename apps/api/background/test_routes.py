@@ -29,10 +29,32 @@ async def test_enqueue_ping(sqlalchemy_sessions, available):
     assert queue.send_task.call_args.kwargs["kwargs"]["request_id"]
 
 
-async def test_enqueue_without_queue(sqlalchemy_sessions):
+@pytest.mark.parametrize("path", ["ping", "hold-notifications"])
+async def test_enqueue_without_queue(sqlalchemy_sessions, path):
     app = await make_app(sqlalchemy_sessions)
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
-        response = await client.post("/v1/background/ping")
+        response = await client.post(f"/v1/background/{path}")
     assert response.status_code == 503
+
+
+@pytest.mark.parametrize("available", [True, False])
+async def test_enqueue_hold_notifications(sqlalchemy_sessions, available):
+    app = await make_app(sqlalchemy_sessions)
+    queue = Mock()
+    queue.send_task.return_value = SimpleNamespace(id="notification-task-123")
+    if not available:
+        queue.send_task.side_effect = OperationalError("broker offline")
+    app.state.dependencies = replace(app.state.dependencies, task_queue=queue)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post("/v1/background/hold-notifications")
+    assert response.status_code == (202 if available else 503)
+    if available:
+        assert response.json() == {
+            "task_id": "notification-task-123",
+            "status": "queued",
+        }
+    queue.send_task.assert_called_once_with("api.create_hold_notifications")

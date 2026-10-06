@@ -214,6 +214,7 @@ class Hold(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (
+        Index("ix_item_holds_status_expires_at_id", "status", "expires_at", "id"),
         Index(
             "uq_item_holds__catalog_item_id_patron_id_status",
             "catalog_item_id",
@@ -224,3 +225,26 @@ class Hold(Base):
             sqlite_where=text("status = 'ALLOCATED'"),
         ),
     )
+
+
+class NotificationKind(enum.Enum):
+    HOLD_EXPIRING = "hold_expiring"
+    HOLD_CONVERTED = "hold_converted"
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    __table_args__ = (
+        UniqueConstraint("hold_id", "kind", name="uq_notifications_hold_kind"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    patron_id: Mapped[int] = mapped_column(ForeignKey("patrons.id"))
+    hold_id: Mapped[int] = mapped_column(
+        ForeignKey("item_holds.id", ondelete="CASCADE")
+    )
+    reservation_id: Mapped[int | None] = mapped_column(ForeignKey("reservations.id"))
+    kind: Mapped[NotificationKind] = mapped_column()
+    message: Mapped[str] = mapped_column(Text)
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

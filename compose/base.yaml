@@ -113,6 +113,8 @@ services:
       DB_NAME: ${POSTGRES_DB:-my_db}
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      HOLD_REMINDER_WINDOW_MINUTES: ${HOLD_REMINDER_WINDOW_MINUTES:-120}
+      HOLD_NOTIFICATION_BATCH_SIZE: ${HOLD_NOTIFICATION_BATCH_SIZE:-200}
       OTEL_SERVICE_NAME: api-worker
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
       OTEL_METRIC_EXPORT_INTERVAL: "20000"
@@ -123,6 +125,27 @@ services:
         condition: service_completed_successfully
       otel-lgtm:
         condition: service_started
+
+  api-beat:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    command:
+      - celery
+      - -A
+      - apps.api.background.celery_app:celery_app
+      - beat
+      - --loglevel=INFO
+      - --schedule=/tmp/celerybeat-schedule
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      HOLD_NOTIFICATION_INTERVAL_SECONDS: >-
+        ${HOLD_NOTIFICATION_INTERVAL_SECONDS:-600}
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
 
   frontend:
     image: node:22-alpine
