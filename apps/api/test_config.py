@@ -3,6 +3,9 @@
 from apps.api.config import Settings
 
 _ENV_VARS = (
+    "TEMPORAL_ADDRESS",
+    "ELASTICSEARCH_URL",
+    "KILT_INDEX",
     "DB_HOST",
     "DB_PORT",
     "DB_NAME",
@@ -27,6 +30,9 @@ def test_defaults_when_unset(monkeypatch) -> None:
     assert settings.database_url == (
         "postgresql+asyncpg://postgres:postgres@localhost:5432/my_db"
     )
+    assert settings.temporal_address == "localhost:7233"
+    assert settings.elasticsearch_url == "http://localhost:9200"
+    assert settings.kilt_index == "kilt"
     assert settings.otel_service_name == "api"
     assert settings.otlp_enabled is False
     assert settings.otel_metric_export_interval == 60_000
@@ -34,6 +40,9 @@ def test_defaults_when_unset(monkeypatch) -> None:
 
 def test_reads_environment_variables(monkeypatch) -> None:
     _clear_env(monkeypatch)
+    monkeypatch.setenv("TEMPORAL_ADDRESS", "temporal:7233")
+    monkeypatch.setenv("ELASTICSEARCH_URL", "http://elasticsearch:9200")
+    monkeypatch.setenv("KILT_INDEX", "kilt-v1")
     monkeypatch.setenv("DB_HOST", "host")
     monkeypatch.setenv("DB_PORT", "6543")
     monkeypatch.setenv("DB_NAME", "db")
@@ -46,6 +55,9 @@ def test_reads_environment_variables(monkeypatch) -> None:
     settings = Settings(_env_file=None)
 
     assert settings.database_url == "postgresql+asyncpg://u:p@host:6543/db"
+    assert settings.temporal_address == "temporal:7233"
+    assert settings.elasticsearch_url == "http://elasticsearch:9200"
+    assert settings.kilt_index == "kilt-v1"
     assert settings.otel_service_name == "custom-service"
     assert settings.otlp_enabled is True
     assert settings.otel_exporter_otlp_endpoint == "http://collector:4317"

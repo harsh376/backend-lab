@@ -26,6 +26,12 @@ concise model answers or verify semantic support. Empty retrieval and invalid
 citations cause abstention. `AnswerActivities` accepts an async synthesis callable for
 replacing the fake provider later.
 
+Configuration comes from `apps.api.config.Settings`, with environment overrides
+for `TEMPORAL_ADDRESS`, `ELASTICSEARCH_URL`, and `KILT_INDEX`. Host defaults are
+`localhost:7233`, `http://localhost:9200`, and `kilt`. The `compose/.env` and
+`compose/.env.example` files configure container addresses for Compose; host
+commands do not automatically load them.
+
 Start Elasticsearch and Temporal, import KILT with `KiltService`, then run:
 
 ```sh

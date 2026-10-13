@@ -317,3 +317,51 @@ if the queue is unavailable. Worker execution is asynchronous; Beat's regular
 schedule continues independently. Like the existing ping endpoint, this route
 uses the app's current access policy; restrict access at your deployment boundary
 if the API is publicly exposed.
+
+## Answer workflow through MCP
+
+Start Temporal, the answer worker, and the MCP HTTP entrypoint:
+
+```bash
+docker compose -f compose/elasticsearch.yaml -f compose/temporal.yaml up -d --build
+```
+
+The worker requires a populated KILT index in Elasticsearch; set `KILT_INDEX`
+(default `kilt`) and `ELASTICSEARCH_URL` to use an existing corpus. Temporal's
+Web UI is available at <http://localhost:8233>. Connect an MCP client using
+Streamable HTTP to <http://localhost:8001/mcp>.
+
+For a local MCP client using stdio, configure this server (replace the directory
+with your checkout path):
+
+```json
+{
+  "mcpServers": {
+    "answers": {
+      "command": "uv",
+      "args": ["--directory", "/absolute/path/to/my-app", "run", "python", "-m", "apps.mcp.server"],
+      "env": {"TEMPORAL_ADDRESS": "localhost:7233"}
+    }
+  }
+}
+```
+
+Call `answer` with `{"question":"Who wrote Photograph by Ringo Starr?","limit":5}`.
+It starts `AnswerWorkflow` on the `kilt-answers` queue and returns
+`{"run_id":"kilt-answer-...","status":"RUNNING"}`. Call `get_answer` with that
+`run_id` to poll. On `COMPLETED`, its `result` contains `short_answer`,
+`explanation`, original passage `citations`, `abstained`, and `provider`.
+Other statuses (including `FAILED`, `CANCELED`, `TERMINATED`, and `TIMED_OUT`)
+are returned without a result. A pending poll does not wait for the workflow.
+Questions must be nonempty and `limit` must be between 1 and 10.
+
+The MCP process only needs Temporal access; retrieval and synthesis execute in
+the worker. Use the returned `run_id` to find the execution and activity history
+in Temporal's Web UI. The HTTP service is intended for local development and
+is published on loopback without authentication.
+
+To run HTTP directly on the host:
+
+```bash
+uv run python -m apps.mcp.server --transport streamable-http --port 8001
+```

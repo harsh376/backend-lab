@@ -1,5 +1,5 @@
 # Local Temporal development server with its built-in Web UI, plus the agent
-# worker that runs the kilt-answers workflows.
+# worker that runs the kilt-answers workflows and its MCP entrypoint.
 # Start: docker compose -f compose/temporal.yaml up -d --build
 # Stop: docker compose -f compose/temporal.yaml down (preserves data)
 # Reset: docker compose -f compose/temporal.yaml down -v (deletes workflow data)
@@ -42,9 +42,32 @@ services:
       context: ..
       dockerfile: apps/mcp/Dockerfile
     environment:
-      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
       ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
       KILT_INDEX: ${KILT_INDEX:-kilt}
+    depends_on:
+      temporal:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mcp:
+    build:
+      context: ..
+      dockerfile: apps/mcp/Dockerfile
+    command:
+      - python
+      - -m
+      - apps.mcp.server
+      - --transport
+      - streamable-http
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8001"
+    environment:
+      TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
+    ports:
+      - "127.0.0.1:8001:8001"
     depends_on:
       temporal:
         condition: service_healthy

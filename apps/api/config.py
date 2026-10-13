@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     hold_notification_interval_seconds: PositiveInt = 600
     hold_notification_batch_size: PositiveInt = 200
 
+    temporal_address: str = "localhost:7233"
+    elasticsearch_url: str = "http://localhost:9200"
+    kilt_index: str = "kilt"
+
     celery_broker_url: str = "redis://localhost:6379/0"
 
     otel_service_name: str = "api"

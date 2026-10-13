@@ -38,14 +38,15 @@ class AnswerWorkflow:
 if __name__ == "__main__":
     import asyncio
     import json
-    import os
     from dataclasses import asdict
     from uuid import uuid4
 
     from temporalio.client import Client
 
+    from apps.api.config import Settings
+
     async def main(question: str) -> None:
-        client = await Client.connect(os.getenv("TEMPORAL_ADDRESS", "localhost:7233"))
+        client = await Client.connect(Settings().temporal_address)
         result = await client.execute_workflow(
             AnswerWorkflow.run,
             AnswerRequest(question),

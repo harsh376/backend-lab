@@ -1,10 +1,10 @@
-import os
 from dataclasses import asdict
 from uuid import uuid4
 
 from mcp.server import MCPServer
 from temporalio.client import Client, WorkflowExecutionStatus
 
+from apps.api.config import Settings
 from apps.mcp.agent.models import AnswerRequest, AnswerResult
 from apps.mcp.agent.workflow import AnswerWorkflow
 
@@ -12,7 +12,7 @@ mcp = MCPServer("Evidence-backed answers")
 
 
 async def temporal_client() -> Client:
-    return await Client.connect(os.getenv("TEMPORAL_ADDRESS", "localhost:7233"))
+    return await Client.connect(Settings().temporal_address)
 
 
 @mcp.tool()
@@ -42,5 +42,21 @@ async def get_answer(run_id: str) -> dict:
     return result
 
 
+def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="MCP entrypoint for AnswerWorkflow")
+    parser.add_argument(
+        "--transport", choices=("stdio", "streamable-http"), default="stdio"
+    )
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=8001)
+    args = parser.parse_args()
+    if args.transport == "stdio":
+        mcp.run()
+    else:
+        mcp.run(transport="streamable-http", host=args.host, port=args.port)
+
+
 if __name__ == "__main__":
-    mcp.run()
+    main()
