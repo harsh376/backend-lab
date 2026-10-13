@@ -1,5 +1,6 @@
-# Local Temporal development server with its built-in Web UI.
-# Start: docker compose -f compose/temporal.yaml up -d
+# Local Temporal development server with its built-in Web UI, plus the agent
+# worker that runs the kilt-answers workflows.
+# Start: docker compose -f compose/temporal.yaml up -d --build
 # Stop: docker compose -f compose/temporal.yaml down (preserves data)
 # Reset: docker compose -f compose/temporal.yaml down -v (deletes workflow data)
 services:
@@ -28,6 +29,26 @@ services:
       - "127.0.0.1:8233:8233" # Web UI
     volumes:
       - temporal-data:/data
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Reaches Elasticsearch by service name when compose/elasticsearch.yaml is
+  # also up: both files share the default Compose project and network.
+  agent-worker:
+    build:
+      context: ..
+      dockerfile: apps/mcp/Dockerfile
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
+      KILT_INDEX: ${KILT_INDEX:-kilt}
+    depends_on:
+      temporal:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   temporal-data:

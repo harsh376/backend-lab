@@ -1,10 +1,11 @@
+import asyncio
 import json
 import logging
 import re
 from collections.abc import Iterable, Iterator
 from itertools import islice
 
-from elasticsearch import Elasticsearch, helpers
+from elasticsearch import AsyncElasticsearch, helpers
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ INDEX_MAPPINGS = {
 
 
 class KiltService:
-    def __init__(self, client: Elasticsearch, index_name: str = "kilt"):
+    def __init__(self, client: AsyncElasticsearch, index_name: str = "kilt"):
         self._client = client
         self._index_name = index_name
 
@@ -87,7 +88,7 @@ class KiltService:
                         f"column {e.colno}: {e.msg}"
                     ) from e
 
-    def import_documents(
+    async def aimport_documents(
         self, documents: Iterable[dict], batch_size: int = 500
     ) -> tuple[int, int, int]:
         """Bulk index documents in batches.
@@ -97,17 +98,17 @@ class KiltService:
         _id is used as the document ID and documents are only ever created, so
         re-running the import skips the ones already indexed.
         """
-        self._create_index_if_missing()
+        await self._acreate_index_if_missing()
 
         indexed = skipped = failed = 0
-        results = helpers.streaming_bulk(
+        results = helpers.async_streaming_bulk(
             self._client,
             self._actions(documents),
             chunk_size=batch_size,
             max_retries=3,
             raise_on_error=False,
         )
-        for ok, item in results:
+        async for ok, item in results:
             if ok:
                 indexed += 1
             elif item["create"]["status"] == HTTP_CONFLICT:
@@ -117,7 +118,7 @@ class KiltService:
                 logger.warning("Failed to index document: %s", item)
         return indexed, skipped, failed
 
-    def search(self, query: str, limit: int = 10) -> list[dict]:
+    async def asearch(self, query: str, limit: int = 10) -> list[dict]:
         """Full-text search over article titles and text, best match first.
 
         Each result has the article's id, title, relevance score and up to three
@@ -129,7 +130,7 @@ class KiltService:
         if limit < 1:
             raise ValueError("limit must be at least 1")
 
-        response = self._client.search(
+        response = await self._client.search(
             index=self._index_name,
             query={
                 "multi_match": {
@@ -157,10 +158,71 @@ class KiltService:
             for hit in response["hits"]["hits"]
         ]
 
-    def _create_index_if_missing(self) -> None:
-        if self._client.indices.exists(index=self._index_name):
+    async def aget_passage(self, article_id: str, paragraph_id: int) -> dict:
+        """Fetch original text with a stable index/article/paragraph identity.
+
+        Use an immutable, versioned index name to pin a corpus snapshot.
+        """
+        if paragraph_id < 0:
+            raise ValueError("paragraph_id must be non-negative")
+        response = await self._client.get(index=self._index_name, id=article_id)
+        document = response["_source"]
+        paragraphs = document.get("text", [])
+        if paragraph_id >= len(paragraphs):
+            raise ValueError("paragraph_id is out of range")
+        return {
+            "passage_id": f"{self._index_name}:{article_id}:{paragraph_id}",
+            "corpus_version": self._index_name,
+            "wikipedia_id": str(document.get("wikipedia_id", article_id)),
+            "paragraph_id": paragraph_id,
+            "title": document["wikipedia_title"],
+            "text": paragraphs[paragraph_id],
+        }
+
+    async def aretrieve_passages(self, query: str, limit: int = 5) -> list[dict]:
+        """Rank original paragraphs from matching articles by query-term overlap.
+
+        Highlights are display fragments and cannot identify KILT paragraphs;
+        fetch original text so citations preserve the dataset paragraph offsets.
+        """
+        terms = set(re.findall(r"\w+", query.lower()))
+        passages = []
+        hits = await self.asearch(query, limit)
+        responses = await asyncio.gather(
+            *(self._client.get(index=self._index_name, id=hit["id"]) for hit in hits)
+        )
+        for hit, response in zip(hits, responses, strict=True):
+            document = response["_source"]
+            for paragraph_id, paragraph in enumerate(document.get("text", [])):
+                if not paragraph.strip() or paragraph.startswith(SECTION_MARKER):
+                    continue
+                overlap = len(terms & set(re.findall(r"\w+", paragraph.lower())))
+                if not overlap:
+                    continue
+                passages.append(
+                    (
+                        overlap,
+                        {
+                            "passage_id": (
+                                f"{self._index_name}:{hit['id']}:{paragraph_id}"
+                            ),
+                            "corpus_version": self._index_name,
+                            "wikipedia_id": str(
+                                document.get("wikipedia_id", hit["id"])
+                            ),
+                            "paragraph_id": paragraph_id,
+                            "title": document["wikipedia_title"],
+                            "text": paragraph,
+                        },
+                    )
+                )
+        passages.sort(key=lambda item: item[0], reverse=True)
+        return [passage for _, passage in passages[:limit]]
+
+    async def _acreate_index_if_missing(self) -> None:
+        if await self._client.indices.exists(index=self._index_name):
             return
-        self._client.indices.create(
+        await self._client.indices.create(
             index=self._index_name,
             settings=INDEX_SETTINGS,
             mappings=INDEX_MAPPINGS,
@@ -199,13 +261,23 @@ class KiltService:
         return list(sections)
 
 
-if __name__ == "__main__":
+async def _main() -> None:
     from pprint import pprint
 
+    async with AsyncElasticsearch("http://localhost:9200") as client:
+        service = KiltService(client)
+        # records = service.parse_json(
+        #     "/Users/harsh/Desktop/kilt_knowledgesource.json"
+        # )
+        # indexed, skipped, failed = await service.aimport_documents(records)
+        # print(
+        #     f"Indexed {indexed} documents, {skipped} already existed, "
+        #     f"{failed} failed"
+        # )
+        results = await service.asearch("top gun")
+        pprint(results)
+
+
+if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    service = KiltService(Elasticsearch("http://localhost:9200"))
-    # records = service.parse_json("/Users/harsh/Desktop/kilt_knowledgesource.json")
-    # indexed, skipped, failed = service.import_documents(records)
-    # print(f"Indexed {indexed} documents, {skipped} already existed, {failed} failed")
-    results = service.search("top gun")
-    pprint(results)
+    asyncio.run(_main())

@@ -1,14 +1,46 @@
-from mcp.server import MCPServer
+import os
+from dataclasses import asdict
+from uuid import uuid4
 
-mcp = MCPServer("Demo")
+from mcp.server import MCPServer
+from temporalio.client import Client, WorkflowExecutionStatus
+
+from apps.mcp.agent.models import AnswerRequest, AnswerResult
+from apps.mcp.agent.workflow import AnswerWorkflow
+
+mcp = MCPServer("Evidence-backed answers")
+
+
+async def temporal_client() -> Client:
+    return await Client.connect(os.getenv("TEMPORAL_ADDRESS", "localhost:7233"))
 
 
 @mcp.tool()
-def add(a: int, b: int) -> int:
-    """Add two numbers."""
-    return a + b
+async def answer(question: str, limit: int = 5) -> dict:
+    """Start a durable extractive answer run; poll get_answer for its result."""
+    request = AnswerRequest(question, limit)
+    request.validate()
+    client = await temporal_client()
+    run_id = f"kilt-answer-{uuid4()}"
+    await client.start_workflow(
+        AnswerWorkflow.run, request, id=run_id, task_queue="kilt-answers"
+    )
+    return {"run_id": run_id, "status": "RUNNING"}
 
 
-@mcp.resource("greeting://{name}")
-def greeting(name: str) -> str:
-    """Greet someone by name"""
+@mcp.tool()
+async def get_answer(run_id: str) -> dict:
+    """Return run status and, on completion, answer text and original citations."""
+    if not run_id.startswith("kilt-answer-"):
+        raise ValueError("invalid answer run ID")
+    client = await temporal_client()
+    handle = client.get_workflow_handle(run_id, result_type=AnswerResult)
+    description = await handle.describe()
+    result = {"run_id": run_id, "status": description.status.name}
+    if description.status == WorkflowExecutionStatus.COMPLETED:
+        result["result"] = asdict(await handle.result())
+    return result
+
+
+if __name__ == "__main__":
+    mcp.run()
