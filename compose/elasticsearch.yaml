@@ -1,0 +1,55 @@
+# Local Elasticsearch and Kibana. Authentication/TLS are disabled for local use.
+# Start: docker compose -f compose/elasticsearch.yaml up -d --wait
+# Stop: docker compose -f compose/elasticsearch.yaml down (preserves data)
+# Reset: docker compose -f compose/elasticsearch.yaml down -v (deletes index data)
+# When creating indices, set number_of_replicas to 0 for this single-node setup.
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.5
+    environment:
+      node.name: elasticsearch
+      cluster.name: evidence-bench
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+    mem_limit: ${ELASTICSEARCH_MEMORY_LIMIT:-4g}
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.5.5
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+      XPACK_SECURITY_ENABLED: "false"
+    mem_limit: ${KIBANA_MEMORY_LIMIT:-2g}
+    ports:
+      - "127.0.0.1:5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - http://localhost:5601/api/status
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 60s
+
+volumes:
+  elasticsearch-data:
