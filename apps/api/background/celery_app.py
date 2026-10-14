@@ -4,8 +4,8 @@ from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown
 
 from apps.api.config import Settings
-from shared.observability.logging import configure_logger
-from shared.observability.telemetry import Telemetry, configure_telemetry
+from backend.observability.logging import configure_logger
+from backend.observability.telemetry import Telemetry, configure_telemetry
 
 settings = Settings()
 celery_app = Celery(

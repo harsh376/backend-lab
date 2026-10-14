@@ -8,10 +8,9 @@ operations.
 ## Structure
 
 The repository is a single Python project organized as a monorepo. Deployable
-applications live in `apps`, while reusable technical infrastructure lives in
-`shared`. Business models and persistence remain inside the application that
-owns them. Tests live beside the files they cover as `test_{file_name}.py` and
-are omitted from this diagram for clarity.
+applications live in `apps`, while reusable business logic, persistence, and
+technical infrastructure live in `backend`. Tests live beside the files they
+cover as `test_{file_name}.py`.
 
 The Terraform setup runs locally and stores remote state in a private,
 versioned S3 bucket with native state locking. Run `bin/terraform.sh help` for the
@@ -171,8 +170,8 @@ environment and Git hooks with `uv sync` and `uv run pre-commit install`.
 ```bash
 uv lock --check
 uv run pre-commit run --all-files
-uv run ruff check apps shared
-uv run ruff format --check apps shared
+uv run ruff check apps backend
+uv run ruff format --check apps backend
 uv run pytest
 uv run alembic -c backend/alembic.ini upgrade head --sql
 ```
@@ -369,14 +368,14 @@ uv run python -m apps.mcp.server --transport streamable-http --port 8001
 ## Python code organization
 
 `backend/` owns reusable domain models, services, repositories, business metrics,
-and database models and migrations. Both `apps/api` and `apps/mcp` import it.
-`shared/` contains generic database and observability utilities. Neither package
-should import from `apps/`.
+database configuration, sessions, models and migrations (`backend/db/`), and
+observability utilities (`backend/observability/`). Both `apps/api` and `apps/mcp`
+import it. The `backend/` package should not import from `apps/`.
 
 Keep HTTP schemas, routers, middleware, and FastAPI dependency providers in
 `apps/api`; keep MCP tools and worker entry points in `apps/mcp`. Each entry point
 constructs the services and manages its own runtime resources. Shared database
-settings live in `shared/database/config.py`; API settings extend them.
+settings live in `backend/db/config.py`; API settings extend them.
 
 Tests live alongside their modules. The root `conftest.py` provides the database
 fixture for both backend tests and API tests. Run all tests with `uv run pytest`.

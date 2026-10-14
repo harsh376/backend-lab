@@ -1,1 +1,1 @@
-"""Reusable business logic and persistence for application entry points."""
+"""Reusable business logic, persistence, and infrastructure for applications."""

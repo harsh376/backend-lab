@@ -10,7 +10,7 @@ from opentelemetry.sdk._logs.export import (
 )
 from opentelemetry.sdk.trace import TracerProvider
 
-from shared.observability.logging import JsonFormatter, configure_logger
+from backend.observability.logging import JsonFormatter, configure_logger
 
 
 def test_json_log_contains_active_trace_context() -> None:

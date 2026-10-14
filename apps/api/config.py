@@ -2,7 +2,7 @@
 
 from pydantic import PositiveInt
 
-from shared.database.config import DatabaseSettings
+from backend.db.config import DatabaseSettings
 
 
 class Settings(DatabaseSettings):

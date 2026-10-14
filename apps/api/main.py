@@ -9,15 +9,15 @@ from apps.api.application import create_app
 from apps.api.background.celery_app import celery_app
 from apps.api.config import Settings
 from apps.api.dependencies import ApplicationDependencies
+from backend.db.session import Database
 from backend.metrics import OpenTelemetryMetrics
+from backend.observability.logging import configure_logger
+from backend.observability.telemetry import configure_telemetry
 from backend.repositories.title import PostgresTitleRepository
 from backend.repositories.user_list import PostgresUserListRepository
 from backend.services.item_reservation.item_reservation import ItemReservation
 from backend.services.title import TitleService
 from backend.services.user_list import UserListService
-from shared.database.session import Database
-from shared.observability.logging import configure_logger
-from shared.observability.telemetry import configure_telemetry
 
 settings = Settings()
 telemetry = configure_telemetry(

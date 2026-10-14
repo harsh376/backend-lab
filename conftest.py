@@ -6,8 +6,8 @@ from collections.abc import AsyncIterator
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from backend.db.config import DatabaseSettings
 from backend.db.models import Base
-from shared.database.config import DatabaseSettings
 
 
 def pytest_configure() -> None:

@@ -129,7 +129,7 @@ Cover success paths, exact-capacity reservations, partial-failure scenarios,
 terminal-state transitions, retry conflicts, retry after failure, and mutation
 of input/output objects. You choose the test cases and implementation approach.
 
-The repository's default pytest discovery targets `apps` and `shared`, so run
+The repository's default pytest discovery targets `apps` and `backend`, so run
 your tests here explicitly, for example:
 
 ```sh

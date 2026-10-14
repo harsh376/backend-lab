@@ -7,8 +7,8 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from backend.db.config import DatabaseSettings
 from backend.db.models import Base
-from shared.database.config import DatabaseSettings
 
 config = context.config
 if config.config_file_name is not None:

@@ -12,7 +12,7 @@ from opentelemetry.sdk.metrics.export import (
 from opentelemetry.sdk.trace import ReadableSpan
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 
-from shared.observability import telemetry as telemetry_module
+from backend.observability import telemetry as telemetry_module
 
 
 class StubSpanExporter(SpanExporter):
