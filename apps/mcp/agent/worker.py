@@ -4,10 +4,10 @@ from elasticsearch import AsyncElasticsearch
 from temporalio.client import Client
 from temporalio.worker import Worker
 
-from apps.api.config import Settings
-from apps.api.services.kilt.kilt import KiltService
 from apps.mcp.agent.activities import AnswerActivities
 from apps.mcp.agent.workflow import AnswerWorkflow
+from apps.mcp.config import Settings
+from backend.services.kilt.kilt import KiltService
 
 TASK_QUEUE = "kilt-answers"
 

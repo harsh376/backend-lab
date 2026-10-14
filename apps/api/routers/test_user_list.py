@@ -1,11 +1,11 @@
 from httpx import ASGITransport, AsyncClient
 
-from apps.api.db.models import Content as ContentRow
-from apps.api.db.models import User as UserRow
-from apps.api.domains.user_list import UserList, UserListContent
-from apps.api.repositories import RepositoryUnavailableError
-from apps.api.repositories.user_list import PostgresUserListRepository
 from apps.api.routers.conftest import make_app
+from backend.db.models import Content as ContentRow
+from backend.db.models import User as UserRow
+from backend.domains.user_list import UserList, UserListContent
+from backend.repositories import RepositoryUnavailableError
+from backend.repositories.user_list import PostgresUserListRepository
 
 USER_HEADERS = {"X-User-Id": "1"}
 OTHER_USER_HEADERS = {"X-User-Id": "2"}

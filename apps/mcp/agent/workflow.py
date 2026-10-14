@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     from temporalio.client import Client
 
-    from apps.api.config import Settings
+    from apps.mcp.config import Settings
 
     async def main(question: str) -> None:
         client = await Client.connect(Settings().temporal_address)

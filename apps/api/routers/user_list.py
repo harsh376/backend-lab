@@ -12,9 +12,10 @@ from apps.api.dependencies import (
     UserIdDependency,
     UserListServiceDependency,
 )
-from apps.api.domains.user_list import UserList, UserListContent
-from apps.api.repositories import RepositoryUnavailableError
-from apps.api.repositories.user_list import (
+from apps.api.schemas import ErrorResponse, error_response
+from backend.domains.user_list import UserList, UserListContent
+from backend.repositories import RepositoryUnavailableError
+from backend.repositories.user_list import (
     ContentAlreadyInListError,
     ContentNotFoundError,
     ContentNotInListError,
@@ -22,7 +23,6 @@ from apps.api.repositories.user_list import (
     UserListNotFoundError,
     UserNotFoundError,
 )
-from apps.api.schemas import ErrorResponse, error_response
 
 router = APIRouter(prefix="/user-lists", tags=["user-lists"])
 

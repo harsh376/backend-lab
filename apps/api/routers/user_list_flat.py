@@ -8,8 +8,6 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from apps.api.db.models import User as UserRow
-from apps.api.db.models import UserList as UserListRow
 from apps.api.dependencies import (
     AsyncDatabaseSessionDependency,
     LoggerDependency,
@@ -17,6 +15,8 @@ from apps.api.dependencies import (
     UserIdDependency,
 )
 from apps.api.schemas import ErrorResponse, error_response
+from backend.db.models import User as UserRow
+from backend.db.models import UserList as UserListRow
 
 router = APIRouter(prefix="/user-lists-flat", tags=["user-lists-flat"])
 

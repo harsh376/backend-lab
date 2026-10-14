@@ -9,10 +9,10 @@ from celery import Celery
 from fastapi import Depends, Header, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from apps.api.metrics import OpenTelemetryMetrics
-from apps.api.services.item_reservation.item_reservation import ItemReservation
-from apps.api.services.title import TitleService
-from apps.api.services.user_list import UserListService
+from backend.metrics import OpenTelemetryMetrics
+from backend.services.item_reservation.item_reservation import ItemReservation
+from backend.services.title import TitleService
+from backend.services.user_list import UserListService
 
 ReadinessProbe = Callable[[], Awaitable[bool]]
 

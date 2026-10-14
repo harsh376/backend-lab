@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from temporalio.converter import DataConverter
 
-from apps.api.services.kilt.kilt import KiltService
 from apps.mcp.agent.activities import AnswerActivities, aextractive_synthesis
 from apps.mcp.agent.models import AnswerRequest, AnswerResult, Passage, SynthesisInput
+from backend.services.kilt.kilt import KiltService
 
 
 async def test_original_paragraph_identity():

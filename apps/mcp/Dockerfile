@@ -17,9 +17,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM deps AS app
 COPY pyproject.toml uv.lock ./
 COPY apps/__init__.py ./apps/__init__.py
-# The agent imports KiltService from apps/api.
-COPY apps/api ./apps/api
 COPY apps/mcp ./apps/mcp
+COPY backend ./backend
 COPY shared ./shared
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev

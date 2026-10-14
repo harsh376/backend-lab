@@ -4,9 +4,9 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from apps.api.db.models import User as UserRow
-from apps.api.repositories.user_list import PostgresUserListRepository
 from apps.api.routers.conftest import make_app
+from backend.db.models import User as UserRow
+from backend.repositories.user_list import PostgresUserListRepository
 
 USER_HEADERS = {"X-User-Id": "1"}
 

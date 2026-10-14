@@ -7,14 +7,14 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from starlette.responses import JSONResponse
 
-from apps.api.db import models
 from apps.api.dependencies import (
     AsyncDatabaseSessionDependency,
     ItemReservationServiceDependency,
     RequestContextDependency,
 )
 from apps.api.schemas import ErrorResponse, error_response
-from apps.api.services.item_reservation.item_reservation import ReservationError
+from backend.db import models
+from backend.services.item_reservation.item_reservation import ReservationError
 
 router = APIRouter(prefix="/catalog-items", tags=["catalog-items"])
 

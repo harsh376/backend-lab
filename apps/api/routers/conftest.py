@@ -6,13 +6,13 @@ from httpx import ASGITransport, AsyncClient
 
 from apps.api.application import create_app
 from apps.api.dependencies import ApplicationDependencies
-from apps.api.domains.title import Title
-from apps.api.metrics import OpenTelemetryMetrics
-from apps.api.repositories.title import PostgresTitleRepository
-from apps.api.repositories.user_list import PostgresUserListRepository
-from apps.api.services.item_reservation.item_reservation import ItemReservation
-from apps.api.services.title import TitleService
-from apps.api.services.user_list import UserListService
+from backend.domains.title import Title
+from backend.metrics import OpenTelemetryMetrics
+from backend.repositories.title import PostgresTitleRepository
+from backend.repositories.user_list import PostgresUserListRepository
+from backend.services.item_reservation.item_reservation import ItemReservation
+from backend.services.title import TitleService
+from backend.services.user_list import UserListService
 
 
 async def make_app(

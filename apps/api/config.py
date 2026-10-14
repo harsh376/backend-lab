@@ -1,19 +1,11 @@
 """Application configuration loaded from environment variables."""
 
 from pydantic import PositiveInt
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from shared.database.config import DatabaseSettings
 
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(extra="ignore")
-
-    db_host: str = "localhost"
-    db_port: str = "5432"
-    db_name: str = "my_db"
-    db_user: str = "postgres"
-    db_password: str = "postgres"
-    test_database_url: str = "sqlite+aiosqlite:///:memory:"
-
+class Settings(DatabaseSettings):
     hold_reminder_window_minutes: PositiveInt = 120
     hold_notification_interval_seconds: PositiveInt = 600
     hold_notification_batch_size: PositiveInt = 200
@@ -27,14 +19,6 @@ class Settings(BaseSettings):
     otel_service_name: str = "api"
     otel_exporter_otlp_endpoint: str | None = None
     otel_metric_export_interval: PositiveInt = 60000
-
-    @property
-    def database_url(self) -> str:
-        """Build the PostgreSQL DSN from the database settings."""
-        return (
-            f"postgresql+asyncpg://{self.db_user}:{self.db_password}"
-            f"@{self.db_host}:{self.db_port}/{self.db_name}"
-        )
 
     @property
     def otlp_enabled(self) -> bool:

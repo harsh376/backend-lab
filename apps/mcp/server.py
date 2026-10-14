@@ -4,9 +4,9 @@ from uuid import uuid4
 from mcp.server import MCPServer
 from temporalio.client import Client, WorkflowExecutionStatus
 
-from apps.api.config import Settings
 from apps.mcp.agent.models import AnswerRequest, AnswerResult
 from apps.mcp.agent.workflow import AnswerWorkflow
+from apps.mcp.config import Settings
 
 mcp = MCPServer("Evidence-backed answers")
 

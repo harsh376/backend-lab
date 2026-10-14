@@ -110,14 +110,14 @@ models, inspect the database's currently applied migration, and apply all
 available migrations with:
 
 ```bash
-uv run alembic -c apps/api/alembic.ini revision --autogenerate -m "describe change"
-uv run alembic -c apps/api/alembic.ini current
-uv run alembic -c apps/api/alembic.ini upgrade head
+uv run alembic -c backend/alembic.ini revision --autogenerate -m "describe change"
+uv run alembic -c backend/alembic.ini current
+uv run alembic -c backend/alembic.ini upgrade head
 ```
 
-Run `uv run alembic -c apps/api/alembic.ini heads` to see the newest migration
+Run `uv run alembic -c backend/alembic.ini heads` to see the newest migration
 available in the repository. Alembic uses the local PostgreSQL defaults from
-`apps/api/alembic.ini`; set the `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and
+`backend/alembic.ini`; set the `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and
 `DB_PASSWORD` environment variables to target a different database.
 
 ## Docker
@@ -174,7 +174,7 @@ uv run pre-commit run --all-files
 uv run ruff check apps shared
 uv run ruff format --check apps shared
 uv run pytest
-uv run alembic -c apps/api/alembic.ini upgrade head --sql
+uv run alembic -c backend/alembic.ini upgrade head --sql
 ```
 
 The repository tests are colocated with their implementation and use async
@@ -288,7 +288,7 @@ Configure `HOLD_NOTIFICATION_INTERVAL_SECONDS` (default 600) on Beat. Run only
 one Beat instance. Outside Compose, run:
 
 ```bash
-alembic -c apps/api/alembic.ini upgrade head
+alembic -c backend/alembic.ini upgrade head
 celery -A apps.api.background.celery_app:celery_app beat --loglevel=INFO
 ```
 
@@ -365,3 +365,18 @@ To run HTTP directly on the host:
 ```bash
 uv run python -m apps.mcp.server --transport streamable-http --port 8001
 ```
+
+## Python code organization
+
+`backend/` owns reusable domain models, services, repositories, business metrics,
+and database models and migrations. Both `apps/api` and `apps/mcp` import it.
+`shared/` contains generic database and observability utilities. Neither package
+should import from `apps/`.
+
+Keep HTTP schemas, routers, middleware, and FastAPI dependency providers in
+`apps/api`; keep MCP tools and worker entry points in `apps/mcp`. Each entry point
+constructs the services and manages its own runtime resources. Shared database
+settings live in `shared/database/config.py`; API settings extend them.
+
+Tests live alongside their modules. The root `conftest.py` provides the database
+fixture for both backend tests and API tests. Run all tests with `uv run pytest`.

@@ -32,7 +32,8 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["apps", "shared"]
+pythonpath = ["."]
+testpaths = ["apps", "backend", "shared"]
 addopts = "-q --import-mode=importlib"
 asyncio_mode = "auto"
 

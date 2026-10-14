@@ -35,7 +35,7 @@ services:
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
-    command: ["alembic", "-c", "apps/api/alembic.ini", "upgrade", "head"]
+    command: ["alembic", "-c", "backend/alembic.ini", "upgrade", "head"]
     environment:
       DB_HOST: postgres
       DB_PORT: "5432"

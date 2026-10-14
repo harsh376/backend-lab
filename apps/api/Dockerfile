@@ -18,6 +18,7 @@ FROM deps AS app
 COPY pyproject.toml uv.lock ./
 COPY apps/__init__.py ./apps/__init__.py
 COPY apps/api ./apps/api
+COPY backend ./backend
 COPY shared ./shared
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev

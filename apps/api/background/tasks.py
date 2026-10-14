@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from apps.api.background.celery_app import celery_app
 from apps.api.config import Settings
-from apps.api.services.hold_notifications.hold_notifications import HoldNotifications
+from backend.services.hold_notifications.hold_notifications import HoldNotifications
 
 
 @celery_app.task(name="api.ping")

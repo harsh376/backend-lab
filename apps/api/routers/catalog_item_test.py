@@ -3,9 +3,9 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from apps.api.db import models
-from apps.api.db.models import CatalogItem as CatalogItemRow
 from apps.api.routers.conftest import make_app
+from backend.db import models
+from backend.db.models import CatalogItem as CatalogItemRow
 
 BOOK = {
     "name": "Dune",

@@ -10,10 +10,10 @@ from apps.api.dependencies import (
     RequestContextDependency,
     TitleServiceDependency,
 )
-from apps.api.domains.title import Title
-from apps.api.repositories import RepositoryUnavailableError
-from apps.api.repositories.title import TitleAlreadyExistsError, TitleNotFoundError
 from apps.api.schemas import ErrorResponse, error_response
+from backend.domains.title import Title
+from backend.repositories import RepositoryUnavailableError
+from backend.repositories.title import TitleAlreadyExistsError, TitleNotFoundError
 
 router = APIRouter(prefix="/titles", tags=["titles"])
 

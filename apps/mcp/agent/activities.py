@@ -2,13 +2,13 @@ from collections.abc import Awaitable, Callable
 
 from temporalio import activity
 
-from apps.api.services.kilt.kilt import KiltService
 from apps.mcp.agent.models import (
     AnswerRequest,
     AnswerResult,
     Passage,
     SynthesisInput,
 )
+from backend.services.kilt.kilt import KiltService
 
 
 async def aextractive_synthesis(data: SynthesisInput) -> AnswerResult:
