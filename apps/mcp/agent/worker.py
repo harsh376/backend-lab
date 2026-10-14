@@ -7,6 +7,7 @@ from temporalio.worker import Worker
 from apps.mcp.agent.activities import AnswerActivities
 from apps.mcp.agent.workflow import AnswerWorkflow
 from apps.mcp.config import Settings
+from backend.repositories.kilt import ElasticsearchKiltRepository
 from backend.services.kilt.kilt import KiltService
 
 TASK_QUEUE = "kilt-answers"
@@ -16,7 +17,9 @@ async def main() -> None:
     settings = Settings()
     client = await Client.connect(settings.temporal_address)
     async with AsyncElasticsearch(settings.elasticsearch_url) as es:
-        activities = AnswerActivities(KiltService(es, settings.kilt_index))
+        activities = AnswerActivities(
+            KiltService(ElasticsearchKiltRepository(es, settings.kilt_index))
+        )
         worker = Worker(
             client,
             task_queue=TASK_QUEUE,

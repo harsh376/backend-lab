@@ -5,6 +5,7 @@ from temporalio.converter import DataConverter
 
 from apps.mcp.agent.activities import AnswerActivities, aextractive_synthesis
 from apps.mcp.agent.models import AnswerRequest, AnswerResult, Passage, SynthesisInput
+from backend.repositories.kilt import ElasticsearchKiltRepository
 from backend.services.kilt.kilt import KiltService
 
 
@@ -28,7 +29,7 @@ async def test_original_paragraph_identity():
             ],
         }
     }
-    service = KiltService(es, "kilt-v1")
+    service = KiltService(ElasticsearchKiltRepository(es, "kilt-v1"))
     passages = await service.aretrieve_passages("Arthur's Magazine", 1)
     assert passages == [await service.aget_passage("42", 1)]
     assert passages[0]["passage_id"] == "kilt-v1:42:1"
