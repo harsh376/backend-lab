@@ -73,5 +73,25 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  inspector:
+    image: node:22-slim
+    command:
+      - npx
+      - --yes
+      - "@modelcontextprotocol/inspector"
+      - --server-url
+      - http://mcp:8001/mcp
+      - --transport
+      - http
+    environment:
+      HOST: "0.0.0.0"
+      DANGEROUSLY_BIND_ALL_INTERFACES: "true"
+      MCP_AUTO_OPEN_ENABLED: "false"
+    ports:
+      - "127.0.0.1:6274:6274"
+    depends_on:
+      - mcp
+    restart: unless-stopped
+
 volumes:
   temporal-data:
