@@ -8,6 +8,7 @@ Monorepo structure:
 - Pure JS frontend: `apps/basic_frontend/`
 - Python concepts: `apps/concepts/`
 - Shared backend code (DB, Service-Repository-Domain, Observability): `backend/`
+  - Core pattern: Service Layer + Repository with dependency injection
 - Docker compose stacks: `compose/`
 - IaC: `infra/`
 
