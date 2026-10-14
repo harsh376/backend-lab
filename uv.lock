@@ -1150,7 +1150,7 @@ wheels = [
 ]
 
 [[package]]
-name = "my-app"
+name = "backend-lab"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

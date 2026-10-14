@@ -5,7 +5,7 @@ provider "aws" {
     tags = {
       Environment = "dev"
       ManagedBy   = "Terraform"
-      Project     = "my-app"
+      Project     = "backend-lab"
     }
   }
 }

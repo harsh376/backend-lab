@@ -1,4 +1,4 @@
-# Backend systems learning project
+# Backend Lab
 
 Monorepo structure:
 

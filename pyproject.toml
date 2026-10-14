@@ -1,5 +1,5 @@
 [project]
-name = "my-app"
+name = "backend-lab"
 version = "0.1.0"
 description = "Reusable FastAPI backend interview skeleton"
 requires-python = ">=3.13"

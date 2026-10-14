@@ -1,6 +1,6 @@
 # module "media_processing" {
 #   source = "../../../../apps/media_processing/terraform"
 #
-#   bucket_name = "my-app-dev-media-assets"
-#   queue_name  = "my-app-dev-media-processing"
+#   bucket_name = "backend-lab-dev-media-assets"
+#   queue_name  = "backend-lab-dev-media-processing"
 # }

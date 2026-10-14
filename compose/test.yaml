@@ -13,7 +13,7 @@
 # (not read from compose/.env) so this file never picks up the dev stack's
 # POSTGRES_DB/POSTGRES_USER/POSTGRES_PASSWORD, which Compose would otherwise
 # auto-load from compose/.env since it lives in the same directory.
-name: my-app-test
+name: backend-lab-test
 services:
   postgres-test:
     image: postgres:17-alpine
