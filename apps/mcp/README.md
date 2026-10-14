@@ -2,7 +2,7 @@
 
 See [the one-pager](ONE_PAGER.md) for the project scope.
 
-## Run the stack
+## Run the compose stacks
 
 ```sh
 docker compose -f compose/elasticsearch.yaml up -d --wait
@@ -38,7 +38,7 @@ Codex submits the equivalent of:
 {"question": "Who wrote Photograph by Ringo Starr?", "limit": 5}
 ```
 
-## Run the workflow directly
+## Run the workflow directly outside Docker
 
 With the stack running, submit a question directly to Temporal:
 
