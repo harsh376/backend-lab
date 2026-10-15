@@ -38,7 +38,10 @@ async def test_cross_process_context_and_errors(monkeypatch):
     temporal.start_workflow = AsyncMock()
     monkeypatch.setattr(server, "temporal_client", AsyncMock(return_value=temporal))
     try:
-        started = await server.answer("question")
+        with provider.get_tracer("mcp-python-sdk").start_as_current_span(
+            "answer", attributes={"gen_ai.operation.name": "execute_tool"}
+        ):
+            started = await server.answer("question")
         request = temporal.start_workflow.call_args.args[1]
         assert request.trace_context
         passage = Passage("v:1:0", "v", "1", 0, "Title", "Evidence")
@@ -55,8 +58,8 @@ async def test_cross_process_context_and_errors(monkeypatch):
             await activities.aretrieve(request)
         instance.flush()
         spans = exporter.get_finished_spans()
-        root = next(s for s in spans if s.name == "mcp.answer")
-        children = [s for s in spans if s.name != "mcp.answer"]
+        root = next(s for s in spans if s.name == "answer")
+        children = [s for s in spans if s.name != "answer"]
         assert len(children) == 3
         assert all(s.context.trace_id == root.context.trace_id for s in children)
         assert all(s.parent.span_id == root.context.span_id for s in children)
@@ -67,6 +70,7 @@ async def test_cross_process_context_and_errors(monkeypatch):
             s.attributes.get("langfuse.internal.is_app_root") is False for s in children
         )
         assert root.attributes.get("langfuse.internal.as_root") is not False
+        assert root.attributes["langfuse.observation.type"] == "tool"
         assert any(s.status.status_code == StatusCode.ERROR for s in children)
         assert started["run_id"] == temporal.start_workflow.call_args.kwargs["id"]
         assert json.loads(root.attributes["langfuse.observation.input"]) == {
@@ -75,14 +79,20 @@ async def test_cross_process_context_and_errors(monkeypatch):
         }
         retrieval = next(s for s in children if s.name == "retrieve_answer_evidence")
         assert json.loads(retrieval.attributes["langfuse.observation.input"]) == {
-            "question": "question",
-            "limit": 5,
+            "request": asdict(request),
         }
+        assert json.loads(retrieval.attributes["langfuse.observation.output"]) == [
+            asdict(passage)
+        ]
         synthesis = next(s for s in children if s.name == "synthesize_answer")
         assert json.loads(synthesis.attributes["langfuse.observation.input"]) == {
-            "question": "question",
-            "passages": [asdict(passage)],
+            "data": asdict(
+                SynthesisInput(request.question, [passage], request.trace_context)
+            ),
         }
+        assert json.loads(
+            synthesis.attributes["langfuse.observation.output"]
+        ) == asdict(result)
         monkeypatch.setattr(
             server,
             "_get_answer",
@@ -93,11 +103,18 @@ async def test_cross_process_context_and_errors(monkeypatch):
                 }
             ),
         )
-        await server.get_answer(started["run_id"])
+        with provider.get_tracer("mcp-python-sdk").start_as_current_span(
+            "get_answer", attributes={"gen_ai.operation.name": "execute_tool"}
+        ):
+            await server.get_answer(started["run_id"])
         instance.flush()
-        poll = next(
-            s for s in exporter.get_finished_spans() if s.name == "mcp.get_answer"
-        )
+        poll = next(s for s in exporter.get_finished_spans() if s.name == "get_answer")
+        assert poll.attributes["langfuse.observation.type"] == "tool"
+        assert len(exporter.get_finished_spans()) == 5
+        assert json.loads(poll.attributes["langfuse.observation.output"]) == {
+            "run_id": started["run_id"],
+            "status": "RUNNING",
+        }
         assert json.loads(poll.attributes["langfuse.observation.input"]) == {
             "run_id": started["run_id"],
         }
@@ -157,3 +174,95 @@ def test_client_uses_settings_explicitly(monkeypatch):
         assert "sk-lf-config" not in repr(settings)
     finally:
         telemetry.client.cache_clear()
+
+
+async def test_observe_disabled_preserves_signature_and_defaults(monkeypatch):
+    from inspect import signature
+
+    monkeypatch.setattr(telemetry, "client", lambda: None)
+
+    async def original(question: str, limit: int = 5) -> dict:
+        return {"question": question, "limit": limit}
+
+    decorated = telemetry.observe("test")(original)
+    assert signature(decorated) == signature(original)
+    assert await decorated(question="question") == {"question": "question", "limit": 5}
+
+
+@pytest.mark.parametrize("input_kind", ["dataclass", "dict", "argument"])
+async def test_observe_infers_context_and_activity_metadata(monkeypatch, input_kind):
+    from contextlib import contextmanager
+
+    context = {"trace_id": "a" * 32, "parent_span_id": "b" * 16}
+    captured = {}
+    span = Mock()
+
+    @contextmanager
+    def observation(name, **kwargs):
+        captured.update(kwargs)
+        yield span
+
+    monkeypatch.setattr(telemetry, "observation", observation)
+    monkeypatch.setattr(telemetry.activity, "in_activity", lambda: True)
+    monkeypatch.setattr(
+        telemetry.activity,
+        "info",
+        lambda: Mock(
+            workflow_id="answer-1",
+            workflow_run_id="run-1",
+            activity_id="activity-1",
+            attempt=2,
+        ),
+    )
+
+    @telemetry.observe("test")
+    async def execute(data=None, trace_context=None):
+        return "done"
+
+    if input_kind == "dataclass":
+        await execute(AnswerRequest("question", trace_context=context))
+    elif input_kind == "dict":
+        await execute({"trace_context": context})
+    else:
+        await execute(trace_context=context)
+    assert captured["trace_context"] == context
+    assert captured["metadata"] == {
+        "answer_id": "answer-1",
+        "temporal_run_id": "run-1",
+        "activity_id": "activity-1",
+        "attempt": 2,
+    }
+    span.update.assert_called_once_with(output="done")
+
+
+async def test_observe_infers_function_and_registered_activity_names(monkeypatch):
+    from contextlib import contextmanager
+
+    from temporalio import activity
+
+    names = []
+
+    @contextmanager
+    def observation(name, **kwargs):
+        names.append(name)
+        yield None
+
+    monkeypatch.setattr(telemetry, "observation", observation)
+
+    @telemetry.observe()
+    async def plain_function():
+        return "done"
+
+    @activity.defn(name="registered-activity")
+    @telemetry.observe()
+    async def activity_function():
+        return "done"
+
+    @telemetry.observe("explicit")
+    async def overridden():
+        return "done"
+
+    await plain_function()
+    await activity_function()
+    await overridden()
+    assert names == ["plain_function", "registered-activity", "explicit"]

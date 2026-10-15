@@ -2,6 +2,7 @@ import json
 from unittest.mock import AsyncMock, Mock
 
 import anyio
+import pytest
 from mcp import ClientSession
 from mcp.shared.memory import create_client_server_memory_streams
 from temporalio.client import WorkflowExecutionStatus
@@ -79,3 +80,36 @@ async def test_temporal_client_uses_settings(monkeypatch):
 
     assert await server.temporal_client() is connect.return_value
     connect.assert_awaited_once_with("custom-temporal:7233")
+
+
+@pytest.mark.parametrize(
+    "arguments, expected",
+    [
+        (["server"], {}),
+        (
+            [
+                "server",
+                "--transport",
+                "streamable-http",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8001",
+            ],
+            {"transport": "streamable-http", "host": "0.0.0.0", "port": 8001},
+        ),
+    ],
+)
+def test_tracing_initialized_before_serving(monkeypatch, arguments, expected):
+    monkeypatch.setattr("sys.argv", arguments)
+    calls = []
+    monkeypatch.setattr(server, "telemetry_client", lambda: calls.append("tracing"))
+
+    def run(**kwargs):
+        assert calls == ["tracing"]
+        assert kwargs == expected
+        calls.append("serving")
+
+    monkeypatch.setattr(server.mcp, "run", run)
+    server.main()
+    assert calls == ["tracing", "serving"]

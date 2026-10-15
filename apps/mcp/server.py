@@ -6,7 +6,8 @@ from temporalio.client import Client, WorkflowExecutionStatus
 
 from apps.mcp.agent.models import AnswerRequest, AnswerResult
 from apps.mcp.agent.workflow import AnswerWorkflow
-from apps.mcp.telemetry import current_context, observation
+from apps.mcp.telemetry import client as telemetry_client
+from apps.mcp.telemetry import current_context, observe, update_metadata
 from backend.config import Settings
 
 mcp = MCPServer("Evidence-backed answers")
@@ -17,40 +18,32 @@ async def temporal_client() -> Client:
 
 
 @mcp.tool()
+@observe(reuse_current=True, as_type="tool")
 async def answer(question: str, limit: int = 5) -> dict:
     """Start a durable extractive answer run; poll get_answer for its result."""
     request = AnswerRequest(question, limit)
     request.validate()
     run_id = f"kilt-answer-{uuid4()}"
-    with observation(
-        "mcp.answer",
-        input={"question": question, "limit": limit},
-        metadata={"answer_id": run_id},
-    ) as span:
-        request.trace_context = current_context()
-        client = await temporal_client()
-        await client.start_workflow(
-            AnswerWorkflow.run, request, id=run_id, task_queue="kilt-answers"
-        )
-        if span:
-            span.update(output={"run_id": run_id, "status": "RUNNING"})
+    update_metadata({"answer_id": run_id})
+    request.trace_context = current_context()
+    client = await temporal_client()
+    await client.start_workflow(
+        AnswerWorkflow.run, request, id=run_id, task_queue="kilt-answers"
+    )
     return {"run_id": run_id, "status": "RUNNING"}
 
 
 @mcp.tool()
+@observe(
+    reuse_current=True,
+    as_type="tool",
+    metadata=lambda args: {"answer_id": args["run_id"]},
+)
 async def get_answer(run_id: str) -> dict:
     """Return run status and, on completion, answer text and original citations."""
     if not run_id.startswith("kilt-answer-"):
         raise ValueError("invalid answer run ID")
-    with observation(
-        "mcp.get_answer",
-        input={"run_id": run_id},
-        metadata={"answer_id": run_id},
-    ) as span:
-        result = await _get_answer(run_id)
-        if span:
-            span.update(output={"status": result["status"]})
-        return result
+    return await _get_answer(run_id)
 
 
 async def _get_answer(run_id: str) -> dict:
@@ -73,6 +66,8 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8001)
     args = parser.parse_args()
+    # Install the tracer provider before the SDK opens its first request span.
+    telemetry_client()
     if args.transport == "stdio":
         mcp.run()
     else:

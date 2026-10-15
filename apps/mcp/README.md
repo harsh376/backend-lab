@@ -75,19 +75,22 @@ Without both keys, tracing is disabled. Set `LANGFUSE_TRACING_ENABLED=false` to
 explicitly disable it. Host processes read the same environment variables directly;
 they do not automatically load `compose/.env`.
 
-Submit an answer and open Langfuse's Traces view. The `mcp.answer` trace contains
+Tracing initializes before the server accepts requests, so the SDK wraps both
+tools consistently. The tool decorators populate inputs, outputs, and metadata on
+the existing SDK `answer` and `get_answer` spans without creating extra spans.
+Submit an answer and open Langfuse's Traces view. The submission trace contains
 `retrieve_answer_evidence` and `synthesize_answer` observations; activity retries
 create separate observations with Temporal run ID, activity ID, and attempt metadata.
 Trace context is persisted in the workflow input and forwarded to synthesis, so
 workers can join the submission trace across processes and restarts. No tracing
 code executes inside the deterministic workflow. Direct workflow submissions without
 trace context produce separate activity traces correlated by workflow metadata.
-`mcp.get_answer` polls are independent traces correlated through `answer_id`.
+`get_answer` polls are independent traces correlated through `answer_id`.
 
 Observation inputs include the question and retrieval limit, the full retrieved
 passages supplied to synthesis, and the run ID supplied to polling. These inputs
-are exported to your configured Langfuse instance. Outputs summarize passage
-IDs/corpus versions, provider, abstention, citation IDs, and status. The current
+are exported to your configured Langfuse instance. Outputs capture the returned
+passages, synthesis result, submission status, and polling result. The current
 extractive baseline is a span, not an LLM generation, and reports no fabricated
 usage or cost. When adding a real model provider, instrument its actual call as a
 Langfuse generation and attach response usage/cost there.

@@ -2,10 +2,13 @@
 
 import atexit
 from contextlib import contextmanager
-from functools import lru_cache
+from dataclasses import asdict, is_dataclass
+from functools import lru_cache, wraps
+from inspect import signature
 
 from langfuse import Langfuse
 from opentelemetry import trace
+from temporalio import activity
 
 from backend.config import Settings
 
@@ -62,3 +65,117 @@ def current_context() -> dict[str, str] | None:
     if trace_id and parent_span_id:
         return {"trace_id": trace_id, "parent_span_id": parent_span_id}
     return None
+
+
+def observe(
+    name=None, *, trace_context=None, metadata=None, as_type="span", reuse_current=False
+):
+    """Capture async arguments/results and infer trace context and Temporal metadata.
+
+    Context comes from a trace_context argument or a top-level input's
+    trace_context field. Outside activities, Temporal metadata is empty.
+    Explicit callbacks override inferred context and extend activity metadata.
+    Names default to the activity type (or its registered definition when called
+    directly), then the function name. Explicit names override this inference.
+    With reuse_current, enrich the SDK-owned tool span and retain its tool name.
+    """
+
+    def decorate(function):
+        call_signature = signature(function)
+
+        @wraps(function)
+        async def wrapped(*args, **kwargs):
+            bound = call_signature.bind(*args, **kwargs)
+            bound.apply_defaults()
+            arguments = {
+                key: value
+                for key, value in bound.arguments.items()
+                if key not in {"self", "cls"}
+            }
+            span_metadata = _activity_metadata()
+            if metadata:
+                span_metadata.update(metadata(arguments))
+            if reuse_current:
+                instance = client()
+                recording = trace.get_current_span().is_recording()
+                if instance is not None and recording:
+                    trace.get_current_span().set_attribute(
+                        "langfuse.observation.type", as_type
+                    )
+                    instance.update_current_span(
+                        input=_serialize(arguments), metadata=span_metadata
+                    )
+                result = await function(*args, **kwargs)
+                if instance is not None and recording:
+                    instance.update_current_span(output=_serialize(result))
+                return result
+            definition = getattr(wrapped, "__temporal_activity_definition", None)
+            inferred_name = (
+                activity.info().activity_type
+                if activity.in_activity()
+                else getattr(definition, "name", None) or function.__name__
+            )
+            with observation(
+                name or inferred_name,
+                input=_serialize(arguments),
+                trace_context=(
+                    trace_context(arguments)
+                    if trace_context
+                    else _trace_context(arguments)
+                ),
+                metadata=span_metadata,
+                as_type=as_type,
+            ) as span:
+                result = await function(*args, **kwargs)
+                if span is not None:
+                    span.update(output=_serialize(result))
+                return result
+
+        return wrapped
+
+    return decorate
+
+
+def update_metadata(metadata):
+    """Attach metadata discovered during a decorated call to its current span."""
+    instance = client()
+    if instance is not None:
+        instance.update_current_span(metadata=metadata)
+
+
+def _serialize(value):
+    """Convert nested dataclasses and containers to structured span payloads."""
+    if is_dataclass(value) and not isinstance(value, type):
+        return _serialize(asdict(value))
+    if isinstance(value, dict):
+        return {key: _serialize(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_serialize(item) for item in value]
+    return value
+
+
+def _trace_context(arguments):
+    context = arguments.get("trace_context")
+    if context:
+        return context
+    for value in arguments.values():
+        context = (
+            value.get("trace_context")
+            if isinstance(value, dict)
+            else getattr(value, "trace_context", None)
+        )
+        if context:
+            return context
+    return None
+
+
+def _activity_metadata() -> dict:
+    if not activity.in_activity():
+        return {}
+    info = activity.info()
+    return {
+        "answer_id": info.workflow_id,
+        "temporal_run_id": info.workflow_run_id,
+        "activity_id": info.activity_id,
+        "attempt": info.attempt,
+    }
