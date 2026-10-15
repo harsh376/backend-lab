@@ -31,7 +31,7 @@ def data():
             "It began in 1844.",
             [passage],
             usage={"total_tokens": 120},
-            estimated_cost_usd=0.001,
+            usage_cost_usd=0.001,
         ),
         {"trace_id": "a" * 32, "parent_span_id": "b" * 16},
         "codex:chat-a",
@@ -79,10 +79,10 @@ async def test_supported_answer_and_independent_accounting(data, completion, mod
     assert not result.abstained
     assert result.citations == data.answer.citations
     assert result.usage == {"total_tokens": 120}
-    assert result.estimated_cost_usd == 0.001
+    assert result.usage_cost_usd == 0.001
     assert result.verification.supported
     assert result.verification.usage["total_tokens"] == 100
-    assert result.verification.estimated_cost_usd == 0.002
+    assert result.verification.usage_cost_usd == 0.002
     request = completion.call_args.kwargs
     assert request["model"] == (model or "openai/synthesis-model")
     assert request["api_key"] == ("test-anthropic" if model else "test-openai")

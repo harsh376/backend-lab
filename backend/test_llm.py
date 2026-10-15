@@ -68,7 +68,7 @@ async def test_injected_model(verification):
     assert result.provider == "fake"
     assert result.model == "fake/model"
     assert result.usage == {"total_tokens": 10}
-    assert result.estimated_cost_usd == 0.001
+    assert result.usage_cost_usd == 0.001
     model.complete.assert_awaited_once()
     assert model.complete.call_args.kwargs["schema_name"] == (
         "evidence_verification" if verification else "evidence_answer"

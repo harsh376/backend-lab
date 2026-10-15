@@ -83,7 +83,7 @@ async def test_provider_selection_and_original_citations(
         "completion_tokens": 20,
         "total_tokens": 120,
     }
-    assert result.estimated_cost_usd == 0.001
+    assert result.usage_cost_usd == 0.001
     args = completion.call_args.kwargs
     assert args["model"] == model
     assert args["api_key"] == key
@@ -162,7 +162,7 @@ async def test_unusable_answers_abstain_without_losing_usage(
     assert result.short_answer == ""
     assert result.citations == []
     assert result.usage["total_tokens"] == 120
-    assert result.estimated_cost_usd == 0.001
+    assert result.usage_cost_usd == 0.001
 
 
 async def test_no_evidence_skips_provider(completion):
@@ -171,7 +171,7 @@ async def test_no_evidence_skips_provider(completion):
     )
     assert result.abstained
     assert result.usage == {}
-    assert result.estimated_cost_usd is None
+    assert result.usage_cost_usd is None
     completion.assert_not_awaited()
 
 
@@ -183,7 +183,7 @@ async def test_unknown_pricing_keeps_answer(completion, evidence, monkeypatch):
         SynthesisInput("question", [evidence])
     )
     assert result.short_answer == "1844"
-    assert result.estimated_cost_usd is None
+    assert result.usage_cost_usd is None
 
 
 @pytest.mark.parametrize("model", ["gpt-5.6-terra", "openai/", "gemini/model"])
@@ -323,7 +323,7 @@ async def test_extractive_adapter():
     assert result.short_answer == passage.text
     assert result.citations == [passage]
     assert result.usage == {}
-    assert result.estimated_cost_usd is None
+    assert result.usage_cost_usd is None
 
 
 async def test_custom_adapter_needs_only_synthesize_method():
@@ -354,7 +354,7 @@ async def test_shared_validation_preserves_accounting(variation):
         provider="custom",
         model="custom/model",
         usage={"total_tokens": 120},
-        estimated_cost_usd=0.001,
+        usage_cost_usd=0.001,
     )
     if variation == "forged":
         result.citations = [replace(passage, text="Fabricated text")]
@@ -374,5 +374,5 @@ async def test_shared_validation_preserves_accounting(variation):
     assert checked.provider == "custom"
     assert checked.model == "custom/model"
     assert checked.usage == {"total_tokens": 120}
-    assert checked.estimated_cost_usd == 0.001
+    assert checked.usage_cost_usd == 0.001
     assert checked is not result

@@ -8,6 +8,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 
+from backend.budget import Reservation
 from backend.config import Settings
 from backend.llm import LiteLLMStructuredModel, StructuredModel, no_observation
 from backend.services.answer_synthesis.answer_synthesis import (
@@ -22,6 +23,7 @@ class VerificationInput:
     answer: AnswerResult
     trace_context: dict[str, str] | None = None
     session_id: str | None = None
+    reservation: Reservation | None = None
 
 
 class VerificationAdapter(Protocol):
@@ -66,7 +68,19 @@ class LiteLLMVerification:
         self.model = model
 
     async def verify(self, data: VerificationInput) -> VerificationResult:
-        messages = [
+        messages = self._build_messages(data)
+        completion = await self.model.complete(
+            messages,
+            response_schema=VerificationResponse,
+            schema_name="evidence_verification",
+            prompt_version="evidence-verification-v1",
+            observation_name="verification_model",
+        )
+        return self._parse_response(completion)
+
+    @staticmethod
+    def _build_messages(data: VerificationInput) -> list[dict[str, str]]:
+        return [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
                 "role": "user",
@@ -80,13 +94,8 @@ class LiteLLMVerification:
                 ),
             },
         ]
-        completion = await self.model.complete(
-            messages,
-            response_schema=VerificationResponse,
-            schema_name="evidence_verification",
-            prompt_version="evidence-verification-v1",
-            observation_name="verification_model",
-        )
+
+    def _parse_response(self, completion) -> VerificationResult:
         response = completion.response
         result = VerificationResult(
             False,
@@ -94,7 +103,7 @@ class LiteLLMVerification:
             self.model.provider,
             self.model.model,
             completion.usage,
-            completion.estimated_cost_usd,
+            completion.usage_cost_usd,
         )
         if not response.choices:
             return result

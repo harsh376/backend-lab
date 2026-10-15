@@ -30,9 +30,14 @@ async def temporal_client() -> Client:
     input=lambda args: args["question"],
     output=lambda result: result["run_id"],
 )
-async def answer(question: str, limit: int = 5) -> dict:
-    """Start a durable evidence-verified answer run; poll get_answer for its result."""
-    request = AnswerRequest(question, limit)
+async def answer(
+    question: str, limit: int = 5, budget_usd: float | None = None
+) -> dict:
+    """Start an answer run, optionally limiting model spend with budget_usd.
+
+    Poll get_answer for its result and per-call budget reservations.
+    """
+    request = AnswerRequest(question, limit, budget_usd=budget_usd)
     request.validate()
     run_id = f"kilt-answer-{uuid4()}"
     update_metadata({"answer_id": run_id})
@@ -77,7 +82,10 @@ async def _get_answer(run_id: str) -> dict:
     description = await handle.describe()
     result = {"run_id": run_id, "status": description.status.name}
     if description.status == WorkflowExecutionStatus.COMPLETED:
-        result["result"] = asdict(await handle.result())
+        answer_result = await handle.result()
+        result["result"] = asdict(answer_result)
+        if answer_result.budget is not None:
+            result["result"]["budget"]["overrun_usd"] = answer_result.budget.overrun_usd
     return result
 
 

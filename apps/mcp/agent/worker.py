@@ -40,7 +40,14 @@ async def main() -> None:
             client,
             task_queue=TASK_QUEUE,
             workflows=[AnswerWorkflow],
-            activities=[activities.aretrieve, activities.agenerate, activities.averify],
+            activities=[
+                activities.aretrieve,
+                activities.agenerate,
+                activities.averify,
+                activities.aquote_synthesis,
+                activities.aquote_verification,
+                activities.arecord_result,
+            ],
             # Activities are coroutines on the event loop, so bound them here
             # rather than by a thread pool size.
             max_concurrent_activities=8,

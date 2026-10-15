@@ -1,5 +1,7 @@
 """Composable structured-output model client and provider accounting."""
 
+import json
+import math
 from collections.abc import Callable
 from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
@@ -8,6 +10,7 @@ from typing import Protocol
 import litellm
 from pydantic import BaseModel
 
+from backend.budget import Reservation, current_reservation
 from backend.config import Settings
 
 
@@ -15,7 +18,7 @@ from backend.config import Settings
 class StructuredCompletion:
     response: litellm.ModelResponse
     usage: dict[str, int]
-    estimated_cost_usd: float | None
+    usage_cost_usd: float | None
 
 
 class StructuredModel(Protocol):
@@ -84,6 +87,27 @@ class LiteLLMStructuredModel:
         self.max_tokens = settings.mcp_answer_max_tokens
         self.timeout = settings.mcp_answer_timeout_seconds
 
+    def quote(self, messages, response_schema) -> Reservation:
+        # UTF-8 bytes plus schema and framing allowance deliberately overestimate
+        # input tokens. This is a pricing estimate, not a provider billing cap.
+        payload = json.dumps(messages) + json.dumps(response_schema.model_json_schema())
+        input_tokens = len(payload.encode("utf-8")) + 1024
+        try:
+            costs = litellm.cost_per_token(
+                model=self.model,
+                prompt_tokens=input_tokens,
+                completion_tokens=self.max_tokens,
+            )
+            amount = math.fsum(costs)
+            if not math.isfinite(amount) or amount < 0:
+                raise ValueError("invalid price")
+        except Exception:
+            raise ModelProviderError(
+                "Cannot reserve budget: model pricing is unavailable.",
+                error_type="UnknownModelPricing",
+            ) from None
+        return Reservation(self.model, self.max_tokens, amount)
+
     def _record_request(self, generation) -> None:
         if generation is not None:
             generation.update(
@@ -104,6 +128,18 @@ class LiteLLMStructuredModel:
         prompt_version: str,
         observation_name: str,
     ) -> StructuredCompletion:
+        reservation = current_reservation.get()
+        if reservation is not None:
+            quote = self.quote(messages, response_schema)
+            if (
+                quote.model != reservation.model
+                or quote.max_tokens != reservation.max_tokens
+                or quote.reserved_cost_usd > reservation.reserved_cost_usd
+            ):
+                raise ModelProviderError(
+                    "Model configuration or price changed after budget reservation.",
+                    error_type="ReservationChanged",
+                )
         with self._observation(
             observation_name,
             as_type="generation",

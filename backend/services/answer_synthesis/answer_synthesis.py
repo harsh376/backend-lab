@@ -9,6 +9,7 @@ from typing import Protocol
 import litellm
 from pydantic import BaseModel, ConfigDict, ValidationError
 
+from backend.budget import BudgetReport, Reservation
 from backend.config import Settings
 from backend.llm import LiteLLMStructuredModel, StructuredModel, no_observation
 
@@ -29,6 +30,7 @@ class SynthesisInput:
     passages: list[Passage]
     trace_context: dict[str, str] | None = None
     session_id: str | None = None
+    reservation: Reservation | None = None
 
 
 @dataclass
@@ -38,7 +40,7 @@ class VerificationResult:
     provider: str
     model: str
     usage: dict[str, int] = field(default_factory=dict)
-    estimated_cost_usd: float | None = None
+    usage_cost_usd: float | None = None
 
 
 @dataclass
@@ -47,11 +49,12 @@ class AnswerResult:
     explanation: str
     citations: list[Passage] = field(default_factory=list)
     abstained: bool = False
-    provider: str = "extractive-baseline"
+    provider: str = "litellm"
     model: str | None = None
     usage: dict[str, int] = field(default_factory=dict)
-    estimated_cost_usd: float | None = None
+    usage_cost_usd: float | None = None
     verification: VerificationResult | None = None
+    budget: BudgetReport | None = None
 
 
 class SynthesisAdapter(Protocol):
@@ -66,12 +69,14 @@ class ExtractiveSynthesis(SynthesisAdapter):
                 short_answer="",
                 explanation="No evidence was retrieved for this question.",
                 abstained=True,
+                provider="extractive-baseline",
             )
         passage = data.passages[0]
         return AnswerResult(
             short_answer=passage.text,
             explanation=("Extractive baseline: the top passage is quoted verbatim."),
             citations=[passage],
+            provider="extractive-baseline",
         )
 
 
@@ -128,7 +133,7 @@ class LiteLLMSynthesis:
             observation_name="answer_model",
         )
         return self._parse_response(
-            data, completion.response, completion.usage, completion.estimated_cost_usd
+            data, completion.response, completion.usage, completion.usage_cost_usd
         )
 
     @staticmethod
@@ -162,7 +167,7 @@ class LiteLLMSynthesis:
             provider=self.model.provider,
             model=self.model.model,
             usage=usage,
-            estimated_cost_usd=cost,
+            usage_cost_usd=cost,
         )
         if choice.finish_reason != "stop" or not content:
             return result

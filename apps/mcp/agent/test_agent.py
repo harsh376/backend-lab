@@ -86,6 +86,11 @@ async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
         calls.append(name)
         if name == "retrieve_answer_evidence":
             return [p]
+        if name == "record_answer_result":
+            assert argument.answer.citations == [p]
+            assert argument.session_id == "codex:chat-a"
+            return None
+        assert kwargs["retry_policy"].maximum_attempts == 3
         if name == "verify_answer":
             assert argument.answer.citations == [p]
             assert argument.session_id == "codex:chat-a"
@@ -95,11 +100,15 @@ async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
         return await ExtractiveSynthesis().synthesize(argument)
 
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
-    monkeypatch.setattr(module.workflow, "patched", lambda _: True)
     result = await module.AnswerWorkflow().run(
         AnswerRequest("question", session_id="codex:chat-a")
     )
-    assert calls == ["retrieve_answer_evidence", "synthesize_answer", "verify_answer"]
+    assert calls == [
+        "retrieve_answer_evidence",
+        "synthesize_answer",
+        "verify_answer",
+        "record_answer_result",
+    ]
     assert result.citations == [p]
 
 
@@ -127,15 +136,11 @@ async def test_mcp_polling(monkeypatch):
     assert completed["result"]["short_answer"] == "evidence"
 
 
-@pytest.mark.parametrize("abstained,patched", [(True, True), (False, False)])
-async def test_workflow_skips_verification_for_abstention_or_old_history(
-    monkeypatch, abstained, patched
-):
+async def test_workflow_skips_verification_for_abstention(monkeypatch):
     from apps.mcp.agent import workflow as module
 
-    candidate = AnswerResult("", "No evidence", abstained=abstained)
-    execute = AsyncMock(side_effect=[[], candidate])
+    candidate = AnswerResult("", "No evidence", abstained=True)
+    execute = AsyncMock(side_effect=[[], candidate, None])
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
-    monkeypatch.setattr(module.workflow, "patched", lambda _: patched)
     assert await module.AnswerWorkflow().run(AnswerRequest("question")) == candidate
-    assert execute.await_count == 2
+    assert execute.await_count == 3
