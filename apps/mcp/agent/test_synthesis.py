@@ -111,3 +111,59 @@ async def test_provider_rejection_becomes_non_retryable_temporal_error(
     assert caught.value.non_retryable
     assert caught.value.type == "AuthenticationError"
     assert "sensitive" not in str(caught.value)
+
+
+async def test_verification_generation_joins_activity_trace(
+    completion, evidence, monkeypatch
+):
+    from backend.services.answer_synthesis.answer_synthesis import AnswerResult
+    from backend.services.answer_verification.answer_verification import (
+        AnswerVerificationService,
+        LiteLLMVerification,
+        VerificationInput,
+    )
+
+    completion.return_value.choices[0].message.content = json.dumps(
+        {"supported": True, "reason": "The passage supports 1844."}
+    )
+    exporter = InMemorySpanExporter()
+    instance = Langfuse(
+        public_key="pk-lf-verification",
+        secret_key="sk-lf-test",
+        tracer_provider=TracerProvider(),
+        span_exporter=exporter,
+    )
+    monkeypatch.setattr(telemetry, "client", lambda: instance)
+    context = {"trace_id": "a" * 32, "parent_span_id": "b" * 16}
+    try:
+        result = await AnswerActivities(
+            Mock(),
+            Mock(),
+            AnswerVerificationService(
+                LiteLLMVerification(
+                    settings(), observation_factory=telemetry.observation
+                )
+            ),
+        ).averify(
+            VerificationInput(
+                "When?",
+                AnswerResult("1844", "It began in 1844.", [evidence]),
+                context,
+                "codex:chat-a",
+            )
+        )
+        assert result.verification.supported
+        instance.flush()
+        spans = exporter.get_finished_spans()
+        generation = next(s for s in spans if s.name == "verification_model")
+        activity = next(s for s in spans if s.name == "verify_answer")
+        assert generation.parent.span_id == activity.context.span_id
+        assert generation.context.trace_id == int(context["trace_id"], 16)
+        assert generation.attributes["session.id"] == "codex:chat-a"
+        assert "test-openai-key" not in str(generation.attributes)
+        assert (
+            generation.attributes["langfuse.observation.metadata.prompt_version"]
+            == "evidence-verification-v1"
+        )
+    finally:
+        instance.shutdown()

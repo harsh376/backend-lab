@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Callable
-from contextlib import AbstractContextManager, nullcontext
+from contextlib import AbstractContextManager
 from dataclasses import asdict, dataclass, field, replace
 from typing import Protocol
 
@@ -10,6 +10,7 @@ import litellm
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from backend.config import Settings
+from backend.llm import LiteLLMStructuredModel, StructuredModel, no_observation
 
 
 @dataclass
@@ -31,6 +32,16 @@ class SynthesisInput:
 
 
 @dataclass
+class VerificationResult:
+    supported: bool
+    reason: str
+    provider: str
+    model: str
+    usage: dict[str, int] = field(default_factory=dict)
+    estimated_cost_usd: float | None = None
+
+
+@dataclass
 class AnswerResult:
     short_answer: str
     explanation: str
@@ -40,18 +51,11 @@ class AnswerResult:
     model: str | None = None
     usage: dict[str, int] = field(default_factory=dict)
     estimated_cost_usd: float | None = None
+    verification: VerificationResult | None = None
 
 
 class SynthesisAdapter(Protocol):
     async def synthesize(self, data: SynthesisInput) -> AnswerResult: ...
-
-
-class SynthesisProviderError(Exception):
-    """A sanitized provider rejection that the caller should not retry."""
-
-    def __init__(self, message: str, *, error_type: str):
-        super().__init__(message)
-        self.error_type = error_type
 
 
 class ExtractiveSynthesis(SynthesisAdapter):
@@ -90,40 +94,21 @@ class SynthesisResponse(BaseModel):
     abstained: bool
 
 
-def _no_observation(*args, **kwargs):
-    return nullcontext()
-
-
-class LiteLLMSynthesis(SynthesisAdapter):
+class LiteLLMSynthesis:
     def __init__(
         self,
-        settings: Settings,
+        settings: Settings | None = None,
         *,
-        observation_factory: Callable[..., AbstractContextManager] = _no_observation,
+        model: StructuredModel | None = None,
+        observation_factory: Callable[..., AbstractContextManager] = no_observation,
     ):
-        self._observation = observation_factory
-        self.model = settings.mcp_answer_model
-        self.provider, separator, model_name = self.model.partition("/")
-        if (
-            separator != "/"
-            or not model_name
-            or self.provider not in {"openai", "anthropic"}
-        ):
-            raise ValueError(
-                "MCP_ANSWER_MODEL must be openai/<model>, or anthropic/<model>."
+        if model is None:
+            if settings is None:
+                raise ValueError("Provide settings or a structured model.")
+            model = LiteLLMStructuredModel(
+                settings, observation_factory=observation_factory
             )
-        key = (
-            settings.openai_api_key
-            if self.provider == "openai"
-            else settings.anthropic_api_key
-        )
-        if key is None or not key.get_secret_value().strip():
-            raise ValueError(
-                f"Missing {self.provider.upper()}_API_KEY for answer model."
-            )
-        self._api_key = key
-        self.max_tokens = settings.mcp_answer_max_tokens
-        self.timeout = settings.mcp_answer_timeout_seconds
+        self.model = model
 
     async def synthesize(self, data: SynthesisInput) -> AnswerResult:
         if not data.passages:
@@ -131,21 +116,20 @@ class LiteLLMSynthesis(SynthesisAdapter):
                 "",
                 "No evidence was retrieved for this question.",
                 abstained=True,
-                provider=self.provider,
-                model=self.model,
+                provider=self.model.provider,
+                model=self.model.model,
             )
         messages = self._build_messages(data)
-        with self._observation(
-            "answer_model",
-            as_type="generation",
-            input=messages,
-            metadata={"prompt_version": PROMPT_VERSION},
-        ) as generation:
-            self._record_request(generation)
-            response = await self._complete(messages)
-            usage, cost = self._usage_and_cost(response)
-            self._record_response(generation, response, usage, cost)
-            return self._parse_response(data, response, usage, cost)
+        completion = await self.model.complete(
+            messages,
+            response_schema=SynthesisResponse,
+            schema_name="evidence_answer",
+            prompt_version=PROMPT_VERSION,
+            observation_name="answer_model",
+        )
+        return self._parse_response(
+            data, completion.response, completion.usage, completion.estimated_cost_usd
+        )
 
     @staticmethod
     def _build_messages(data: SynthesisInput) -> list[dict[str, str]]:
@@ -162,109 +146,6 @@ class LiteLLMSynthesis(SynthesisAdapter):
             },
         ]
 
-    def _record_request(self, generation) -> None:
-        if generation is not None:
-            generation.update(
-                model=self.model,
-                model_parameters={
-                    "max_tokens": self.max_tokens,
-                    "timeout": self.timeout,
-                    "num_retries": 0,
-                },
-            )
-
-    async def _complete(self, messages: list[dict[str, str]]) -> litellm.ModelResponse:
-        try:
-            response = await litellm.acompletion(
-                model=self.model,
-                api_key=self._api_key.get_secret_value(),
-                messages=messages,
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "evidence_answer",
-                        "strict": True,
-                        "schema": SynthesisResponse.model_json_schema(),
-                    },
-                },
-                max_tokens=self.max_tokens,
-                timeout=self.timeout,
-                num_retries=0,
-                caching=False,
-                stream=False,
-            )
-        except (
-            litellm.AuthenticationError,
-            litellm.BadRequestError,
-            litellm.PermissionDeniedError,
-            litellm.NotFoundError,
-        ) as error:
-            # Configuration errors do not improve by repeating a paid activity.
-            # Do not put SDK exception messages (which may contain requests)
-            # or credentials into Temporal failure histories.
-            raise SynthesisProviderError(
-                "Model provider rejected the request; check credentials, "
-                "model access and structured-output support.",
-                error_type=type(error).__name__,
-            ) from None
-        if not isinstance(response, litellm.ModelResponse):
-            raise SynthesisProviderError(
-                "Expected a non-streaming model response.",
-                error_type="UnexpectedResponseType",
-            )
-        return response
-
-    @staticmethod
-    def _usage_and_cost(
-        response: litellm.ModelResponse,
-    ) -> tuple[dict[str, int], float | None]:
-        usage = {}
-        if response.usage is not None:
-            usage = {
-                name: value
-                for name in ("prompt_tokens", "completion_tokens", "total_tokens")
-                if isinstance(value := getattr(response.usage, name, None), int)
-            }
-        try:
-            cost = (
-                litellm.completion_cost(completion_response=response) if usage else None
-            )
-        except Exception:
-            # New model pricing may be absent from LiteLLM's catalog.
-            cost = None
-        return usage, cost
-
-    @staticmethod
-    def _record_response(
-        generation,
-        response: litellm.ModelResponse,
-        usage: dict[str, int],
-        cost: float | None,
-    ) -> None:
-        choice = response.choices[0]
-        content = choice.message.content
-        if generation is not None:
-            generation.update(
-                output=content,
-                usage_details={
-                    label: usage[name]
-                    for name, label in (
-                        ("prompt_tokens", "input"),
-                        ("completion_tokens", "output"),
-                    )
-                    if name in usage
-                }
-                if usage
-                else None,
-                cost_details={"total": cost} if cost is not None else None,
-                metadata={
-                    "prompt_version": PROMPT_VERSION,
-                    "response_model": response.model,
-                    "response_id": response.id,
-                    "finish_reason": choice.finish_reason,
-                },
-            )
-
     def _parse_response(
         self,
         data: SynthesisInput,
@@ -278,8 +159,8 @@ class LiteLLMSynthesis(SynthesisAdapter):
             "",
             "Model did not return a complete valid answer.",
             abstained=True,
-            provider=self.provider,
-            model=self.model,
+            provider=self.model.provider,
+            model=self.model.model,
             usage=usage,
             estimated_cost_usd=cost,
         )

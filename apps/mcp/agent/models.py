@@ -6,8 +6,15 @@ from backend.services.answer_synthesis.answer_synthesis import (
     Passage,
     SynthesisInput,
 )
+from backend.services.answer_verification.answer_verification import VerificationInput
 
-__all__ = ["AnswerRequest", "AnswerResult", "Passage", "SynthesisInput"]
+__all__ = [
+    "AnswerRequest",
+    "AnswerResult",
+    "Passage",
+    "SynthesisInput",
+    "VerificationInput",
+]
 
 
 @dataclass

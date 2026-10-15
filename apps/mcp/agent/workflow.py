@@ -9,6 +9,7 @@ with workflow.unsafe.imports_passed_through():
         AnswerResult,
         Passage,
         SynthesisInput,
+        VerificationInput,
     )
 
 
@@ -25,10 +26,23 @@ class AnswerWorkflow:
             schedule_to_close_timeout=timedelta(minutes=2),
             retry_policy=RetryPolicy(maximum_attempts=3),
         )
-        return await workflow.execute_activity(
+        answer = await workflow.execute_activity(
             "synthesize_answer",
             SynthesisInput(
                 request.question, passages, request.trace_context, request.session_id
+            ),
+            result_type=AnswerResult,
+            start_to_close_timeout=timedelta(seconds=60),
+            schedule_to_close_timeout=timedelta(minutes=3),
+            retry_policy=RetryPolicy(maximum_attempts=3),
+        )
+        # Preserve replay compatibility for histories created before verification.
+        if not workflow.patched("answer-verification-v1") or answer.abstained:
+            return answer
+        return await workflow.execute_activity(
+            "verify_answer",
+            VerificationInput(
+                request.question, answer, request.trace_context, request.session_id
             ),
             result_type=AnswerResult,
             start_to_close_timeout=timedelta(seconds=60),

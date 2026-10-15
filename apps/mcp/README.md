@@ -54,7 +54,12 @@ accepts a `SynthesisAdapter` implementing `async synthesize(data) -> AnswerResul
 and applies shared citation identity checks. `ExtractiveSynthesis` supplies the
 baseline; `LiteLLMSynthesis` adapts OpenAI and Claude through LiteLLM. To add a
 synthesis variation, implement that interface and inject it into the service;
-the MCP tools and Temporal workflow do not need to change. The worker constructs
+the MCP tools and Temporal workflow do not need to change. Both LiteLLM adapters
+compose the structured-output client in `backend/llm.py`; neither inherits from
+it. Pass `model=` to inject any client implementing `StructuredModel`, or supply
+settings to construct the default client. The shared client handles provider
+calls, telemetry, usage and cost; adapters own prompts and response parsing.
+The worker constructs
 the LiteLLM adapter directly and supplies the Langfuse observation factory. Provider
 rejections are translated into Temporal failures by the activity layer.
 
@@ -104,13 +109,45 @@ Synthesis requests a strict JSON schema with `short_answer`, `explanation`,
 `citation_ids` and `abstained`. The backend resolves citation IDs to the original
 retrieved passages. Empty retrieval skips the model. Malformed, truncated,
 refused or invalidly cited responses abstain, retaining any returned usage.
-Citation identity is checked; semantic evidence verification is not implemented.
+Citation identity is checked during synthesis; a separate verification activity
+then checks semantic evidence support before returning a non-abstained answer.
 
 Results include `provider`, `model`, normalized token `usage`, and
 `estimated_cost_usd`. Cost is estimated from LiteLLM's pricing catalog and is null
-when unavailable. These fields describe the completed synthesis attempt, not all
+when unavailable. Top-level fields describe synthesis; `verification` records the verifier
+judgment (`supported`, `reason`), provider, model, usage and estimated cost
+separately. Add the two costs only when both are known. These fields describe
+the completed attempts, not all
 retry attempts or total host spend, and are not a durable cost ledger or budget
 enforcement mechanism. The extractive baseline returns empty usage and null cost.
+
+## Answer verification
+
+The workflow is retrieve → synthesize → verify → return. The separate
+`AnswerVerificationService` in
+`backend/services/answer_verification/answer_verification.py` accepts an
+interchangeable adapter implementing `verify(data)`. The worker uses
+`LiteLLMVerification`, which makes a fresh structured-output call containing the
+question, candidate short answer, explanation and cited passages only.
+
+The verifier checks that the answer addresses the question and that factual
+claims in both answer fields are supported by the citations. Unsupported,
+malformed, refused or truncated judgments produce an abstention with no short
+answer or citations. Synthesis abstentions skip verification. Provider failures
+follow the synthesis retry policy: configuration rejections fail immediately;
+transient failures retry through Temporal and fail the run if exhausted.
+
+By default verification uses `MCP_ANSWER_MODEL`. Optionally set
+`MCP_VERIFIER_MODEL=anthropic/<model>` or `openai/<model>` in `compose/.env`.
+The corresponding provider key must be present. It shares the answer token limit
+and timeout settings. Rebuild the worker after changes. Each verification activity
+has its own `verification_model` Langfuse generation with prompt version, usage
+and estimated cost, joined to the submission trace and chat session.
+
+This is a model judgment of evidence support, not a guarantee of factual
+correctness. Audit judgments against manually reviewed examples before relying
+on them as evaluation labels. The Temporal version marker preserves replay of
+older histories that completed without verification; newly started runs include it.
 
 ## Langfuse tracing
 

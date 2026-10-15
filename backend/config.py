@@ -17,6 +17,7 @@ class Settings(DatabaseSettings):
     mcp_answer_model: str = "openai/gpt-5.6-terra"
     mcp_answer_max_tokens: PositiveInt = 1024
     mcp_answer_timeout_seconds: float = Field(default=40, gt=0, le=45)
+    mcp_verifier_model: str | None = None
     openai_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
 

@@ -76,7 +76,7 @@ def test_request_validation(question, limit):
         AnswerRequest(question, limit).validate()
 
 
-async def test_workflow_retrieves_before_synthesis(monkeypatch):
+async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
     from apps.mcp.agent import workflow as module
 
     p = Passage("v:1:0", "v", "1", 0, "Title", "Evidence")
@@ -86,15 +86,20 @@ async def test_workflow_retrieves_before_synthesis(monkeypatch):
         calls.append(name)
         if name == "retrieve_answer_evidence":
             return [p]
+        if name == "verify_answer":
+            assert argument.answer.citations == [p]
+            assert argument.session_id == "codex:chat-a"
+            return argument.answer
         assert argument.passages == [p]
         assert argument.session_id == "codex:chat-a"
         return await ExtractiveSynthesis().synthesize(argument)
 
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
+    monkeypatch.setattr(module.workflow, "patched", lambda _: True)
     result = await module.AnswerWorkflow().run(
         AnswerRequest("question", session_id="codex:chat-a")
     )
-    assert calls == ["retrieve_answer_evidence", "synthesize_answer"]
+    assert calls == ["retrieve_answer_evidence", "synthesize_answer", "verify_answer"]
     assert result.citations == [p]
 
 
@@ -120,3 +125,17 @@ async def test_mcp_polling(monkeypatch):
     handle.describe.return_value.status = WorkflowExecutionStatus.COMPLETED
     completed = await server.get_answer(started["run_id"])
     assert completed["result"]["short_answer"] == "evidence"
+
+
+@pytest.mark.parametrize("abstained,patched", [(True, True), (False, False)])
+async def test_workflow_skips_verification_for_abstention_or_old_history(
+    monkeypatch, abstained, patched
+):
+    from apps.mcp.agent import workflow as module
+
+    candidate = AnswerResult("", "No evidence", abstained=abstained)
+    execute = AsyncMock(side_effect=[[], candidate])
+    monkeypatch.setattr(module.workflow, "execute_activity", execute)
+    monkeypatch.setattr(module.workflow, "patched", lambda _: patched)
+    assert await module.AnswerWorkflow().run(AnswerRequest("question")) == candidate
+    assert execute.await_count == 2

@@ -7,6 +7,7 @@ import litellm
 import pytest
 
 from backend.config import Settings
+from backend.llm import ModelProviderError
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerResult,
     AnswerSynthesisService,
@@ -14,7 +15,6 @@ from backend.services.answer_synthesis.answer_synthesis import (
     LiteLLMSynthesis,
     Passage,
     SynthesisInput,
-    SynthesisProviderError,
 )
 
 
@@ -213,7 +213,7 @@ async def test_authentication_error_is_not_retried(completion, evidence):
     completion.side_effect = litellm.AuthenticationError(
         message="sensitive provider message", llm_provider="openai", model="model"
     )
-    with pytest.raises(SynthesisProviderError) as caught:
+    with pytest.raises(ModelProviderError) as caught:
         await AnswerSynthesisService(LiteLLMSynthesis(settings())).synthesize(
             SynthesisInput("question", [evidence])
         )

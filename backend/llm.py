@@ -1,0 +1,211 @@
+"""Composable structured-output model client and provider accounting."""
+
+from collections.abc import Callable
+from contextlib import AbstractContextManager, nullcontext
+from dataclasses import dataclass
+from typing import Protocol
+
+import litellm
+from pydantic import BaseModel
+
+from backend.config import Settings
+
+
+@dataclass
+class StructuredCompletion:
+    response: litellm.ModelResponse
+    usage: dict[str, int]
+    estimated_cost_usd: float | None
+
+
+class StructuredModel(Protocol):
+    provider: str
+    model: str
+
+    async def complete(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        response_schema: type[BaseModel],
+        schema_name: str,
+        prompt_version: str,
+        observation_name: str,
+    ) -> StructuredCompletion: ...
+
+
+class ModelProviderError(Exception):
+    """A sanitized provider rejection that the caller should not retry."""
+
+    def __init__(self, message: str, *, error_type: str):
+        super().__init__(message)
+        self.error_type = error_type
+
+
+def no_observation(*args, **kwargs):
+    return nullcontext()
+
+
+class LiteLLMStructuredModel:
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        model: str | None = None,
+        model_setting: str = "MCP_ANSWER_MODEL",
+        observation_factory: Callable[..., AbstractContextManager] = no_observation,
+    ):
+        self._observation = observation_factory
+        self.model = model or settings.mcp_answer_model
+        self.provider, separator, model_name = self.model.partition("/")
+        if (
+            separator != "/"
+            or not model_name
+            or self.provider not in {"openai", "anthropic"}
+        ):
+            raise ValueError(
+                f"{model_setting} must be openai/<model>, or anthropic/<model>."
+            )
+        key = (
+            settings.openai_api_key
+            if self.provider == "openai"
+            else settings.anthropic_api_key
+        )
+        if key is None or not key.get_secret_value().strip():
+            raise ValueError(
+                f"Missing {self.provider.upper()}_API_KEY for answer model."
+            )
+        self._api_key = key
+        self.max_tokens = settings.mcp_answer_max_tokens
+        self.timeout = settings.mcp_answer_timeout_seconds
+
+    def _record_request(self, generation) -> None:
+        if generation is not None:
+            generation.update(
+                model=self.model,
+                model_parameters={
+                    "max_tokens": self.max_tokens,
+                    "timeout": self.timeout,
+                    "num_retries": 0,
+                },
+            )
+
+    async def complete(
+        self,
+        messages: list[dict[str, str]],
+        *,
+        response_schema: type[BaseModel],
+        schema_name: str,
+        prompt_version: str,
+        observation_name: str,
+    ) -> StructuredCompletion:
+        with self._observation(
+            observation_name,
+            as_type="generation",
+            input=messages,
+            metadata={"prompt_version": prompt_version},
+        ) as generation:
+            self._record_request(generation)
+            response = await self._complete(messages, response_schema, schema_name)
+            usage, cost = self._usage_and_cost(response)
+            self._record_response(generation, response, usage, cost, prompt_version)
+            return StructuredCompletion(response, usage, cost)
+
+    async def _complete(
+        self,
+        messages: list[dict[str, str]],
+        response_schema: type[BaseModel],
+        schema_name: str,
+    ) -> litellm.ModelResponse:
+        try:
+            response = await litellm.acompletion(
+                model=self.model,
+                api_key=self._api_key.get_secret_value(),
+                messages=messages,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": schema_name,
+                        "strict": True,
+                        "schema": response_schema.model_json_schema(),
+                    },
+                },
+                max_tokens=self.max_tokens,
+                timeout=self.timeout,
+                num_retries=0,
+                caching=False,
+                stream=False,
+            )
+        except (
+            litellm.AuthenticationError,
+            litellm.BadRequestError,
+            litellm.PermissionDeniedError,
+            litellm.NotFoundError,
+        ) as error:
+            # Configuration errors do not improve by repeating a paid activity.
+            # Do not put SDK exception messages (which may contain requests)
+            # or credentials into Temporal failure histories.
+            raise ModelProviderError(
+                "Model provider rejected the request; check credentials, "
+                "model access and structured-output support.",
+                error_type=type(error).__name__,
+            ) from None
+        if not isinstance(response, litellm.ModelResponse):
+            raise ModelProviderError(
+                "Expected a non-streaming model response.",
+                error_type="UnexpectedResponseType",
+            )
+        return response
+
+    @staticmethod
+    def _usage_and_cost(
+        response: litellm.ModelResponse,
+    ) -> tuple[dict[str, int], float | None]:
+        usage = {}
+        if response.usage is not None:
+            usage = {
+                name: value
+                for name in ("prompt_tokens", "completion_tokens", "total_tokens")
+                if isinstance(value := getattr(response.usage, name, None), int)
+            }
+        try:
+            cost = (
+                litellm.completion_cost(completion_response=response) if usage else None
+            )
+        except Exception:
+            # New model pricing may be absent from LiteLLM's catalog.
+            cost = None
+        return usage, cost
+
+    def _record_response(
+        self,
+        generation,
+        response: litellm.ModelResponse,
+        usage: dict[str, int],
+        cost: float | None,
+        prompt_version: str,
+    ) -> None:
+        if not response.choices:
+            return
+        choice = response.choices[0]
+        content = choice.message.content
+        if generation is not None:
+            generation.update(
+                output=content,
+                usage_details={
+                    label: usage[name]
+                    for name, label in (
+                        ("prompt_tokens", "input"),
+                        ("completion_tokens", "output"),
+                    )
+                    if name in usage
+                }
+                if usage
+                else None,
+                cost_details={"total": cost} if cost is not None else None,
+                metadata={
+                    "prompt_version": prompt_version,
+                    "response_model": response.model,
+                    "response_id": response.id,
+                    "finish_reason": choice.finish_reason,
+                },
+            )

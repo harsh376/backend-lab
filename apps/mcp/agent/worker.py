@@ -14,6 +14,10 @@ from backend.services.answer_synthesis.answer_synthesis import (
     AnswerSynthesisService,
     LiteLLMSynthesis,
 )
+from backend.services.answer_verification.answer_verification import (
+    AnswerVerificationService,
+    LiteLLMVerification,
+)
 from backend.services.kilt.kilt import KiltService
 
 TASK_QUEUE = "kilt-answers"
@@ -21,20 +25,22 @@ TASK_QUEUE = "kilt-answers"
 
 async def main() -> None:
     settings = Settings()
-    synthesis = AnswerSynthesisService(
-        LiteLLMSynthesis(settings, observation_factory=observation)
-    )
     client = await Client.connect(settings.temporal_address)
     async with AsyncElasticsearch(settings.elasticsearch_url) as es:
         activities = AnswerActivities(
-            KiltService(ElasticsearchKiltRepository(es, settings.kilt_index)),
-            synthesis=synthesis,
+            kilt=KiltService(ElasticsearchKiltRepository(es, settings.kilt_index)),
+            synthesis=AnswerSynthesisService(
+                LiteLLMSynthesis(settings, observation_factory=observation)
+            ),
+            verification=AnswerVerificationService(
+                LiteLLMVerification(settings, observation_factory=observation)
+            ),
         )
         worker = Worker(
             client,
             task_queue=TASK_QUEUE,
             workflows=[AnswerWorkflow],
-            activities=[activities.aretrieve, activities.agenerate],
+            activities=[activities.aretrieve, activities.agenerate, activities.averify],
             # Activities are coroutines on the event loop, so bound them here
             # rather than by a thread pool size.
             max_concurrent_activities=8,

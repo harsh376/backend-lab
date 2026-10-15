@@ -31,7 +31,7 @@ async def temporal_client() -> Client:
     output=lambda result: result["run_id"],
 )
 async def answer(question: str, limit: int = 5) -> dict:
-    """Start a durable extractive answer run; poll get_answer for its result."""
+    """Start a durable evidence-verified answer run; poll get_answer for its result."""
     request = AnswerRequest(question, limit)
     request.validate()
     run_id = f"kilt-answer-{uuid4()}"
