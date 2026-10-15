@@ -20,7 +20,7 @@ def test_notification_schedule_and_retry_policy():
 
 
 def test_default_notification_interval():
-    from apps.api.config import Settings
+    from backend.config import Settings
 
     assert (
         Settings(

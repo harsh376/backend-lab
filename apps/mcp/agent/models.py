@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 class AnswerRequest:
     question: str
     limit: int = 5
+    trace_context: dict[str, str] | None = None
 
     def validate(self) -> None:
         if not self.question.strip():
@@ -27,6 +28,7 @@ class Passage:
 class SynthesisInput:
     question: str
     passages: list[Passage]
+    trace_context: dict[str, str] | None = None
 
 
 @dataclass

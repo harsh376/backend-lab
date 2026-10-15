@@ -3,7 +3,7 @@
 from celery import Celery
 from celery.signals import worker_process_init, worker_process_shutdown
 
-from apps.api.config import Settings
+from backend.config import Settings
 from backend.observability.logging import configure_logger
 from backend.observability.telemetry import Telemetry, configure_telemetry
 

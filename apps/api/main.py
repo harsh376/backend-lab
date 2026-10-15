@@ -7,8 +7,8 @@ from fastapi import FastAPI
 
 from apps.api.application import create_app
 from apps.api.background.celery_app import celery_app
-from apps.api.config import Settings
 from apps.api.dependencies import ApplicationDependencies
+from backend.config import Settings
 from backend.db.session import Database
 from backend.metrics import OpenTelemetryMetrics
 from backend.observability.logging import configure_logger

@@ -27,7 +27,7 @@ class AnswerWorkflow:
         )
         return await workflow.execute_activity(
             "synthesize_answer",
-            SynthesisInput(request.question, passages),
+            SynthesisInput(request.question, passages, request.trace_context),
             result_type=AnswerResult,
             start_to_close_timeout=timedelta(seconds=60),
             schedule_to_close_timeout=timedelta(minutes=3),
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     from temporalio.client import Client
 
-    from apps.mcp.config import Settings
+    from backend.config import Settings
 
     async def main(question: str) -> None:
         client = await Client.connect(Settings().temporal_address)

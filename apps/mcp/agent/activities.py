@@ -1,4 +1,5 @@
 from collections.abc import Awaitable, Callable
+from dataclasses import asdict
 
 from temporalio import activity
 
@@ -8,6 +9,7 @@ from apps.mcp.agent.models import (
     Passage,
     SynthesisInput,
 )
+from apps.mcp.telemetry import observation
 from backend.services.kilt.kilt import KiltService
 
 
@@ -41,11 +43,50 @@ class AnswerActivities:
     @activity.defn(name="retrieve_answer_evidence")
     async def aretrieve(self, request: AnswerRequest) -> list[Passage]:
         request.validate()
-        passages = await self.kilt.aretrieve_passages(request.question, request.limit)
-        return [Passage(**item) for item in passages]
+        with observation(
+            "retrieve_answer_evidence",
+            input={"question": request.question, "limit": request.limit},
+            trace_context=request.trace_context,
+            metadata=_activity_metadata(),
+            as_type="retriever",
+        ) as span:
+            passages = await self.kilt.aretrieve_passages(
+                request.question, request.limit
+            )
+            if span:
+                span.update(
+                    output={
+                        "passages": [
+                            {k: p[k] for k in ("passage_id", "corpus_version")}
+                            for p in passages
+                        ]
+                    }
+                )
+            return [Passage(**item) for item in passages]
 
     @activity.defn(name="synthesize_answer")
     async def agenerate(self, data: SynthesisInput) -> AnswerResult:
+        with observation(
+            "synthesize_answer",
+            input={
+                "question": data.question,
+                "passages": [asdict(p) for p in data.passages],
+            },
+            trace_context=data.trace_context,
+            metadata=_activity_metadata(),
+        ) as span:
+            result = await self._generate(data)
+            if span:
+                span.update(
+                    output={
+                        "abstained": result.abstained,
+                        "provider": result.provider,
+                        "citation_ids": [p.passage_id for p in result.citations],
+                    }
+                )
+            return result
+
+    async def _generate(self, data: SynthesisInput) -> AnswerResult:
         result = await self.synthesize(data)
         evidence = {p.passage_id: p for p in data.passages}
         # This checks citation identity, not semantic support. A real provider
@@ -66,3 +107,15 @@ class AnswerActivities:
                 provider=result.provider,
             )
         return result
+
+
+def _activity_metadata() -> dict:
+    if not activity.in_activity():
+        return {}
+    info = activity.info()
+    return {
+        "answer_id": info.workflow_id,
+        "temporal_run_id": info.workflow_run_id,
+        "activity_id": info.activity_id,
+        "attempt": info.attempt,
+    }

@@ -1,6 +1,6 @@
 """Tests for environment-driven application settings."""
 
-from apps.api.config import Settings
+from backend.config import Settings
 
 _ENV_VARS = (
     "TEMPORAL_ADDRESS",

@@ -9,7 +9,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from apps.api.background.celery_app import celery_app
-from apps.api.config import Settings
+from backend.config import Settings
 from backend.services.hold_notifications.hold_notifications import HoldNotifications
 
 

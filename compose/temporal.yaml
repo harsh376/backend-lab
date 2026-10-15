@@ -43,6 +43,11 @@ services:
       dockerfile: apps/mcp/Dockerfile
     environment:
       TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
+      LANGFUSE_TRACING_ENVIRONMENT: ${LANGFUSE_TRACING_ENVIRONMENT:-local}
+      LANGFUSE_TRACING_ENABLED: ${LANGFUSE_TRACING_ENABLED:-true}
       ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
       KILT_INDEX: ${KILT_INDEX:-kilt}
     depends_on:
@@ -66,6 +71,11 @@ services:
       - "8001"
     environment:
       TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
+      LANGFUSE_TRACING_ENVIRONMENT: ${LANGFUSE_TRACING_ENVIRONMENT:-local}
+      LANGFUSE_TRACING_ENABLED: ${LANGFUSE_TRACING_ENABLED:-true}
     ports:
       - "127.0.0.1:8001:8001"
     depends_on:

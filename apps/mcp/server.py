@@ -6,7 +6,8 @@ from temporalio.client import Client, WorkflowExecutionStatus
 
 from apps.mcp.agent.models import AnswerRequest, AnswerResult
 from apps.mcp.agent.workflow import AnswerWorkflow
-from apps.mcp.config import Settings
+from apps.mcp.telemetry import current_context, observation
+from backend.config import Settings
 
 mcp = MCPServer("Evidence-backed answers")
 
@@ -20,11 +21,19 @@ async def answer(question: str, limit: int = 5) -> dict:
     """Start a durable extractive answer run; poll get_answer for its result."""
     request = AnswerRequest(question, limit)
     request.validate()
-    client = await temporal_client()
     run_id = f"kilt-answer-{uuid4()}"
-    await client.start_workflow(
-        AnswerWorkflow.run, request, id=run_id, task_queue="kilt-answers"
-    )
+    with observation(
+        "mcp.answer",
+        input={"question": question, "limit": limit},
+        metadata={"answer_id": run_id},
+    ) as span:
+        request.trace_context = current_context()
+        client = await temporal_client()
+        await client.start_workflow(
+            AnswerWorkflow.run, request, id=run_id, task_queue="kilt-answers"
+        )
+        if span:
+            span.update(output={"run_id": run_id, "status": "RUNNING"})
     return {"run_id": run_id, "status": "RUNNING"}
 
 
@@ -33,6 +42,18 @@ async def get_answer(run_id: str) -> dict:
     """Return run status and, on completion, answer text and original citations."""
     if not run_id.startswith("kilt-answer-"):
         raise ValueError("invalid answer run ID")
+    with observation(
+        "mcp.get_answer",
+        input={"run_id": run_id},
+        metadata={"answer_id": run_id},
+    ) as span:
+        result = await _get_answer(run_id)
+        if span:
+            span.update(output={"status": result["status"]})
+        return result
+
+
+async def _get_answer(run_id: str) -> dict:
     client = await temporal_client()
     handle = client.get_workflow_handle(run_id, result_type=AnswerResult)
     description = await handle.describe()

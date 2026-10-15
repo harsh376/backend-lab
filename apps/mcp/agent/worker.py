@@ -6,7 +6,8 @@ from temporalio.worker import Worker
 
 from apps.mcp.agent.activities import AnswerActivities
 from apps.mcp.agent.workflow import AnswerWorkflow
-from apps.mcp.config import Settings
+from apps.mcp.telemetry import client as telemetry_client
+from backend.config import Settings
 from backend.repositories.kilt import ElasticsearchKiltRepository
 from backend.services.kilt.kilt import KiltService
 
@@ -29,7 +30,12 @@ async def main() -> None:
             # rather than by a thread pool size.
             max_concurrent_activities=8,
         )
-        await worker.run()
+        try:
+            await worker.run()
+        finally:
+            telemetry = telemetry_client()
+            if telemetry is not None:
+                await asyncio.to_thread(telemetry.flush)
 
 
 if __name__ == "__main__":
