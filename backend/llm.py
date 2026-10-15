@@ -60,21 +60,27 @@ class LiteLLMStructuredModel:
         if (
             separator != "/"
             or not model_name
-            or self.provider not in {"openai", "anthropic"}
+            or self.provider not in {"openai", "anthropic", "ollama_chat"}
         ):
             raise ValueError(
-                f"{model_setting} must be openai/<model>, or anthropic/<model>."
+                f"{model_setting} must be openai/<model>, anthropic/<model>, "
+                "or ollama_chat/<model>."
             )
-        key = (
-            settings.openai_api_key
-            if self.provider == "openai"
-            else settings.anthropic_api_key
-        )
-        if key is None or not key.get_secret_value().strip():
-            raise ValueError(
-                f"Missing {self.provider.upper()}_API_KEY for answer model."
-            )
-        self._api_key = key
+        if self.provider == "ollama_chat":
+            self._provider_options = {
+                "api_base": settings.ollama_api_base,
+                "reasoning_effort": "none",
+            }
+        else:
+            key = {
+                "openai": settings.openai_api_key,
+                "anthropic": settings.anthropic_api_key,
+            }[self.provider]
+            if key is None or not key.get_secret_value().strip():
+                raise ValueError(
+                    f"Missing {self.provider.upper()}_API_KEY for answer model."
+                )
+            self._provider_options = {"api_key": key.get_secret_value()}
         self.max_tokens = settings.mcp_answer_max_tokens
         self.timeout = settings.mcp_answer_timeout_seconds
 
@@ -119,7 +125,7 @@ class LiteLLMStructuredModel:
         try:
             response = await litellm.acompletion(
                 model=self.model,
-                api_key=self._api_key.get_secret_value(),
+                **self._provider_options,
                 messages=messages,
                 response_format={
                     "type": "json_schema",

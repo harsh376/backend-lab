@@ -226,3 +226,40 @@ Langfuse callback is needed.
 The SDK batches asynchronously and shuts down on normal process exit. Forced
 termination can lose buffered telemetry; traces are not a durable accounting ledger.
 Langfuse Cloud hosts the observability backend; no local Langfuse services are needed.
+
+## Local models with Ollama on macOS
+
+Run Ollama natively on your Mac for Apple GPU acceleration, then download a model:
+
+```sh
+ollama run qwen3.8
+```
+
+Set these values in `compose/.env`:
+
+```dotenv
+MCP_ANSWER_MODEL=ollama_chat/qwen3.8
+MCP_VERIFIER_MODEL=
+OLLAMA_API_BASE=http://host.docker.internal:11434
+```
+
+An empty verifier model uses the answer model. Ollama requires no cloud API key.
+The shared adapter requests JSON schema output and disables thinking for local
+requests to conserve the output budget and reduce latency. Existing response
+validation and citation checks still apply.
+
+Rebuild the worker:
+
+```sh
+docker compose -f compose/temporal.yaml up -d --build agent-worker
+```
+
+For a worker running directly on macOS, export `MCP_ANSWER_MODEL` and use
+`OLLAMA_API_BASE=http://localhost:11434` (the Python default). If Docker cannot
+reach Ollama, check from a container with
+`curl http://host.docker.internal:11434/api/tags`. If necessary, quit the Ollama
+app, run `OLLAMA_HOST=0.0.0.0:11434 ollama serve`, and retry. This binds Ollama to
+all interfaces; use it only on a trusted network with appropriate firewall rules.
+Keep Ollama running while the worker handles requests. Warm the model before
+benchmarking: the first load may exceed the 40-second request timeout. Compare
+answer quality and latency with your existing models before relying on it.

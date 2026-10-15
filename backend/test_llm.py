@@ -73,3 +73,54 @@ async def test_injected_model(verification):
     assert model.complete.call_args.kwargs["schema_name"] == (
         "evidence_verification" if verification else "evidence_answer"
     )
+
+
+async def test_ollama_translation_without_cloud_credentials(monkeypatch):
+    import httpx
+    from pydantic import BaseModel
+
+    from backend.config import Settings
+
+    class Answer(BaseModel):
+        answer: str
+
+    async def send(client, request, **kwargs):
+        assert str(request.url) == "http://localhost:11434/api/chat"
+        body = json.loads(request.content)
+        assert body["model"] == "qwen3.8"
+        assert body["format"] == Answer.model_json_schema()
+        assert body["think"] is False
+        assert body["stream"] is False
+        assert "authorization" not in request.headers
+        return httpx.Response(
+            200,
+            request=request,
+            json={
+                "model": "qwen3.8",
+                "created_at": "2026-10-15T12:00:00Z",
+                "message": {"role": "assistant", "content": '{"answer":"1844"}'},
+                "done": True,
+                "done_reason": "stop",
+                "prompt_eval_count": 10,
+                "eval_count": 5,
+            },
+        )
+
+    monkeypatch.setattr(httpx.AsyncClient, "send", send)
+    model = LiteLLMStructuredModel(
+        Settings(
+            _env_file=None,
+            mcp_answer_model="ollama_chat/qwen3.8",
+            openai_api_key=None,
+            anthropic_api_key=None,
+        )
+    )
+    result = await model.complete(
+        [{"role": "user", "content": "When?"}],
+        response_schema=Answer,
+        schema_name="answer",
+        prompt_version="test",
+        observation_name="test",
+    )
+    assert json.loads(result.response.choices[0].message.content) == {"answer": "1844"}
+    assert result.usage["total_tokens"] == 15

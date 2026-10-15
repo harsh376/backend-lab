@@ -18,6 +18,7 @@ class Settings(DatabaseSettings):
     mcp_answer_max_tokens: PositiveInt = 1024
     mcp_answer_timeout_seconds: float = Field(default=40, gt=0, le=45)
     mcp_verifier_model: str | None = None
+    ollama_api_base: str = "http://localhost:11434"
     openai_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
 
