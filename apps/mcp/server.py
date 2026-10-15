@@ -6,11 +6,17 @@ from temporalio.client import Client, WorkflowExecutionStatus
 
 from apps.mcp.agent.models import AnswerRequest, AnswerResult
 from apps.mcp.agent.workflow import AnswerWorkflow
+from apps.mcp.telemetry import (
+    chat_session,
+    current_context,
+    current_session_id,
+    observe,
+    update_metadata,
+)
 from apps.mcp.telemetry import client as telemetry_client
-from apps.mcp.telemetry import current_context, observe, update_metadata
 from backend.config import Settings
 
-mcp = MCPServer("Evidence-backed answers")
+mcp = MCPServer("Evidence-backed answers", middleware=[chat_session])
 
 
 async def temporal_client() -> Client:
@@ -26,6 +32,7 @@ async def answer(question: str, limit: int = 5) -> dict:
     run_id = f"kilt-answer-{uuid4()}"
     update_metadata({"answer_id": run_id})
     request.trace_context = current_context()
+    request.session_id = current_session_id()
     client = await temporal_client()
     await client.start_workflow(
         AnswerWorkflow.run, request, id=run_id, task_queue="kilt-answers"

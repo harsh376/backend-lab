@@ -6,6 +6,7 @@ class AnswerRequest:
     question: str
     limit: int = 5
     trace_context: dict[str, str] | None = None
+    session_id: str | None = None
 
     def validate(self) -> None:
         if not self.question.strip():
@@ -29,6 +30,7 @@ class SynthesisInput:
     question: str
     passages: list[Passage]
     trace_context: dict[str, str] | None = None
+    session_id: str | None = None
 
 
 @dataclass

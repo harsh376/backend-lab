@@ -76,10 +76,13 @@ async def test_workflow_retrieves_before_synthesis(monkeypatch):
         if name == "retrieve_answer_evidence":
             return [p]
         assert argument.passages == [p]
+        assert argument.session_id == "codex:chat-a"
         return await aextractive_synthesis(argument)
 
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
-    result = await module.AnswerWorkflow().run(AnswerRequest("question"))
+    result = await module.AnswerWorkflow().run(
+        AnswerRequest("question", session_id="codex:chat-a")
+    )
     assert calls == ["retrieve_answer_evidence", "synthesize_answer"]
     assert result.citations == [p]
 

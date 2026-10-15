@@ -27,7 +27,9 @@ class AnswerWorkflow:
         )
         return await workflow.execute_activity(
             "synthesize_answer",
-            SynthesisInput(request.question, passages, request.trace_context),
+            SynthesisInput(
+                request.question, passages, request.trace_context, request.session_id
+            ),
             result_type=AnswerResult,
             start_to_close_timeout=timedelta(seconds=60),
             schedule_to_close_timeout=timedelta(minutes=3),

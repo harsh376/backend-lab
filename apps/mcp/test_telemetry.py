@@ -266,3 +266,97 @@ async def test_observe_infers_function_and_registered_activity_names(monkeypatch
     await activity_function()
     await overridden()
     assert names == ["plain_function", "registered-activity", "explicit"]
+
+
+@pytest.mark.parametrize("thread_id", [None, "", 123, "é", "x" * 194])
+async def test_chat_session_missing_or_invalid_metadata(thread_id):
+    ctx = Mock(method="tools/call", meta={"threadId": thread_id})
+
+    async def call_next(ctx):
+        assert telemetry.current_session_id() is None
+        return "done"
+
+    assert await telemetry.chat_session(ctx, call_next) == "done"
+    assert telemetry.current_session_id() is None
+
+
+async def test_chat_sessions_propagate_without_leaking(monkeypatch):
+    from temporalio.converter import DataConverter
+
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    instance = Langfuse(
+        public_key="pk-lf-sessions",
+        secret_key="sk-lf-test",
+        tracer_provider=provider,
+        span_exporter=exporter,
+    )
+    monkeypatch.setattr(telemetry, "client", lambda: instance)
+    temporal = Mock(start_workflow=AsyncMock())
+    monkeypatch.setattr(server, "temporal_client", AsyncMock(return_value=temporal))
+    monkeypatch.setattr(
+        server, "_get_answer", AsyncMock(return_value={"status": "RUNNING"})
+    )
+
+    async def submit(ctx):
+        return await server.answer("question")
+
+    async def poll(ctx):
+        return await server.get_answer("kilt-answer-test")
+
+    try:
+        for chat_id in ["chat-a", "chat-b", "chat-a"]:
+            ctx = Mock(method="tools/call", meta={"threadId": chat_id})
+            with provider.get_tracer("mcp-python-sdk").start_as_current_span(
+                "answer", attributes={"gen_ai.operation.name": "execute_tool"}
+            ):
+                await telemetry.chat_session(ctx, submit)
+            request = temporal.start_workflow.call_args.args[1]
+            assert request.session_id == f"codex:{chat_id}"
+            converter = DataConverter.default
+            request = (
+                await converter.decode(
+                    await converter.encode([request]), [AnswerRequest]
+                )
+            )[0]
+            activities = AnswerActivities(
+                Mock(aretrieve_passages=AsyncMock(return_value=[]))
+            )
+            await activities.aretrieve(request)
+            await activities.agenerate(
+                SynthesisInput(
+                    request.question, [], request.trace_context, request.session_id
+                )
+            )
+            with provider.get_tracer("mcp-python-sdk").start_as_current_span(
+                "get_answer", attributes={"gen_ai.operation.name": "execute_tool"}
+            ):
+                await telemetry.chat_session(ctx, poll)
+            assert telemetry.current_session_id() is None
+        with provider.get_tracer("mcp-python-sdk").start_as_current_span(
+            "no-chat", attributes={"gen_ai.operation.name": "execute_tool"}
+        ):
+            await telemetry.chat_session(Mock(method="tools/call", meta=None), poll)
+        instance.flush()
+        spans = exporter.get_finished_spans()
+        for index, chat_id in enumerate(["chat-a", "chat-b", "chat-a"]):
+            group = spans[index * 4 : (index + 1) * 4]
+            assert len(group) == 4
+            assert all(
+                s.attributes.get("session.id") == f"codex:{chat_id}" for s in group
+            )
+        assert "session.id" not in spans[-1].attributes
+    finally:
+        instance.shutdown()
+
+
+async def test_chat_session_resets_after_error():
+    async def fail(ctx):
+        assert telemetry.current_session_id() == "codex:chat-a"
+        raise RuntimeError("failed")
+
+    with pytest.raises(RuntimeError, match="failed"):
+        await telemetry.chat_session(
+            Mock(method="tools/call", meta={"threadId": "chat-a"}), fail
+        )
+    assert telemetry.current_session_id() is None

@@ -87,6 +87,28 @@ code executes inside the deterministic workflow. Direct workflow submissions wit
 trace context produce separate activity traces correlated by workflow metadata.
 `get_answer` polls are independent traces correlated through `answer_id`.
 
+For Codex clients that send `_meta.threadId` on MCP tool requests, submission,
+worker observations, and polls are grouped in one Langfuse session named
+`codex:<threadId>`. The middleware reads this metadata automatically; no tool
+argument or model-generated identifier is needed. The session ID is persisted
+in the Temporal input and forwarded to synthesis, alongside trace context.
+Multiple answer runs retain their own `answer_id` within the chat session.
+Polling belongs to the calling chat; polling an answer from a different chat
+therefore appears in that different chat's session.
+
+Missing or invalid thread metadata leaves calls ungrouped. Direct workflow
+submissions also remain ungrouped unless their input supplies `session_id`.
+Transport connection IDs are never used as chat IDs. Thread metadata is a
+client-provided observability label, not an authentication identity.
+
+After rebuilding the stack, verify the installed Codex client's behavior by
+submitting and polling answers from two chats: Langfuse should show distinct
+`codex:<threadId>` sessions. Resume the first chat and submit another answer;
+it should join its original session. If sessions are absent, inspect only the
+incoming `_meta.threadId` field to confirm whether that client sends it; avoid
+logging full request metadata or credentials.
+
+
 Observation inputs include the question and retrieval limit, the full retrieved
 passages supplied to synthesis, and the run ID supplied to polling. These inputs
 are exported to your configured Langfuse instance. Outputs capture the returned

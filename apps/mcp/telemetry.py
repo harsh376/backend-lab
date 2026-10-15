@@ -2,15 +2,43 @@
 
 import atexit
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import asdict, is_dataclass
 from functools import lru_cache, wraps
 from inspect import signature
 
-from langfuse import Langfuse
+from langfuse import Langfuse, propagate_attributes
 from opentelemetry import trace
 from temporalio import activity
 
 from backend.config import Settings
+
+_session_id: ContextVar[str | None] = ContextVar("langfuse_session_id", default=None)
+
+
+def current_session_id() -> str | None:
+    return _session_id.get()
+
+
+async def chat_session(ctx, call_next):
+    """Group tool calls by client-supplied Codex thread metadata, never transport ID."""
+    if ctx.method != "tools/call":
+        return await call_next(ctx)
+    thread_id = (ctx.meta or {}).get("threadId")
+    session_id = None
+    if (
+        isinstance(thread_id, str)
+        and thread_id.strip()
+        and thread_id.isascii()
+        and len(thread_id) <= 193
+    ):
+        session_id = f"codex:{thread_id}"
+    token = _session_id.set(session_id)
+    try:
+        with propagate_attributes(session_id=session_id):
+            return await call_next(ctx)
+    finally:
+        _session_id.reset(token)
 
 
 @lru_cache(maxsize=1)
@@ -35,18 +63,29 @@ def client() -> Langfuse | None:
 
 
 @contextmanager
-def observation(name, *, input=None, trace_context=None, metadata=None, as_type="span"):
+def observation(
+    name,
+    *,
+    input=None,
+    trace_context=None,
+    metadata=None,
+    as_type="span",
+    session_id=None,
+):
     instance = client()
     if instance is None:
         yield None
         return
-    with instance.start_as_current_observation(
-        name=name,
-        input=input,
-        as_type=as_type,
-        trace_context=trace_context,
-        metadata=metadata,
-    ) as span:
+    with (
+        instance.start_as_current_observation(
+            name=name,
+            input=input,
+            as_type=as_type,
+            trace_context=trace_context,
+            metadata=metadata,
+        ) as span,
+        propagate_attributes(session_id=session_id),
+    ):
         if trace_context and trace_context.get("parent_span_id"):
             # Langfuse 4 marks explicit remote contexts as application roots.
             # These are continuations of our already-exported submission span.
@@ -125,6 +164,7 @@ def observe(
                 ),
                 metadata=span_metadata,
                 as_type=as_type,
+                session_id=_session_from_arguments(arguments),
             ) as span:
                 result = await function(*args, **kwargs)
                 if span is not None:
@@ -179,3 +219,15 @@ def _activity_metadata() -> dict:
         "activity_id": info.activity_id,
         "attempt": info.attempt,
     }
+
+
+def _session_from_arguments(arguments):
+    for value in arguments.values():
+        session_id = (
+            value.get("session_id")
+            if isinstance(value, dict)
+            else getattr(value, "session_id", None)
+        )
+        if session_id:
+            return session_id
+    return current_session_id()
