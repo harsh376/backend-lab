@@ -33,6 +33,7 @@ class Settings(DatabaseSettings):
     langfuse_base_url: str = "https://cloud.langfuse.com"
     langfuse_tracing_environment: str = "local"
     langfuse_tracing_enabled: bool = True
+    git_commit_sha: str | None = None
 
     @property
     def otlp_enabled(self) -> bool:

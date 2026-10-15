@@ -56,6 +56,7 @@ def client() -> Langfuse | None:
         secret_key=settings.langfuse_secret_key.get_secret_value(),
         base_url=settings.langfuse_base_url,
         environment=settings.langfuse_tracing_environment,
+        release=settings.git_commit_sha or None,
         tracing_enabled=settings.langfuse_tracing_enabled,
     )
     atexit.register(instance.shutdown)

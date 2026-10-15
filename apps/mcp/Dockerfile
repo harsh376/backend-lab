@@ -15,6 +15,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-install-project --no-dev
 
 FROM deps AS app
+ARG GIT_COMMIT_SHA
+ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 COPY pyproject.toml uv.lock ./
 COPY apps/__init__.py ./apps/__init__.py
 COPY apps/mcp ./apps/mcp

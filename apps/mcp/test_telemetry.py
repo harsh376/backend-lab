@@ -28,6 +28,23 @@ def test_disabled_without_credentials(monkeypatch):
     telemetry.client.cache_clear()
 
 
+@pytest.mark.parametrize("sha", ["a" * 40, ""])
+def test_client_records_build_commit_as_release(monkeypatch, sha):
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-lf-test")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-lf-test")
+    monkeypatch.setenv("LANGFUSE_TRACING_ENABLED", "true")
+    monkeypatch.setenv("GIT_COMMIT_SHA", sha)
+    factory = Mock()
+    monkeypatch.setattr(telemetry, "Langfuse", factory)
+    monkeypatch.setattr(telemetry.atexit, "register", Mock())
+    telemetry.client.cache_clear()
+    try:
+        assert telemetry.client() is factory.return_value
+        assert factory.call_args.kwargs["release"] == (sha or None)
+    finally:
+        telemetry.client.cache_clear()
+
+
 async def test_cross_process_context_and_errors(monkeypatch):
     exporter = InMemorySpanExporter()
     provider = TracerProvider()
@@ -167,6 +184,7 @@ def test_client_uses_settings_explicitly(monkeypatch):
         langfuse_base_url="https://us.cloud.langfuse.com",
         langfuse_tracing_environment="test",
         langfuse_tracing_enabled=True,
+        git_commit_sha="b" * 40,
     )
     monkeypatch.setattr(telemetry, "Settings", lambda: settings)
     factory = Mock()
@@ -182,6 +200,7 @@ def test_client_uses_settings_explicitly(monkeypatch):
             secret_key="sk-lf-config",
             base_url="https://us.cloud.langfuse.com",
             environment="test",
+            release="b" * 40,
             tracing_enabled=True,
         )
         register.assert_called_once_with(factory.return_value.shutdown)
