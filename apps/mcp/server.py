@@ -24,7 +24,12 @@ async def temporal_client() -> Client:
 
 
 @mcp.tool()
-@observe(reuse_current=True, as_type="tool")
+@observe(
+    reuse_current=True,
+    as_type="tool",
+    input=lambda args: args["question"],
+    output=lambda result: result["run_id"],
+)
 async def answer(question: str, limit: int = 5) -> dict:
     """Start a durable extractive answer run; poll get_answer for its result."""
     request = AnswerRequest(question, limit)
@@ -45,6 +50,19 @@ async def answer(question: str, limit: int = 5) -> dict:
     reuse_current=True,
     as_type="tool",
     metadata=lambda args: {"answer_id": args["run_id"]},
+    input=lambda args: args["run_id"],
+    output=lambda result: (
+        "\n\n".join(
+            text
+            for text in (
+                result["result"]["short_answer"],
+                result["result"]["explanation"],
+            )
+            if text
+        )
+        if "result" in result
+        else result["status"]
+    ),
 )
 async def get_answer(run_id: str) -> dict:
     """Return run status and, on completion, answer text and original citations."""

@@ -10,6 +10,7 @@ dependencies = [
     "elasticsearch[async]>=9,<10",
     "fastapi>=0.115,<1",
     "langfuse>=4,<5",
+    "litellm>=1.81,<2",
     "mcp[cli]>=2.3.0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.30,<2",
     "opentelemetry-instrumentation-fastapi>=0.51b0,<1",

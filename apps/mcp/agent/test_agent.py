@@ -3,9 +3,13 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 from temporalio.converter import DataConverter
 
-from apps.mcp.agent.activities import AnswerActivities, aextractive_synthesis
+from apps.mcp.agent.activities import AnswerActivities
 from apps.mcp.agent.models import AnswerRequest, AnswerResult, Passage, SynthesisInput
 from backend.repositories.kilt import ElasticsearchKiltRepository
+from backend.services.answer_synthesis.answer_synthesis import (
+    AnswerSynthesisService,
+    ExtractiveSynthesis,
+)
 from backend.services.kilt.kilt import KiltService
 
 
@@ -38,14 +42,21 @@ async def test_original_paragraph_identity():
 
 
 async def test_abstention_and_forged_citations():
-    assert (await aextractive_synthesis(SynthesisInput("question", []))).abstained
+    assert (
+        await ExtractiveSynthesis().synthesize(SynthesisInput("question", []))
+    ).abstained
     p = Passage("v:1:0", "v", "1", 0, "Title", "Original text")
     forged = Passage("v:1:0", "v", "1", 0, "Title", "Fabricated text")
     activities = AnswerActivities(
-        Mock(), AsyncMock(return_value=AnswerResult("answer", "", [forged]))
+        Mock(),
+        AnswerSynthesisService(
+            Mock(
+                synthesize=AsyncMock(return_value=AnswerResult("answer", "", [forged]))
+            )
+        ),
     )
     assert (await activities.agenerate(SynthesisInput("question", [p]))).abstained
-    result = await aextractive_synthesis(SynthesisInput("question", [p]))
+    result = await ExtractiveSynthesis().synthesize(SynthesisInput("question", [p]))
     assert result.short_answer == p.text
     assert result.citations == [p]
 
@@ -77,7 +88,7 @@ async def test_workflow_retrieves_before_synthesis(monkeypatch):
             return [p]
         assert argument.passages == [p]
         assert argument.session_id == "codex:chat-a"
-        return await aextractive_synthesis(argument)
+        return await ExtractiveSynthesis().synthesize(argument)
 
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
     result = await module.AnswerWorkflow().run(

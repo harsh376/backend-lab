@@ -11,6 +11,10 @@ from opentelemetry.trace import StatusCode
 from apps.mcp import server, telemetry
 from apps.mcp.agent.activities import AnswerActivities
 from apps.mcp.agent.models import AnswerRequest, Passage, SynthesisInput
+from backend.services.answer_synthesis.answer_synthesis import (
+    AnswerSynthesisService,
+    ExtractiveSynthesis,
+)
 
 
 def test_disabled_without_credentials(monkeypatch):
@@ -46,7 +50,8 @@ async def test_cross_process_context_and_errors(monkeypatch):
         assert request.trace_context
         passage = Passage("v:1:0", "v", "1", 0, "Title", "Evidence")
         activities = AnswerActivities(
-            Mock(aretrieve_passages=AsyncMock(return_value=[asdict(passage)]))
+            Mock(aretrieve_passages=AsyncMock(return_value=[asdict(passage)])),
+            AnswerSynthesisService(ExtractiveSynthesis()),
         )
         assert await activities.aretrieve(request) == [passage]
         result = await activities.agenerate(
@@ -73,10 +78,8 @@ async def test_cross_process_context_and_errors(monkeypatch):
         assert root.attributes["langfuse.observation.type"] == "tool"
         assert any(s.status.status_code == StatusCode.ERROR for s in children)
         assert started["run_id"] == temporal.start_workflow.call_args.kwargs["id"]
-        assert json.loads(root.attributes["langfuse.observation.input"]) == {
-            "question": "question",
-            "limit": 5,
-        }
+        assert root.attributes["langfuse.observation.input"] == "question"
+        assert root.attributes["langfuse.observation.output"] == started["run_id"]
         retrieval = next(s for s in children if s.name == "retrieve_answer_evidence")
         assert json.loads(retrieval.attributes["langfuse.observation.input"]) == {
             "request": asdict(request),
@@ -111,13 +114,24 @@ async def test_cross_process_context_and_errors(monkeypatch):
         poll = next(s for s in exporter.get_finished_spans() if s.name == "get_answer")
         assert poll.attributes["langfuse.observation.type"] == "tool"
         assert len(exporter.get_finished_spans()) == 5
-        assert json.loads(poll.attributes["langfuse.observation.output"]) == {
+        assert poll.attributes["langfuse.observation.output"] == "RUNNING"
+        assert poll.attributes["langfuse.observation.input"] == started["run_id"]
+        exporter.clear()
+        server._get_answer.return_value = {
             "run_id": started["run_id"],
-            "status": "RUNNING",
+            "status": "COMPLETED",
+            "result": asdict(result),
         }
-        assert json.loads(poll.attributes["langfuse.observation.input"]) == {
-            "run_id": started["run_id"],
-        }
+        with provider.get_tracer("mcp-python-sdk").start_as_current_span(
+            "get_answer", attributes={"gen_ai.operation.name": "execute_tool"}
+        ):
+            completed = await server.get_answer(started["run_id"])
+        instance.flush()
+        poll = exporter.get_finished_spans()[0]
+        assert poll.attributes["langfuse.observation.output"] == (
+            f"{result.short_answer}\n\n{result.explanation}"
+        )
+        assert completed["result"] == asdict(result)
     finally:
         instance.shutdown()
 
@@ -320,7 +334,8 @@ async def test_chat_sessions_propagate_without_leaking(monkeypatch):
                 )
             )[0]
             activities = AnswerActivities(
-                Mock(aretrieve_passages=AsyncMock(return_value=[]))
+                Mock(aretrieve_passages=AsyncMock(return_value=[])),
+                AnswerSynthesisService(ExtractiveSynthesis()),
             )
             await activities.aretrieve(request)
             await activities.agenerate(

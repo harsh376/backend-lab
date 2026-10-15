@@ -46,6 +46,72 @@ With the stack running, submit a question directly to Temporal:
 uv run python -m apps.mcp.agent.workflow
 ```
 
+## OpenAI and Claude synthesis through LiteLLM
+
+Synthesis lives in `backend/services/answer_synthesis/answer_synthesis.py`.
+`AnswerSynthesisService`
+accepts a `SynthesisAdapter` implementing `async synthesize(data) -> AnswerResult`
+and applies shared citation identity checks. `ExtractiveSynthesis` supplies the
+baseline; `LiteLLMSynthesis` adapts OpenAI and Claude through LiteLLM. To add a
+synthesis variation, implement that interface and inject it into the service;
+the MCP tools and Temporal workflow do not need to change. The worker constructs
+the LiteLLM adapter directly and supplies the Langfuse observation factory. Provider
+rejections are translated into Temporal failures by the activity layer.
+
+The worker always uses LiteLLM and defaults to
+`MCP_ANSWER_MODEL=openai/gpt-5.6-terra`. Set the selected provider's key in
+`compose/.env`; a missing key fails worker startup. For OpenAI:
+
+```dotenv
+MCP_ANSWER_MODEL=openai/gpt-5.6-terra
+OPENAI_API_KEY=your-openai-api-key
+```
+
+Or for Claude:
+
+```dotenv
+MCP_ANSWER_MODEL=anthropic/claude-sonnet-5
+ANTHROPIC_API_KEY=your-anthropic-api-key
+```
+
+Use a model available to your account that supports structured output through
+LiteLLM. The model name is configurable; these are examples, not an allowlist.
+Only the selected provider's key is required. Keys are passed only to the worker
+container and are never included in workflow inputs or results. Keep real keys
+out of version control.
+
+Apply changes by rebuilding/recreating the worker:
+
+```sh
+docker compose -f compose/temporal.yaml up -d --build agent-worker
+```
+
+The existing `answer` and `get_answer` tools use the worker's configured model;
+there is no model argument on the tools. For a worker started outside Docker,
+export the same variables in its environment; `compose/.env` is not loaded by
+Python automatically. Both Docker and direct workflow submissions use this worker
+configuration. Switching models affects subsequent synthesis activities, including
+retries, so finish existing runs before changing it for an experiment.
+
+Optional settings are `MCP_ANSWER_MAX_TOKENS` (default `1024`) and
+`MCP_ANSWER_TIMEOUT_SECONDS` (default `40`, maximum `45`, below the activity's
+60-second timeout). LiteLLM retries and response caching are disabled; Temporal
+retains its existing activity retry policy. Authentication, model-access and bad
+request errors fail without retry. Transient errors can be retried by Temporal;
+a timed-out provider call may still have executed and incurred cost.
+
+Synthesis requests a strict JSON schema with `short_answer`, `explanation`,
+`citation_ids` and `abstained`. The backend resolves citation IDs to the original
+retrieved passages. Empty retrieval skips the model. Malformed, truncated,
+refused or invalidly cited responses abstain, retaining any returned usage.
+Citation identity is checked; semantic evidence verification is not implemented.
+
+Results include `provider`, `model`, normalized token `usage`, and
+`estimated_cost_usd`. Cost is estimated from LiteLLM's pricing catalog and is null
+when unavailable. These fields describe the completed synthesis attempt, not all
+retry attempts or total host spend, and are not a durable cost ledger or budget
+enforcement mechanism. The extractive baseline returns empty usage and null cost.
+
 ## Langfuse tracing
 
 Use Langfuse Cloud's free Hobby plan. Create an account and project, then generate
@@ -112,10 +178,13 @@ logging full request metadata or credentials.
 Observation inputs include the question and retrieval limit, the full retrieved
 passages supplied to synthesis, and the run ID supplied to polling. These inputs
 are exported to your configured Langfuse instance. Outputs capture the returned
-passages, synthesis result, submission status, and polling result. The current
-extractive baseline is a span, not an LLM generation, and reports no fabricated
-usage or cost. When adding a real model provider, instrument its actual call as a
-Langfuse generation and attach response usage/cost there.
+passages, synthesis result, submission status, and polling result. The extractive
+baseline is a span, not an LLM generation, and reports no fabricated usage or cost.
+LiteLLM synthesis creates one nested `answer_model` generation per activity attempt,
+under the existing synthesis observation. It records the configured model, prompt
+version, model parameters, returned response model/ID, finish reason, usage and
+estimated cost. It inherits the activity's trace and chat session; no LiteLLM
+Langfuse callback is needed.
 
 The SDK batches asynchronously and shuts down on normal process exit. Forced
 termination can lose buffered telemetry; traces are not a durable accounting ledger.

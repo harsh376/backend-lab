@@ -1,6 +1,6 @@
 """Shared runtime configuration for API, MCP, and background workers."""
 
-from pydantic import PositiveInt, SecretStr
+from pydantic import Field, PositiveInt, SecretStr
 
 from backend.db.config import DatabaseSettings
 
@@ -13,6 +13,12 @@ class Settings(DatabaseSettings):
     temporal_address: str = "localhost:7233"
     elasticsearch_url: str = "http://localhost:9200"
     kilt_index: str = "kilt"
+
+    mcp_answer_model: str = "openai/gpt-5.6-terra"
+    mcp_answer_max_tokens: PositiveInt = 1024
+    mcp_answer_timeout_seconds: float = Field(default=40, gt=0, le=45)
+    openai_api_key: SecretStr | None = None
+    anthropic_api_key: SecretStr | None = None
 
     celery_broker_url: str = "redis://localhost:6379/0"
 

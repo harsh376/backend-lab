@@ -7,8 +7,13 @@ from temporalio.worker import Worker
 from apps.mcp.agent.activities import AnswerActivities
 from apps.mcp.agent.workflow import AnswerWorkflow
 from apps.mcp.telemetry import client as telemetry_client
+from apps.mcp.telemetry import observation
 from backend.config import Settings
 from backend.repositories.kilt import ElasticsearchKiltRepository
+from backend.services.answer_synthesis.answer_synthesis import (
+    AnswerSynthesisService,
+    LiteLLMSynthesis,
+)
 from backend.services.kilt.kilt import KiltService
 
 TASK_QUEUE = "kilt-answers"
@@ -16,10 +21,14 @@ TASK_QUEUE = "kilt-answers"
 
 async def main() -> None:
     settings = Settings()
+    synthesis = AnswerSynthesisService(
+        LiteLLMSynthesis(settings, observation_factory=observation)
+    )
     client = await Client.connect(settings.temporal_address)
     async with AsyncElasticsearch(settings.elasticsearch_url) as es:
         activities = AnswerActivities(
-            KiltService(ElasticsearchKiltRepository(es, settings.kilt_index))
+            KiltService(ElasticsearchKiltRepository(es, settings.kilt_index)),
+            synthesis=synthesis,
         )
         worker = Worker(
             client,

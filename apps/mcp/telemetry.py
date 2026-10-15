@@ -107,7 +107,14 @@ def current_context() -> dict[str, str] | None:
 
 
 def observe(
-    name=None, *, trace_context=None, metadata=None, as_type="span", reuse_current=False
+    name=None,
+    *,
+    trace_context=None,
+    metadata=None,
+    as_type="span",
+    reuse_current=False,
+    input=None,
+    output=None,
 ):
     """Capture async arguments/results and infer trace context and Temporal metadata.
 
@@ -134,6 +141,7 @@ def observe(
             span_metadata = _activity_metadata()
             if metadata:
                 span_metadata.update(metadata(arguments))
+            span_input = input(arguments) if input else arguments
             if reuse_current:
                 instance = client()
                 recording = trace.get_current_span().is_recording()
@@ -142,11 +150,13 @@ def observe(
                         "langfuse.observation.type", as_type
                     )
                     instance.update_current_span(
-                        input=_serialize(arguments), metadata=span_metadata
+                        input=_serialize(span_input), metadata=span_metadata
                     )
                 result = await function(*args, **kwargs)
                 if instance is not None and recording:
-                    instance.update_current_span(output=_serialize(result))
+                    instance.update_current_span(
+                        output=_serialize(output(result) if output else result)
+                    )
                 return result
             definition = getattr(wrapped, "__temporal_activity_definition", None)
             inferred_name = (
@@ -156,7 +166,7 @@ def observe(
             )
             with observation(
                 name or inferred_name,
-                input=_serialize(arguments),
+                input=_serialize(span_input),
                 trace_context=(
                     trace_context(arguments)
                     if trace_context
@@ -168,7 +178,7 @@ def observe(
             ) as span:
                 result = await function(*args, **kwargs)
                 if span is not None:
-                    span.update(output=_serialize(result))
+                    span.update(output=_serialize(output(result) if output else result))
                 return result
 
         return wrapped
