@@ -1,8 +1,13 @@
 # MCP tool over a durable agent
 
-Date: 2026-10-18
+Date: 2026-10-19
 
 Code: [mcp-tool-durable-agent-v1](https://github.com/harsh376/backend-lab/tree/mcp-tool-durable-agent-v1)
+
+## Video demos
+
+- [Youtube: Compare MCP tool runs with and without a cost budget](https://youtu.be/k5RaU0go5_k)
+- [Youtube: Durable worker recovery](https://youtu.be/R4757yfjd5Q)
 
 ## What I built
 

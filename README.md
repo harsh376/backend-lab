@@ -1,6 +1,10 @@
 # Backend Lab
 
-Monorepo structure:
+## Posts
+
+- October 19, 2026: [MCP tool over a durable agent](posts/2026-10-19-mcp-tool-durable-agent.md)
+
+## Monorepo structure:
 
 - FastAPI app: `apps/api/`
 - MCP server: `apps/mcp/`
