@@ -113,3 +113,52 @@ def test_tracing_initialized_before_serving(monkeypatch, arguments, expected):
     monkeypatch.setattr(server.mcp, "run", run)
     server.main()
     assert calls == ["tracing", "serving"]
+
+
+@pytest.mark.parametrize("status", list(WorkflowExecutionStatus))
+async def test_idempotent_retry_returns_existing_run(monkeypatch, status):
+    from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
+    from temporalio.exceptions import WorkflowAlreadyStartedError
+
+    client = Mock()
+    client.start_workflow = AsyncMock()
+    monkeypatch.setattr(server, "temporal_client", AsyncMock(return_value=client))
+    first = await server.answer("question", idempotency_key="eval:run:case")
+    options = client.start_workflow.call_args.kwargs
+    assert options["id_reuse_policy"] == WorkflowIDReusePolicy.REJECT_DUPLICATE
+    assert options["id_conflict_policy"] == WorkflowIDConflictPolicy.FAIL
+    assert "eval:run:case" not in first["run_id"]
+    description = Mock(status=status)
+    description.memo = AsyncMock(return_value=options["memo"])
+    client.get_workflow_handle.return_value.describe = AsyncMock(
+        return_value=description
+    )
+    client.start_workflow.side_effect = WorkflowAlreadyStartedError(
+        first["run_id"], "AnswerWorkflow"
+    )
+    retry = await server.answer("question", idempotency_key="eval:run:case")
+    assert retry == {"run_id": first["run_id"], "status": status.name}
+    assert client.start_workflow.call_args.kwargs["id"] == first["run_id"]
+    with pytest.raises(ValueError, match="different arguments"):
+        await server.answer("different", idempotency_key="eval:run:case")
+    with pytest.raises(ValueError, match="different arguments"):
+        await server.answer("question", limit=3, idempotency_key="eval:run:case")
+    with pytest.raises(ValueError, match="different arguments"):
+        await server.answer("question", budget_usd=0.1, idempotency_key="eval:run:case")
+
+
+@pytest.mark.parametrize("key", ["", "   ", "x" * 257])
+async def test_invalid_idempotency_key_does_not_connect(monkeypatch, key):
+    connect = AsyncMock()
+    monkeypatch.setattr(server, "temporal_client", connect)
+    with pytest.raises(ValueError, match="idempotency_key"):
+        await server.answer("question", idempotency_key=key)
+    connect.assert_not_awaited()
+
+
+async def test_unkeyed_submissions_remain_independent(monkeypatch):
+    client = Mock(start_workflow=AsyncMock())
+    monkeypatch.setattr(server, "temporal_client", AsyncMock(return_value=client))
+    first = await server.answer("question")
+    second = await server.answer("question")
+    assert first["run_id"] != second["run_id"]

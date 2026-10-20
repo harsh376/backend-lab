@@ -56,3 +56,12 @@ Supply an optional positive `budget_usd` when starting a run:
 ```json
 {"question": "When did Arthur's Magazine begin publication?", "limit": 5, "budget_usd": 0.05}
 ```
+
+## Retrying answer submissions
+
+Use an optional `idempotency_key` to retry a submission without starting another
+answer workflow:
+
+```json
+{"question": "When did Arthur's Magazine begin publication?", "limit": 5, "idempotency_key": "eval:baseline-001:case-001:attempt-1"}
+```
