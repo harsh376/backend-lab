@@ -437,6 +437,7 @@ async def test_eval_tools_enrich_sdk_root_spans(monkeypatch):
             "tags": None,
             "timeout": 120,
             "retrieval_k": 5,
+            "experiment_name": None,
         }
         assert (
             json.loads(submission.attributes["langfuse.observation.output"]) == started

@@ -18,7 +18,7 @@ class Settings(DatabaseSettings):
     mcp_answer_max_tokens: PositiveInt = 1024
     mcp_answer_timeout_seconds: float = Field(default=40, gt=0, le=45)
     mcp_verifier_model: str = ""
-    eval_answer_model: str = ""
+    eval_judge_model: str = ""
     ollama_api_base: str = "http://localhost:11434"
     openai_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
@@ -36,7 +36,7 @@ class Settings(DatabaseSettings):
     langfuse_tracing_enabled: bool = True
     git_commit_sha: str | None = None
 
-    @field_validator("eval_answer_model", "mcp_verifier_model", mode="before")
+    @field_validator("eval_judge_model", "mcp_verifier_model", mode="before")
     @classmethod
     def resolve_answer_model_fallback(cls, value, info: ValidationInfo) -> str:
         return value or info.data["mcp_answer_model"]

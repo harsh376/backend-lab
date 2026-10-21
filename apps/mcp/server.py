@@ -166,12 +166,14 @@ async def run_evals(
     tags: list[str] | None = None,
     timeout: float = 120,
     retrieval_k: int = 5,
+    experiment_name: str | None = None,
 ) -> dict:
     """Start dataset evals through AnswerWorkflow directly. Poll get_evals.
 
     Select cases from the bundled KILT dev dataset by ID or tags.
     Defaults to three page_verified cases. Pass tags=[] to disable tag filtering.
     Each case has independent, linked eval and answer traces.
+    Set experiment_name for a readable Langfuse label; omitted uses Temporal IDs.
     """
     request = EvalRunRequest(
         case_id=case_id,
@@ -179,6 +181,7 @@ async def run_evals(
         tags=["page_verified"] if tags is None else tags,
         timeout=timeout,
         retrieval_k=retrieval_k,
+        experiment_name=experiment_name,
         trace_context=current_context(),
     )
     client = await Client.connect(
@@ -214,6 +217,26 @@ async def get_evals(run_id: str) -> EvalRunResponse:
     if description.status == WorkflowExecutionStatus.COMPLETED:
         result["results"] = await handle.result()
         result["summary"] = summarize_retrieval(result["results"])
+        for case_result in result["results"]:
+            if "experiment_id" in case_result:
+                result["experiment_id"] = case_result["experiment_id"]
+            if "experiment_url" in case_result:
+                result["experiment_url"] = case_result["experiment_url"]
+        result["coverage"] = {
+            "total": len(result["results"]),
+            "completed": sum(
+                r.get("output", {}).get("status") == "COMPLETED"
+                for r in result["results"]
+            ),
+            "failed": sum(
+                r.get("output", {}).get("status") != "COMPLETED"
+                for r in result["results"]
+            ),
+            "retrieval_scored": result["summary"]["mrr_at_k_count"],
+            "retrieval_skipped": (
+                len(result["results"]) - result["summary"]["mrr_at_k_count"]
+            ),
+        }
     return result
 
 

@@ -61,13 +61,14 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
             "result": {
                 "short_answer": "answer",
                 "abstained": False,
+                "usage_cost_usd": 0.0,
             },
         },
         "evaluators": {},
     }
 
     judge = AsyncMock(return_value={"correctness": score})
-    second = AsyncMock(return_value={"quality": score})
+    second = AsyncMock(return_value={"ap_at_k": score})
     evaluators = [("answer_correctness", judge, "answer")]
     if evaluator_count == 2:
         evaluators.append(("additional_quality", second, "answer"))
@@ -82,7 +83,8 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
         )
         == result
     )
-    assert observed["trace_context"] == parent_context
+    assert observed["trace_context"] != parent_context
+    assert "parent_span_id" not in observed["trace_context"]
     evaluate.assert_awaited_once_with(
         case, 120, {"trace_id": "eval-trace"} if enabled else None
     )
@@ -94,11 +96,12 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
         judge.assert_not_awaited()
     assert result["evaluators"]["answer_correctness"].get("correctness") == score
     if evaluator_count == 2:
-        assert result["evaluators"]["additional_quality"].get("quality") == score
+        assert result["evaluators"]["additional_quality"].get("ap_at_k") == score
         if status == "COMPLETED":
             second.assert_awaited_once_with(case, "answer", abstained=False)
         else:
             second.assert_not_awaited()
+    assert "answer_cost_usd" not in result
     assert observed["session_id"] == "eval-run"
     assert observed["input"]["accepted_pages"] == sorted(
         {
@@ -118,7 +121,7 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
         assert output["evaluators"]["answer_correctness"].get("correctness") == score
         assert "answers" not in output["evaluators"]
         if evaluator_count == 2:
-            assert output["evaluators"]["additional_quality"].get("quality") == score
+            assert output["evaluators"]["additional_quality"].get("ap_at_k") == score
         assert output["case_id"] == result["case_id"]
         assert span.update.call_args_list[0].kwargs["metadata"] == {
             "answer_id": "answer-run",
@@ -138,7 +141,7 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
         span.update.assert_not_called()
 
 
-async def test_direct_answer_has_separate_linked_trace(monkeypatch):
+async def test_direct_answer_continues_experiment_trace(monkeypatch):
     from apps.mcp.agent.models import AnswerResult
 
     case = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
@@ -178,7 +181,7 @@ async def test_direct_answer_has_separate_linked_trace(monkeypatch):
     assert request.trace_context["trace_id"] == "answer-trace"
     assert invocation.kwargs["task_queue"] == "kilt-answers"
     assert observed["name"] == "answer"
-    assert observed["trace_context"]["trace_id"] != "eval-trace"
+    assert observed["trace_context"]["trace_id"] == "eval-trace"
     assert observed["metadata"]["eval_trace_id"] == "eval-trace"
     assert result["answer_trace_id"] == observed["trace_context"]["trace_id"]
     assert result["output"]["status"] == "COMPLETED"
@@ -215,7 +218,8 @@ async def test_direct_answer_timeout(monkeypatch):
     )
 
 
-async def test_decorated_evaluators_are_direct_children(monkeypatch):
+@pytest.mark.parametrize("experiment_name", [None, "BM25 baseline"])
+async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_name):
     from langfuse import Langfuse
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
@@ -224,14 +228,19 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch):
 
     exporter = InMemorySpanExporter()
     instance = Langfuse(
-        public_key="pk-lf-eval-helper-test",
+        public_key=f"pk-lf-eval-helper-test-{experiment_name or 'default'}",
         secret_key="sk-lf-test",
         tracer_provider=TracerProvider(),
         span_exporter=exporter,
     )
     monkeypatch.setattr(activities.telemetry, "client", lambda: instance)
     monkeypatch.setattr(
-        activities.activity, "info", lambda: Mock(workflow_id="eval-run")
+        instance, "get_trace_url", lambda **kw: "https://example.com/project/p/traces/t"
+    )
+    monkeypatch.setattr(
+        activities.activity,
+        "info",
+        lambda: Mock(workflow_id="eval-run", workflow_run_id="execution"),
     )
     case = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
     monkeypatch.setattr(
@@ -257,7 +266,9 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch):
         ],
     )
     try:
-        result = await activities.evaluate_mcp_case(EvalCaseRequest(case))
+        result = await activities.evaluate_mcp_case(
+            EvalCaseRequest(case, experiment_name=experiment_name)
+        )
         instance.flush()
         spans = exporter.get_finished_spans()
         assert {s.name for s in spans} == {
@@ -266,7 +277,40 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch):
             "retrieval_mapk",
         }
         root = next(s for s in spans if s.name == "eval_case")
+        # SDK trace-id overrides use a synthetic, unexported parent.
+        assert root.parent is None or root.parent.span_id not in {
+            s.context.span_id for s in spans
+        }
+        root_id = format(root.context.span_id, "016x")
+        expected_name = experiment_name or (
+            f"eval-run/{activities.activity.info().workflow_run_id}"
+        )
+        assert root.attributes["langfuse.experiment.name"] == expected_name
+        # A local label must not masquerade as a hosted dataset ID: the UI
+        # uses that attribute to turn input cells into dataset-item links.
+        assert "langfuse.experiment.dataset.id" not in root.attributes
+        assert (
+            root.attributes["langfuse.experiment.metadata.local_dataset"]
+            == "kilt-v1/dev"
+        )
+        assert root.attributes["langfuse.experiment.item.id"] == case.case_id
+        assert (
+            root.attributes["langfuse.experiment.item.root_observation_id"] == root_id
+        )
+        assert result["experiment_url"] == (
+            "https://example.com/project/p/experiments/results?baseline="
+            + result["experiment_id"]
+        )
         for child in (s for s in spans if s.name != "eval_case"):
+            assert child.attributes["langfuse.experiment.name"] == expected_name
+            assert "langfuse.experiment.dataset.id" not in child.attributes
+            assert child.attributes["langfuse.experiment.id"] == result["experiment_id"]
+            assert child.attributes["langfuse.experiment.item.id"] == case.case_id
+            assert (
+                child.attributes["langfuse.experiment.item.root_observation_id"]
+                == root_id
+            )
+            assert child.attributes["langfuse.experiment.metadata.retrieval_k"] == "5"
             assert child.parent.span_id == root.context.span_id
             assert child.context.trace_id == root.context.trace_id
         assert result["trace_id"] == format(root.context.trace_id, "032x")
@@ -324,4 +368,32 @@ async def test_load_eval_cases_observes_selection(monkeypatch):
             "count": 3,
             "case_ids": [case.case_id for case in cases],
         }
+    )
+
+
+def test_cost_fields_are_not_emitted_as_scores(monkeypatch):
+    instance = Mock()
+    monkeypatch.setattr(activities.telemetry, "client", lambda: instance)
+    activities._record_evaluation(
+        {
+            "output": {"status": "COMPLETED"},
+            "answer_cost_usd": 0.03,
+            "evaluators": {
+                "answer_correctness": {
+                    "correctness": 1,
+                    "judge_cost_usd": 0.002,
+                    "usage_cost_usd": 0.002,
+                    "answer_cost_usd": 0.03,
+                }
+            },
+        }
+    )
+    scores = {
+        call.kwargs["name"]: call.kwargs["value"]
+        for call in instance.score_current_span.call_args_list
+    }
+    assert scores == {"correctness": 1}
+    assert all(
+        "cost_details" not in call.kwargs
+        for call in instance.update_current_span.call_args_list
     )

@@ -46,8 +46,8 @@ async def evaluate_correctness(
             settings = Settings()
             model = LiteLLMStructuredModel(
                 settings,
-                model=settings.eval_answer_model,
-                model_setting="EVAL_ANSWER_MODEL",
+                model=settings.eval_judge_model,
+                model_setting="EVAL_JUDGE_MODEL",
                 observation_factory=observation,
             )
         result["model"] = model.model
@@ -71,7 +71,7 @@ async def evaluate_correctness(
             prompt_version=PROMPT_VERSION,
             observation_name="judge_model",
         )
-        result.update(usage=completion.usage, usage_cost_usd=completion.usage_cost_usd)
+        result.update(usage=completion.usage)
         choices = completion.response.choices
         if not choices or choices[0].finish_reason != "stop":
             raise ValueError("Incomplete judgment")

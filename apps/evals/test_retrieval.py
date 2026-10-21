@@ -151,6 +151,6 @@ async def test_retrieval_activity_spans_and_scores(case, monkeypatch):
     assert result["evaluators"]["retrieval_mrrk"]["reciprocal_rank_at_k"] == 0.5
     assert set(spans) == {"eval_case", "retrieval_mapk", "retrieval_mrrk"}
     assert {c.kwargs["name"] for c in spans["eval_case"].score.call_args_list} == {
-        "ap_at_k",
-        "reciprocal_rank_at_k",
+        "ap_at_2",
+        "reciprocal_rank_at_2",
     }

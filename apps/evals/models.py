@@ -16,6 +16,9 @@ class RetrievalSummary(TypedDict):
 class EvalRunResponse(TypedDict):
     run_id: str
     status: str
+    experiment_id: NotRequired[str]
+    experiment_url: NotRequired[str]
+    coverage: NotRequired[dict[str, int]]
     results: NotRequired[list[dict]]
     summary: NotRequired[RetrievalSummary]
 

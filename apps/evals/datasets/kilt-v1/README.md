@@ -2,7 +2,17 @@
 
 Run commands from the repository root. The bundled `dev.json` contains
 45 cases (30 NQ and 15 HotpotQA); `manifest.json` records source hashes,
-sampling settings, counts, and corpus source identity. Human review is pending.
+sampling settings, counts, and corpus source identity.
+
+Corpus verification has already been run and its tags are saved in `dev.json`:
+
+- 45/45 cases have `page_verified`.
+- 33/45 cases have `passage_verified` (the tag for paragraph-range and character-offset checks).
+
+Human review of answer correctness and semantic support is still pending;
+the saved verification tags record structural corpus checks. The next step is
+to run a baseline evaluation and inspect its failures. Refresh corpus verification
+when the dataset or corpus changes.
 
 ## Build
 

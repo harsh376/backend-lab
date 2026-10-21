@@ -25,7 +25,7 @@ def _clear_env(monkeypatch) -> None:
 
 
 @pytest.mark.parametrize("override", [None, "", "anthropic/judge"])
-@pytest.mark.parametrize("field", ["eval_answer_model", "mcp_verifier_model"])
+@pytest.mark.parametrize("field", ["eval_judge_model", "mcp_verifier_model"])
 def test_model_fallback_resolved_in_settings(monkeypatch, override, field):
     monkeypatch.setenv("MCP_ANSWER_MODEL", "ollama_chat/answer")
     monkeypatch.delenv(field.upper(), raising=False)

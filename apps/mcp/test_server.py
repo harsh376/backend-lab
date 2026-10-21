@@ -178,14 +178,30 @@ async def test_evals_tools_start_and_read(monkeypatch):
     client.get_workflow_handle.return_value = handle
     connect = AsyncMock(return_value=client)
     monkeypatch.setattr(server.Client, "connect", connect)
-    started = await server.run_evals(limit=2, timeout=30)
+    started = await server.run_evals(
+        limit=2, timeout=30, experiment_name="BM25 baseline"
+    )
     invocation = client.start_workflow.call_args
     assert invocation.args[0] == server.EvalWorkflow.run
+    assert invocation.args[1].experiment_name == "BM25 baseline"
     assert invocation.args[1].limit == 2
     assert invocation.args[1].timeout == 30
     assert invocation.kwargs["task_queue"] == "kilt-evals"
     result = await server.get_evals(started["run_id"])
     assert result["results"] == await handle.result()
+    assert result["coverage"] == {
+        "total": 1,
+        "completed": 0,
+        "failed": 1,
+        "retrieval_scored": 0,
+        "retrieval_skipped": 1,
+    }
+    handle.result.return_value[0].update(
+        experiment_id="experiment", experiment_url="https://example.com/results"
+    )
+    linked = await server.get_evals(started["run_id"])
+    assert linked["experiment_id"] == "experiment"
+    assert linked["experiment_url"] == "https://example.com/results"
     with pytest.raises(ValueError):
         await server.get_evals("kilt-answer-invalid")
     await server.run_evals(timeout=0)

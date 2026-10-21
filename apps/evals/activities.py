@@ -6,7 +6,6 @@ from datetime import timedelta
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
-from opentelemetry.trace import INVALID_SPAN, use_span
 from temporalio import activity
 from temporalio.client import Client, WorkflowFailureError
 from temporalio.exceptions import ApplicationError
@@ -14,6 +13,10 @@ from temporalio.exceptions import ApplicationError
 from apps.evals.dataset import load_cases, select_cases
 from apps.evals.evaluators.answers import evaluate_correctness
 from apps.evals.evaluators.retrieval import evaluate_mapk, evaluate_mrrk
+from apps.evals.experiments import (
+    case_trace_context,
+    experiment_item,
+)
 from apps.evals.models import EvalCase
 from apps.evals.workflow import EvalCaseRequest, EvalRunRequest
 from apps.mcp import telemetry
@@ -58,6 +61,7 @@ async def load_eval_cases(request: EvalRunRequest) -> list[EvalCase]:
 @activity.defn(name="evaluate_mcp_case")
 @observe(
     "eval_case",
+    trace_context=case_trace_context,
     input=lambda args: {
         "question": args["request"].case.question,
         "accepted_answers": args["request"].case.accepted_answers,
@@ -80,12 +84,14 @@ async def load_eval_cases(request: EvalRunRequest) -> list[EvalCase]:
 async def evaluate_mcp_case(request: EvalCaseRequest) -> dict:
     case = request.case
     context = current_context()
-    result = await _generate_answer(case, request.timeout, context)
-    await _run_evaluators(case, result, request.retrieval_k)
-    if context:
-        result["trace_id"] = context["trace_id"]
-    _record_evaluation(result)
-    return result
+    with experiment_item(request) as report:
+        result = await _generate_answer(case, request.timeout, context)
+        await _run_evaluators(case, result, request.retrieval_k)
+        if context:
+            result["trace_id"] = context["trace_id"]
+        result.update(report)
+        _record_evaluation(result)
+        return result
 
 
 async def _run_evaluators(case, result, k):
@@ -152,9 +158,17 @@ def _record_evaluation(result):
     )
     for name, judgment in result["evaluators"].items():
         for metric, value in judgment.items():
-            if metric != "k" and isinstance(value, (int, float)):
+            if metric in {
+                "correctness",
+                "ap_at_k",
+                "reciprocal_rank_at_k",
+            } and isinstance(value, (int, float)):
                 instance.score_current_span(
-                    name=metric,
+                    name=(
+                        f"{metric.removesuffix('_at_k')}_at_{judgment['k']}"
+                        if "k" in judgment
+                        else metric
+                    ),
                     value=value,
                     data_type="NUMERIC",
                     comment=judgment.get("reason"),
@@ -175,25 +189,22 @@ async def _generate_answer(case, timeout, eval_context):
             f"{info.workflow_id}/{info.workflow_run_id}/{info.activity_id}",
         ).hex
     )
-    trace_id = uuid5(NAMESPACE_URL, run_id).hex
+    trace_id = (eval_context or {}).get("trace_id") or uuid5(NAMESPACE_URL, run_id).hex
     started = asyncio.get_running_loop().time()
     output = {"run_id": run_id, "status": "TIMEOUT"}
-    # Detach the answer root so its model cost and latency are independent.
-    with (
-        use_span(INVALID_SPAN),
-        observation(
-            "answer",
-            input=case.question,
-            trace_context={"trace_id": trace_id},
-            session_id=info.workflow_id,
-            metadata={
-                "answer_id": run_id,
-                "eval_run_id": info.workflow_id,
-                "eval_trace_id": (eval_context or {}).get("trace_id"),
-                "case_id": case.case_id,
-            },
-        ) as span,
-    ):
+    # Keep answer generations in the experiment trace for native cost aggregation.
+    with observation(
+        "answer",
+        input=case.question,
+        trace_context=eval_context or {"trace_id": trace_id},
+        session_id=info.workflow_id,
+        metadata={
+            "answer_id": run_id,
+            "eval_run_id": info.workflow_id,
+            "eval_trace_id": (eval_context or {}).get("trace_id"),
+            "case_id": case.case_id,
+        },
+    ) as span:
         try:
             async with asyncio.timeout(timeout):
                 client = await Client.connect(Settings().temporal_address)

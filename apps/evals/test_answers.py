@@ -36,7 +36,7 @@ async def test_judge_uses_structured_comparison(correct):
     assert result["correctness"] == int(correct)
     assert result["reason"] == "Semantic comparison."
     assert result["model"] == "test/judge"
-    assert result["usage_cost_usd"] == 0.01
+    assert "judge_cost_usd" not in result
     messages = model.complete.call_args.args[0]
     payload = json.loads(messages[1]["content"])
     assert payload["accepted_answers"] == case.accepted_answers

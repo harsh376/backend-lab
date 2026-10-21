@@ -21,12 +21,15 @@ class EvalRunRequest:
     timeout: float = 120
     trace_context: dict[str, str] | None = None
     retrieval_k: int = 5
+    experiment_name: str | None = None
 
     def validate(self) -> None:
         if not 0 < self.timeout <= 3600:
             raise ValueError("timeout must be between 0 and 3600 seconds")
         if self.retrieval_k <= 0:
             raise ValueError("retrieval_k must be positive")
+        if self.experiment_name is not None and not self.experiment_name.strip():
+            raise ValueError("experiment_name must not be blank")
         if self.limit <= 0:
             raise ValueError("limit must be positive")
 
@@ -37,6 +40,7 @@ class EvalCaseRequest:
     timeout: float = 120
     trace_context: dict[str, str] | None = None
     retrieval_k: int = 5
+    experiment_name: str | None = None
 
 
 @workflow.defn
@@ -64,6 +68,7 @@ class EvalWorkflow:
                         timeout=request.timeout,
                         trace_context=request.trace_context,
                         retrieval_k=request.retrieval_k,
+                        experiment_name=request.experiment_name,
                     ),
                     result_type=dict,
                     start_to_close_timeout=timedelta(seconds=request.timeout + 90),

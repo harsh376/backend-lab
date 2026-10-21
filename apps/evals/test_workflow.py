@@ -12,6 +12,7 @@ from apps.evals.workflow import EvalCaseRequest, EvalRunRequest, EvalWorkflow
 async def test_eval_payload_round_trip():
     request = EvalRunRequest(
         limit=2,
+        experiment_name="BM25 baseline",
         trace_context={"trace_id": "a" * 32, "parent_span_id": "b" * 16},
     )
     converter = pydantic_data_converter
@@ -51,7 +52,9 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
     context = {"trace_id": "a" * 32, "parent_span_id": "b" * 16}
     result = await EvalWorkflow().run(
-        EvalRunRequest(limit=2, timeout=10, trace_context=context)
+        EvalRunRequest(
+            limit=2, timeout=10, trace_context=context, experiment_name="BM25 baseline"
+        )
     )
     assert result[0]["output"]["status"] == "FAILED"
     assert result[0]["evaluators"] == {}
@@ -60,6 +63,7 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
     for invocation in execute.call_args_list[1:]:
         assert invocation.args[0] == "evaluate_mcp_case"
         assert invocation.args[1].trace_context == context
+        assert invocation.args[1].experiment_name == "BM25 baseline"
         assert invocation.kwargs["retry_policy"].maximum_attempts == 1
         assert invocation.kwargs["start_to_close_timeout"].total_seconds() == 100
 
@@ -71,6 +75,8 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
         {"timeout": 3601},
         {"limit": 0},
         {"retrieval_k": 0},
+        {"experiment_name": ""},
+        {"experiment_name": "   "},
     ],
 )
 async def test_invalid_requests_fail_before_loading(monkeypatch, kwargs):
