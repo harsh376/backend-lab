@@ -6,6 +6,7 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never \
     PYTHONUNBUFFERED=1
+RUN useradd --create-home --shell /usr/sbin/nologin appuser
 WORKDIR /app
 
 FROM base AS deps
@@ -20,13 +21,12 @@ ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 COPY pyproject.toml uv.lock ./
 COPY apps/__init__.py ./apps/__init__.py
 COPY apps/mcp ./apps/mcp
+COPY apps/evals ./apps/evals
 COPY backend ./backend
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 ENV PATH="/app/.venv/bin:${PATH}"
-RUN useradd --create-home --shell /usr/sbin/nologin appuser \
-    && chown -R appuser:appuser /app
 USER appuser
 
 CMD ["python", "-m", "apps.mcp.agent.worker"]

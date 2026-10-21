@@ -1,5 +1,7 @@
 """Tests for environment-driven application settings."""
 
+import pytest
+
 from backend.config import Settings
 
 _ENV_VARS = (
@@ -20,6 +22,18 @@ _ENV_VARS = (
 def _clear_env(monkeypatch) -> None:
     for name in _ENV_VARS:
         monkeypatch.delenv(name, raising=False)
+
+
+@pytest.mark.parametrize("override", [None, "", "anthropic/judge"])
+@pytest.mark.parametrize("field", ["eval_answer_model", "mcp_verifier_model"])
+def test_model_fallback_resolved_in_settings(monkeypatch, override, field):
+    monkeypatch.setenv("MCP_ANSWER_MODEL", "ollama_chat/answer")
+    monkeypatch.delenv(field.upper(), raising=False)
+    if override is not None:
+        monkeypatch.setenv(field.upper(), override)
+    assert getattr(Settings(_env_file=None), field) == (
+        override or "ollama_chat/answer"
+    )
 
 
 def test_defaults_when_unset(monkeypatch) -> None:

@@ -61,7 +61,7 @@ class LiteLLMVerification:
                 raise ValueError("Provide settings or a structured model.")
             model = LiteLLMStructuredModel(
                 settings,
-                model=settings.mcp_verifier_model or settings.mcp_answer_model,
+                model=settings.mcp_verifier_model,
                 model_setting="MCP_VERIFIER_MODEL",
                 observation_factory=observation_factory,
             )

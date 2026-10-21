@@ -1,6 +1,6 @@
 """Shared runtime configuration for API, MCP, and background workers."""
 
-from pydantic import Field, PositiveInt, SecretStr
+from pydantic import Field, PositiveInt, SecretStr, ValidationInfo, field_validator
 
 from backend.db.config import DatabaseSettings
 
@@ -17,7 +17,8 @@ class Settings(DatabaseSettings):
     mcp_answer_model: str = "openai/gpt-5.6-terra"
     mcp_answer_max_tokens: PositiveInt = 1024
     mcp_answer_timeout_seconds: float = Field(default=40, gt=0, le=45)
-    mcp_verifier_model: str | None = None
+    mcp_verifier_model: str = ""
+    eval_answer_model: str = ""
     ollama_api_base: str = "http://localhost:11434"
     openai_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
@@ -34,6 +35,11 @@ class Settings(DatabaseSettings):
     langfuse_tracing_environment: str = "local"
     langfuse_tracing_enabled: bool = True
     git_commit_sha: str | None = None
+
+    @field_validator("eval_answer_model", "mcp_verifier_model", mode="before")
+    @classmethod
+    def resolve_answer_model_fallback(cls, value, info: ValidationInfo) -> str:
+        return value or info.data["mcp_answer_model"]
 
     @property
     def otlp_enabled(self) -> bool:

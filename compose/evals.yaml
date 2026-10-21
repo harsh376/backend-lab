@@ -1,0 +1,41 @@
+# Start after Temporal and the answer worker: docker compose -f compose/evals.yaml up --build
+
+services:
+  eval-worker:
+    image: backend-lab-evals
+    build:
+      context: ..
+      dockerfile: apps/evals/Dockerfile
+      args:
+        GIT_COMMIT_SHA: ${GIT_COMMIT_SHA:-}
+    environment:
+      TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
+      LANGFUSE_TRACING_ENVIRONMENT: ${LANGFUSE_TRACING_ENVIRONMENT:-local}
+      LANGFUSE_TRACING_ENABLED: ${LANGFUSE_TRACING_ENABLED:-true}
+      EVAL_ANSWER_MODEL: ${EVAL_ANSWER_MODEL:-}
+      MCP_ANSWER_MODEL: ${MCP_ANSWER_MODEL:-openai/gpt-5.6-terra}
+      MCP_ANSWER_MAX_TOKENS: ${MCP_ANSWER_MAX_TOKENS:-1024}
+      MCP_ANSWER_TIMEOUT_SECONDS: ${MCP_ANSWER_TIMEOUT_SECONDS:-40}
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:11434}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    restart: unless-stopped
+
+  eval-run:
+    image: backend-lab-evals
+    build:
+      context: ..
+      dockerfile: apps/evals/Dockerfile
+      args:
+        GIT_COMMIT_SHA: ${GIT_COMMIT_SHA:-}
+    profiles: [cli]
+    entrypoint: [python, -m, apps.evals.run]
+    command: [--help]
+    environment:
+      TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
+    depends_on:
+      eval-worker:
+        condition: service_started

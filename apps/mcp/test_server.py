@@ -41,7 +41,12 @@ async def test_mcp_answer_protocol(monkeypatch):
         async with ClientSession(*client_streams) as session:
             await session.initialize()
             tools = await session.list_tools()
-            assert {tool.name for tool in tools.tools} == {"answer", "get_answer"}
+            assert {tool.name for tool in tools.tools} == {
+                "answer",
+                "get_answer",
+                "run_evals",
+                "get_evals",
+            }
 
             invalid = await session.call_tool("answer", {"question": " "})
             assert invalid.is_error
@@ -162,3 +167,26 @@ async def test_unkeyed_submissions_remain_independent(monkeypatch):
     first = await server.answer("question")
     second = await server.answer("question")
     assert first["run_id"] != second["run_id"]
+
+
+async def test_evals_tools_start_and_read(monkeypatch):
+    client = Mock(start_workflow=AsyncMock())
+    handle = Mock(
+        describe=AsyncMock(return_value=Mock(status=WorkflowExecutionStatus.COMPLETED)),
+        result=AsyncMock(return_value=[{"case_id": "case", "evaluators": {}}]),
+    )
+    client.get_workflow_handle.return_value = handle
+    connect = AsyncMock(return_value=client)
+    monkeypatch.setattr(server.Client, "connect", connect)
+    started = await server.run_evals(limit=2, timeout=30)
+    invocation = client.start_workflow.call_args
+    assert invocation.args[0] == server.EvalWorkflow.run
+    assert len(invocation.args[1].cases) == 2
+    assert invocation.args[1].timeout == 30
+    assert invocation.kwargs["task_queue"] == "kilt-evals"
+    result = await server.get_evals(started["run_id"])
+    assert result["results"] == await handle.result()
+    with pytest.raises(ValueError):
+        await server.get_evals("kilt-answer-invalid")
+    with pytest.raises(ValueError):
+        await server.run_evals(timeout=0)

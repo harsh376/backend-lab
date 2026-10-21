@@ -1,0 +1,44 @@
+{
+  "dataset_version": "kilt-v1",
+  "schema_version": 1,
+  "corpus_snapshot": {
+    "name": "kilt_knowledgesource",
+    "wikipedia_dump_date": "2019-08-01",
+    "filename": "kilt_knowledgesource.json",
+    "sha256": "f966d6f09c4ff91656db5c56c384f136b0c495c7083c043586b8cb1033c389a5"
+  },
+  "files": {
+    "dev": "dev.json"
+  },
+  "case_counts": {
+    "dev": 45
+  },
+  "status": "dev_populated_pending_review",
+  "split_seed": 42,
+  "split_group_key": "group_id",
+  "sampling": {
+    "seed": 42,
+    "method": "shuffle eligible records independently per source; take first unique normalized questions",
+    "eligibility": "Nonempty question and answers; at least one structurally valid provenance set",
+    "sources": [
+      {
+        "dataset": "nq",
+        "split": "dev",
+        "filename": "nq-dev-kilt.jsonl",
+        "sha256": "1bcdb150fb10504bd80b915730cde1b384c21647bcf14a4592e4e5df42cc6dfb",
+        "source_record_count": 2837,
+        "eligible_record_count": 2837,
+        "selected_count": 30
+      },
+      {
+        "dataset": "hotpotqa",
+        "split": "dev",
+        "filename": "hotpotqa-dev-kilt.jsonl",
+        "sha256": "7f2efbc22c462eb5710e5ecd99447702e7f48203eecd4489bf32a332389d70b6",
+        "source_record_count": 5600,
+        "eligible_record_count": 5600,
+        "selected_count": 15
+      }
+    ]
+  }
+}

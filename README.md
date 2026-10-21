@@ -7,7 +7,8 @@
 ## Monorepo structure:
 
 - FastAPI app: `apps/api/`
-- MCP server: `apps/mcp/`
+- MCP server and answer worker: `apps/mcp/`
+- Temporal answer evaluations and LLM judging: `apps/evals/`
 - React frontend: `apps/frontend/`
 - Pure JS frontend: `apps/basic_frontend/`
 - Python concepts: `apps/concepts/`
@@ -37,6 +38,30 @@ docker compose -f compose/base.yaml \
 Compose automatically loads `compose/.env`. Copy `compose/.env.example` when
 setting up a new checkout or when you want to restore the documented defaults.
 
+For the answer and eval apps, run each stack in a separate terminal, in this
+order. Wait for Elasticsearch and Temporal to become healthy before starting
+the application stacks:
+
+```bash
+# Terminal 1
+docker compose -f compose/elasticsearch.yaml up
+# Terminal 2
+docker compose -f compose/temporal.yaml up
+# Terminal 3
+docker compose -f compose/mcp.yaml up --build
+# Terminal 4
+docker compose -f compose/evals.yaml up --build
+```
+
+Temporal infrastructure lives in `temporal.yaml`, the MCP server and answer
+workers in `mcp.yaml`, and eval workers in `evals.yaml`. All use the same default
+Compose project and network because their files live in `compose/`. If using
+`-p`, supply the same name in every terminal. Use Ctrl+C or `stop` to stop one
+stack independently; avoid `--remove-orphans`, since the other stacks share
+the project. The eval CLI submits directly to Temporal; MCP exposes
+`run_evals` and `get_evals` for starting and polling the same eval workflow.
+See the
+[MCP](apps/mcp/README.md) and [eval](apps/evals/README.md) READMEs for commands.
 
 ## Checks
 

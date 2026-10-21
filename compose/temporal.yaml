@@ -1,8 +1,5 @@
-# Local Temporal development server with its built-in Web UI, plus the agent
-# worker that runs the kilt-answers workflows and its MCP entrypoint.
-# Start: docker compose -f compose/temporal.yaml up -d --build
-# Stop: docker compose -f compose/temporal.yaml down (preserves data)
-# Reset: docker compose -f compose/temporal.yaml down -v (deletes workflow data)
+# Temporal infrastructure and persistent workflow storage.
+# Start: docker compose -f compose/temporal.yaml up -d --wait
 services:
   temporal-init:
     image: temporalio/temporal:latest
@@ -34,85 +31,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
-
-  # Reaches Elasticsearch by service name when compose/elasticsearch.yaml is
-  # also up: both files share the default Compose project and network.
-  agent-worker:
-    build:
-      context: ..
-      dockerfile: apps/mcp/Dockerfile
-      args:
-        GIT_COMMIT_SHA: ${GIT_COMMIT_SHA:-}
-    environment:
-      TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
-      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
-      LANGFUSE_TRACING_ENVIRONMENT: ${LANGFUSE_TRACING_ENVIRONMENT:-local}
-      LANGFUSE_TRACING_ENABLED: ${LANGFUSE_TRACING_ENABLED:-true}
-      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
-      KILT_INDEX: ${KILT_INDEX:-kilt}
-      MCP_ANSWER_MODEL: ${MCP_ANSWER_MODEL:-openai/gpt-5.6-terra}
-      MCP_VERIFIER_MODEL: ${MCP_VERIFIER_MODEL:-}
-      MCP_ANSWER_MAX_TOKENS: ${MCP_ANSWER_MAX_TOKENS:-1024}
-      MCP_ANSWER_TIMEOUT_SECONDS: ${MCP_ANSWER_TIMEOUT_SECONDS:-40}
-      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    depends_on:
-      temporal:
-        condition: service_healthy
-    restart: unless-stopped
-
-  mcp:
-    build:
-      context: ..
-      dockerfile: apps/mcp/Dockerfile
-      args:
-        GIT_COMMIT_SHA: ${GIT_COMMIT_SHA:-}
-    command:
-      - python
-      - -m
-      - apps.mcp.server
-      - --transport
-      - streamable-http
-      - --host
-      - 0.0.0.0
-      - --port
-      - "8001"
-    environment:
-      TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
-      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
-      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
-      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}
-      LANGFUSE_TRACING_ENVIRONMENT: ${LANGFUSE_TRACING_ENVIRONMENT:-local}
-      LANGFUSE_TRACING_ENABLED: ${LANGFUSE_TRACING_ENABLED:-true}
-    ports:
-      - "127.0.0.1:8001:8001"
-    depends_on:
-      temporal:
-        condition: service_healthy
-    restart: unless-stopped
-
-  inspector:
-    image: node:22-slim
-    command:
-      - npx
-      - --yes
-      - "@modelcontextprotocol/inspector"
-      - --server-url
-      - http://mcp:8001/mcp
-      - --transport
-      - http
-    environment:
-      HOST: "0.0.0.0"
-      DANGEROUSLY_BIND_ALL_INTERFACES: "true"
-      MCP_AUTO_OPEN_ENABLED: "false"
-    ports:
-      - "127.0.0.1:6274:6274"
-    depends_on:
-      - mcp
-    restart: unless-stopped
 
 volumes:
   temporal-data:

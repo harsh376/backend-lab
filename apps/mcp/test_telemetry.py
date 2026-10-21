@@ -394,3 +394,60 @@ async def test_chat_session_resets_after_error():
             Mock(method="tools/call", meta={"threadId": "chat-a"}), fail
         )
     assert telemetry.current_session_id() is None
+
+
+async def test_eval_tools_enrich_sdk_root_spans(monkeypatch):
+    from temporalio.client import WorkflowExecutionStatus
+
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    instance = Langfuse(
+        public_key="pk-lf-eval-tools",
+        secret_key="sk-lf-test",
+        tracer_provider=provider,
+        span_exporter=exporter,
+    )
+    monkeypatch.setattr(telemetry, "client", lambda: instance)
+    results = [{"case_id": "case", "evaluators": {"answers": {"correctness": 1}}}]
+    handle = Mock(
+        describe=AsyncMock(return_value=Mock(status=WorkflowExecutionStatus.COMPLETED)),
+        result=AsyncMock(return_value=results),
+    )
+    temporal = Mock(start_workflow=AsyncMock())
+    temporal.get_workflow_handle.return_value = handle
+    monkeypatch.setattr(server.Client, "connect", AsyncMock(return_value=temporal))
+    try:
+        with provider.get_tracer("mcp-python-sdk").start_as_current_span(
+            "run_evals", attributes={"gen_ai.operation.name": "execute_tool"}
+        ):
+            started = await server.run_evals(limit=1, timeout=120)
+            parent = telemetry.current_context()
+        assert temporal.start_workflow.call_args.args[1].trace_context == parent
+        with provider.get_tracer("mcp-python-sdk").start_as_current_span(
+            "get_evals", attributes={"gen_ai.operation.name": "execute_tool"}
+        ):
+            completed = await server.get_evals(started["run_id"])
+        instance.flush()
+        spans = exporter.get_finished_spans()
+        assert len(spans) == 2
+        submission, poll = spans
+        assert json.loads(submission.attributes["langfuse.observation.input"]) == {
+            "case_id": None,
+            "limit": 1,
+            "tags": None,
+            "timeout": 120,
+        }
+        assert (
+            json.loads(submission.attributes["langfuse.observation.output"]) == started
+        )
+        assert json.loads(poll.attributes["langfuse.observation.output"]) == completed
+        assert completed["results"] == results
+        for span in spans:
+            assert span.parent is None
+            assert span.attributes["langfuse.observation.type"] == "tool"
+            assert (
+                span.attributes["langfuse.observation.metadata.eval_run_id"]
+                == started["run_id"]
+            )
+    finally:
+        instance.shutdown()
