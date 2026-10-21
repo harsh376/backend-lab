@@ -12,7 +12,6 @@ from temporalio.exceptions import ApplicationError
 
 from apps.evals.dataset import load_cases, select_cases
 from apps.evals.evaluators.answers import evaluate_correctness
-from apps.evals.evaluators.retrieval import evaluate_mapk, evaluate_mrrk
 from apps.evals.experiments import (
     case_trace_context,
     experiment_item,
@@ -26,9 +25,7 @@ from apps.mcp.telemetry import current_context, observation, observe
 from backend.config import Settings
 
 EVALUATORS = [
-    ("answer_correctness", evaluate_correctness, "answer"),
-    ("retrieval_mapk", evaluate_mapk, "retrieval"),
-    ("retrieval_mrrk", evaluate_mrrk, "retrieval"),
+    ("answer_correctness", evaluate_correctness),
 ]
 
 
@@ -86,7 +83,7 @@ async def evaluate_mcp_case(request: EvalCaseRequest) -> dict:
     context = current_context()
     with experiment_item(request) as report:
         result = await _generate_answer(case, request.timeout, context)
-        await _run_evaluators(case, result, request.retrieval_k)
+        await _run_evaluators(case, result)
         if context:
             result["trace_id"] = context["trace_id"]
         result.update(report)
@@ -94,26 +91,18 @@ async def evaluate_mcp_case(request: EvalCaseRequest) -> dict:
         return result
 
 
-async def _run_evaluators(case, result, k):
-    for evaluator_name, evaluator, kind in EVALUATORS:
+async def _run_evaluators(case, result):
+    for evaluator_name, evaluator in EVALUATORS:
         judgment = {"reason": "Answer run did not complete."}
         if result["output"]["status"] == "COMPLETED":
             judgment = await _evaluate_one(
-                case, result["output"]["result"], evaluator_name, evaluator, kind, k
+                case, result["output"]["result"], evaluator_name, evaluator
             )
         result["evaluators"][evaluator_name] = judgment
 
 
 def _evaluator_input(args):
     case, answer = args["case"], args["answer"]
-    if args["kind"] == "retrieval":
-        return {
-            "retrieved_passages": answer.get("retrieved_passages"),
-            "evidence_sets": [
-                [e.model_dump() for e in group] for group in case.evidence_sets
-            ],
-            "k": args["k"],
-        }
     return {
         "question": case.question,
         "accepted_answers": case.accepted_answers,
@@ -128,13 +117,10 @@ def _evaluator_input(args):
     session_id=lambda args: activity.info().workflow_id,
     metadata=lambda args: {"case_id": args["case"].case_id},
 )
-async def _evaluate_one(case, answer, evaluator_name, evaluator, kind, k):
-    if kind == "retrieval":
-        judgment = await evaluator(case, answer.get("retrieved_passages"), k=k)
-    else:
-        judgment = await evaluator(
-            case, answer["short_answer"], abstained=answer.get("abstained", False)
-        )
+async def _evaluate_one(case, answer, evaluator_name, evaluator):
+    judgment = await evaluator(
+        case, answer["short_answer"], abstained=answer.get("abstained", False)
+    )
     if judgment.get("error"):
         _mark_evaluator_error("Evaluator failed")
     return judgment
@@ -158,17 +144,9 @@ def _record_evaluation(result):
     )
     for name, judgment in result["evaluators"].items():
         for metric, value in judgment.items():
-            if metric in {
-                "correctness",
-                "ap_at_k",
-                "reciprocal_rank_at_k",
-            } and isinstance(value, (int, float)):
+            if metric == "correctness" and isinstance(value, (int, float)):
                 instance.score_current_span(
-                    name=(
-                        f"{metric.removesuffix('_at_k')}_at_{judgment['k']}"
-                        if "k" in judgment
-                        else metric
-                    ),
+                    name=metric,
                     value=value,
                     data_type="NUMERIC",
                     comment=judgment.get("reason"),

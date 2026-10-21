@@ -87,3 +87,21 @@ async def test_unanswerable_case_does_not_call_model():
     result = await evaluate_correctness(case, "", model=model)
     assert result["correctness"] is None
     model.complete.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    "values,expected,count",
+    [([1, 0, None], 0.5, 2), ([0], 0, 1), ([None], None, 0), ([], None, 0)],
+)
+def test_summary_excludes_unscored_answers(values, expected, count):
+    from apps.evals.evaluators.answers import summarize_answers
+
+    results = [
+        {"evaluators": {"answer_correctness": {"correctness": value}}}
+        for value in values
+    ]
+    results.append({"output": {"status": "FAILED"}, "evaluators": {}})
+    assert summarize_answers(results) == {
+        "correctness": expected,
+        "correctness_count": count,
+    }

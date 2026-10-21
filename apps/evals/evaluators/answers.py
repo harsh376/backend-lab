@@ -4,7 +4,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from apps.evals.models import EvalCase
+from apps.evals.models import AnswerSummary, EvalCase
 from apps.mcp.telemetry import observation
 from backend.config import Settings
 from backend.llm import LiteLLMStructuredModel, StructuredModel
@@ -83,3 +83,21 @@ async def evaluate_correctness(
         # Never serialize raw provider errors, which may contain credentials.
         result.update(reason="Answer evaluator failed.", error=type(error).__name__)
     return result
+
+
+def summarize_answers(results: list[dict]) -> AnswerSummary:
+    """Average scored answers, preserving zero and excluding unavailable judgments."""
+    values = [
+        value
+        for result in results
+        if (
+            value := result.get("evaluators", {})
+            .get("answer_correctness", {})
+            .get("correctness")
+        )
+        is not None
+    ]
+    return {
+        "correctness": sum(values) / len(values) if values else None,
+        "correctness_count": len(values),
+    }

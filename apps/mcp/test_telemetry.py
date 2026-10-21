@@ -436,7 +436,6 @@ async def test_eval_tools_enrich_sdk_root_spans(monkeypatch):
             "limit": 1,
             "tags": None,
             "timeout": 120,
-            "retrieval_k": 5,
             "experiment_name": None,
         }
         assert (

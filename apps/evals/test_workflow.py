@@ -74,7 +74,6 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
         {"timeout": 0},
         {"timeout": 3601},
         {"limit": 0},
-        {"retrieval_k": 0},
         {"experiment_name": ""},
         {"experiment_name": "   "},
     ],

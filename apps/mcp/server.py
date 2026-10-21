@@ -9,7 +9,7 @@ from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
 from temporalio.contrib.pydantic import pydantic_data_converter
 from temporalio.exceptions import WorkflowAlreadyStartedError
 
-from apps.evals.evaluators.retrieval import summarize_retrieval
+from apps.evals.evaluators.answers import summarize_answers
 from apps.evals.models import EvalRunResponse
 from apps.evals.workflow import TASK_QUEUE as EVAL_TASK_QUEUE
 from apps.evals.workflow import EvalRunRequest, EvalWorkflow
@@ -165,7 +165,6 @@ async def run_evals(
     limit: int = 3,
     tags: list[str] | None = None,
     timeout: float = 120,
-    retrieval_k: int = 5,
     experiment_name: str | None = None,
 ) -> dict:
     """Start dataset evals through AnswerWorkflow directly. Poll get_evals.
@@ -180,7 +179,6 @@ async def run_evals(
         limit=limit,
         tags=["page_verified"] if tags is None else tags,
         timeout=timeout,
-        retrieval_k=retrieval_k,
         experiment_name=experiment_name,
         trace_context=current_context(),
     )
@@ -216,7 +214,7 @@ async def get_evals(run_id: str) -> EvalRunResponse:
     result: EvalRunResponse = {"run_id": run_id, "status": description.status.name}
     if description.status == WorkflowExecutionStatus.COMPLETED:
         result["results"] = await handle.result()
-        result["summary"] = summarize_retrieval(result["results"])
+        result["summary"] = summarize_answers(result["results"])
         for case_result in result["results"]:
             if "experiment_id" in case_result:
                 result["experiment_id"] = case_result["experiment_id"]
@@ -232,9 +230,9 @@ async def get_evals(run_id: str) -> EvalRunResponse:
                 r.get("output", {}).get("status") != "COMPLETED"
                 for r in result["results"]
             ),
-            "retrieval_scored": result["summary"]["mrr_at_k_count"],
-            "retrieval_skipped": (
-                len(result["results"]) - result["summary"]["mrr_at_k_count"]
+            "correctness_scored": result["summary"]["correctness_count"],
+            "correctness_skipped": (
+                len(result["results"]) - result["summary"]["correctness_count"]
             ),
         }
     return result

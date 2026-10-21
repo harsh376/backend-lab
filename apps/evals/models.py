@@ -6,11 +6,9 @@ from typing import Any, Literal, NotRequired, TypedDict
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-class RetrievalSummary(TypedDict):
-    map_at_k: float | None
-    map_at_k_count: int
-    mrr_at_k: float | None
-    mrr_at_k_count: int
+class AnswerSummary(TypedDict):
+    correctness: float | None
+    correctness_count: int
 
 
 class EvalRunResponse(TypedDict):
@@ -20,7 +18,7 @@ class EvalRunResponse(TypedDict):
     experiment_url: NotRequired[str]
     coverage: NotRequired[dict[str, int]]
     results: NotRequired[list[dict]]
-    summary: NotRequired[RetrievalSummary]
+    summary: NotRequired[AnswerSummary]
 
 
 class VerificationTag(StrEnum):

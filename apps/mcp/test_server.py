@@ -193,8 +193,8 @@ async def test_evals_tools_start_and_read(monkeypatch):
         "total": 1,
         "completed": 0,
         "failed": 1,
-        "retrieval_scored": 0,
-        "retrieval_skipped": 1,
+        "correctness_scored": 0,
+        "correctness_skipped": 1,
     }
     handle.result.return_value[0].update(
         experiment_id="experiment", experiment_url="https://example.com/results"

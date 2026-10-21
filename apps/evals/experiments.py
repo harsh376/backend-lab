@@ -51,7 +51,6 @@ def experiment_item(request):
         "local_dataset": "kilt-v1/dev",
         "dataset_version": hashlib.sha256(DATASET_PATH.read_bytes()).hexdigest(),
         "git_commit_sha": settings.git_commit_sha or "unknown",
-        "retrieval_k": str(request.retrieval_k),
         "evaluator_version": "1",
         "answer_model": settings.mcp_answer_model,
         "judge_model": settings.eval_judge_model,

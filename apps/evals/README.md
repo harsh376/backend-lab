@@ -35,8 +35,7 @@ codex mcp add answers --url http://localhost:8001/mcp
 Ask Codex:
 
 ```text
-Use answers.run_evals with limit 5, tags ["page_verified"], timeout 120,
-and retrieval_k 5. Poll answers.get_evals until finished and show the summary.
+Use answers.run_evals with limit 5, tags ["page_verified"], timeout 120. Poll answers.get_evals until finished and show the summary.
 ```
 
 `run_evals` arguments:
@@ -46,7 +45,6 @@ and retrieval_k 5. Poll answers.get_evals until finished and show the summary.
   "limit": 5,
   "tags": ["page_verified"],
   "timeout": 120,
-  "retrieval_k": 5,
   "experiment_name": "BM25 baseline"
 }
 ```
@@ -63,12 +61,12 @@ Poll `get_evals` with the returned ID:
 {"run_id": "kilt-eval-<returned-id>"}
 ```
 
-Defaults: `limit=3`, `tags=["page_verified"]`, `timeout=120`, `retrieval_k=5`.
+Defaults: `limit=3`, `tags=["page_verified"]`, `timeout=120`.
 Tags require all matches; pass `tags=[]` to disable tag filtering.
 The eval workflow validates arguments and loads and selects cases on its worker.
 Invalid arguments, missing cases, or invalid datasets fail the workflow.
-Completed results include answer correctness, per-case AP@k/RR@k, and a
-MAP@k/MRR@k summary. Retrieval metrics require `page_verified` cases.
+Completed results include final-answer correctness and a mean correctness summary
+with a count of scored cases. Intermediate operations are not evaluated.
 
 ## Worker commands
 
@@ -97,11 +95,10 @@ trace per case. Completed `get_evals` responses include `experiment_id`, an
 Open that URL and select a previous run as the baseline to inspect score changes
 and drill into cases and their linked answer traces.
 
-In the experiment comparison, the mean of `reciprocal_rank_at_5` is MRR@5 and
-the mean of `ap_at_5` is MAP@5. Score names include the actual cutoff, so different
-cutoffs cannot be combined. Zero is a valid score; unavailable metrics are
-unscored. Check `coverage` and the summary's metric counts alongside averages:
-failed or ineligible cases do not contribute to retrieval means.
+In the experiment comparison, `correctness` measures final-answer quality.
+Zero is a valid score; unavailable judgments are unscored. Check `coverage` and
+`summary.correctness_count` alongside averages: failed or ineligible cases do not
+contribute to the mean.
 
 Experiment IDs include the Temporal workflow execution ID; case IDs are stable
 across runs. All evaluator observations inherit experiment and item attributes.
@@ -114,7 +111,7 @@ These changes apply to new runs; historical experiments are not backfilled. No h
 experiments omit `langfuse.experiment.dataset.id`: that field must refer to a real
 hosted dataset, because the UI uses it to link input cells to dataset items.
 The local dataset label is recorded in experiment metadata instead. Metadata
-records the dataset content hash, configured commit, cutoff, models, and evaluator
+records the dataset content hash, configured commit, models, and evaluator
 version. Compare the same case selection and dataset hash across runs.
 
 This integration requires Langfuse v4 experiment ingestion. Results may take a

@@ -68,10 +68,10 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
     }
 
     judge = AsyncMock(return_value={"correctness": score})
-    second = AsyncMock(return_value={"ap_at_k": score})
-    evaluators = [("answer_correctness", judge, "answer")]
+    second = AsyncMock(return_value={"correctness": score})
+    evaluators = [("answer_correctness", judge)]
     if evaluator_count == 2:
-        evaluators.append(("additional_quality", second, "answer"))
+        evaluators.append(("additional_quality", second))
     monkeypatch.setattr(activities, "EVALUATORS", evaluators)
 
     evaluate = AsyncMock(return_value=result)
@@ -96,7 +96,7 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
         judge.assert_not_awaited()
     assert result["evaluators"]["answer_correctness"].get("correctness") == score
     if evaluator_count == 2:
-        assert result["evaluators"]["additional_quality"].get("ap_at_k") == score
+        assert result["evaluators"]["additional_quality"].get("correctness") == score
         if status == "COMPLETED":
             second.assert_awaited_once_with(case, "answer", abstained=False)
         else:
@@ -121,7 +121,9 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
         assert output["evaluators"]["answer_correctness"].get("correctness") == score
         assert "answers" not in output["evaluators"]
         if evaluator_count == 2:
-            assert output["evaluators"]["additional_quality"].get("ap_at_k") == score
+            assert (
+                output["evaluators"]["additional_quality"].get("correctness") == score
+            )
         assert output["case_id"] == result["case_id"]
         assert span.update.call_args_list[0].kwargs["metadata"] == {
             "answer_id": "answer-run",
@@ -260,9 +262,8 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_
             (
                 "answer_correctness",
                 AsyncMock(return_value={"correctness": 1}),
-                "answer",
             ),
-            ("retrieval_mapk", AsyncMock(return_value={"ap_at_k": 0.5}), "retrieval"),
+            ("additional_quality", AsyncMock(return_value={"correctness": 0.5})),
         ],
     )
     try:
@@ -274,7 +275,7 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_
         assert {s.name for s in spans} == {
             "eval_case",
             "answer_correctness",
-            "retrieval_mapk",
+            "additional_quality",
         }
         root = next(s for s in spans if s.name == "eval_case")
         # SDK trace-id overrides use a synthetic, unexported parent.
@@ -310,7 +311,7 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_
                 child.attributes["langfuse.experiment.item.root_observation_id"]
                 == root_id
             )
-            assert child.attributes["langfuse.experiment.metadata.retrieval_k"] == "5"
+            assert "langfuse.experiment.metadata.retrieval_k" not in child.attributes
             assert child.parent.span_id == root.context.span_id
             assert child.context.trace_id == root.context.trace_id
         assert result["trace_id"] == format(root.context.trace_id, "032x")
