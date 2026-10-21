@@ -3,97 +3,169 @@
 import asyncio
 from dataclasses import asdict
 from datetime import timedelta
+from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
 from opentelemetry.trace import INVALID_SPAN, use_span
 from temporalio import activity
 from temporalio.client import Client, WorkflowFailureError
+from temporalio.exceptions import ApplicationError
 
+from apps.evals.dataset import load_cases, select_cases
 from apps.evals.evaluators.answers import evaluate_correctness
-from apps.evals.workflow import EvalRunRequest
+from apps.evals.evaluators.retrieval import evaluate_mapk, evaluate_mrrk
+from apps.evals.models import EvalCase
+from apps.evals.workflow import EvalCaseRequest, EvalRunRequest
+from apps.mcp import telemetry
 from apps.mcp.agent.models import AnswerRequest
 from apps.mcp.agent.workflow import AnswerWorkflow
-from apps.mcp.telemetry import current_context, observation
+from apps.mcp.telemetry import current_context, observation, observe
 from backend.config import Settings
 
-EVALUATORS = [("answer_correctness", evaluate_correctness)]
+EVALUATORS = [
+    ("answer_correctness", evaluate_correctness, "answer"),
+    ("retrieval_mapk", evaluate_mapk, "retrieval"),
+    ("retrieval_mrrk", evaluate_mrrk, "retrieval"),
+]
+
+
+@activity.defn(name="load_eval_cases")
+@observe(
+    input=lambda args: {
+        "case_id": args["request"].case_id,
+        "limit": args["request"].limit,
+        "tags": args["request"].tags,
+    },
+    output=lambda cases: {"count": len(cases), "case_ids": [c.case_id for c in cases]},
+    session_id=lambda args: activity.info().workflow_id,
+    metadata=lambda args: {
+        "eval_run_id": activity.info().workflow_id,
+        "answer_id": None,
+    },
+)
+async def load_eval_cases(request: EvalRunRequest) -> list[EvalCase]:
+    try:
+        return select_cases(
+            cases=load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json"),
+            case_id=request.case_id,
+            limit=request.limit,
+            tags=request.tags,
+        )
+    except (OSError, ValueError) as error:
+        raise ApplicationError(str(error), non_retryable=True) from error
 
 
 @activity.defn(name="evaluate_mcp_case")
-async def evaluate_mcp_case(request: EvalRunRequest) -> dict:
-    case = request.cases[0]
-    info = activity.info()
-    with observation(
-        "eval",
-        trace_context=request.trace_context,
-        input={"question": case.question, "accepted_answers": case.accepted_answers},
-        session_id=info.workflow_id,
-        metadata={
-            "eval_run_id": info.workflow_id,
-            "temporal_run_id": info.workflow_run_id,
-            "activity_id": info.activity_id,
-            "attempt": info.attempt,
-            "case_id": case.case_id,
-            "tags": case.tags,
-        },
-    ) as span:
-        context = current_context()
-        result = await evaluate_answer_case(case, request.timeout, context)
-        for evaluator_name, evaluator in EVALUATORS:
-            judgment = {"reason": "Answer run did not complete."}
-            if result["output"]["status"] == "COMPLETED":
-                answer = result["output"]["result"]
-                with observation(
-                    evaluator_name,
-                    input={
-                        "question": case.question,
-                        "accepted_answers": case.accepted_answers,
-                        "actual_answer": answer["short_answer"],
-                    },
-                    metadata={"case_id": case.case_id},
-                ) as evaluator_span:
-                    judgment = await evaluator(
-                        case,
-                        answer["short_answer"],
-                        abstained=answer.get("abstained", False),
-                    )
-                    if evaluator_span is not None:
-                        evaluator_span.update(output=judgment)
-                        if judgment.get("error"):
-                            evaluator_span.update(
-                                level="ERROR", status_message="Evaluator failed"
-                            )
-            result["evaluators"][evaluator_name] = judgment
-            if span is not None:
-                for metric, value in judgment.items():
-                    if isinstance(value, (int, float)):
-                        span.score(
-                            name=metric,
-                            value=value,
-                            data_type="NUMERIC",
-                            comment=judgment.get("reason"),
-                        )
-                if judgment.get("error"):
-                    span.update(
-                        level="ERROR",
-                        status_message=f"{evaluator_name} evaluator failed",
-                    )
-        if span is not None:
-            if context:
-                result["trace_id"] = context["trace_id"]
-            span.update(
-                output=result,
-                metadata={
-                    "answer_id": result["output"].get("run_id"),
-                    "answer_trace_id": result.get("answer_trace_id"),
-                },
+@observe(
+    "eval_case",
+    input=lambda args: {
+        "question": args["request"].case.question,
+        "accepted_answers": args["request"].case.accepted_answers,
+        "accepted_pages": sorted(
+            {
+                evidence.wikipedia_id
+                for evidence_set in args["request"].case.evidence_sets
+                for evidence in evidence_set
+            }
+        ),
+    },
+    session_id=lambda args: activity.info().workflow_id,
+    metadata=lambda args: {
+        "eval_run_id": activity.info().workflow_id,
+        "answer_id": None,
+        "case_id": args["request"].case.case_id,
+        "tags": args["request"].case.tags,
+    },
+)
+async def evaluate_mcp_case(request: EvalCaseRequest) -> dict:
+    case = request.case
+    context = current_context()
+    result = await _generate_answer(case, request.timeout, context)
+    await _run_evaluators(case, result, request.retrieval_k)
+    if context:
+        result["trace_id"] = context["trace_id"]
+    _record_evaluation(result)
+    return result
+
+
+async def _run_evaluators(case, result, k):
+    for evaluator_name, evaluator, kind in EVALUATORS:
+        judgment = {"reason": "Answer run did not complete."}
+        if result["output"]["status"] == "COMPLETED":
+            judgment = await _evaluate_one(
+                case, result["output"]["result"], evaluator_name, evaluator, kind, k
             )
-            if result["output"]["status"] != "COMPLETED":
-                span.update(level="ERROR", status_message=result["output"]["status"])
-        return result
+        result["evaluators"][evaluator_name] = judgment
 
 
-async def evaluate_answer_case(case, timeout, eval_context):
+def _evaluator_input(args):
+    case, answer = args["case"], args["answer"]
+    if args["kind"] == "retrieval":
+        return {
+            "retrieved_passages": answer.get("retrieved_passages"),
+            "evidence_sets": [
+                [e.model_dump() for e in group] for group in case.evidence_sets
+            ],
+            "k": args["k"],
+        }
+    return {
+        "question": case.question,
+        "accepted_answers": case.accepted_answers,
+        "actual_answer": answer["short_answer"],
+    }
+
+
+@observe(
+    name=lambda args: args["evaluator_name"],
+    input=_evaluator_input,
+    trace_context=lambda args: None,
+    session_id=lambda args: activity.info().workflow_id,
+    metadata=lambda args: {"case_id": args["case"].case_id},
+)
+async def _evaluate_one(case, answer, evaluator_name, evaluator, kind, k):
+    if kind == "retrieval":
+        judgment = await evaluator(case, answer.get("retrieved_passages"), k=k)
+    else:
+        judgment = await evaluator(
+            case, answer["short_answer"], abstained=answer.get("abstained", False)
+        )
+    if judgment.get("error"):
+        _mark_evaluator_error("Evaluator failed")
+    return judgment
+
+
+def _mark_evaluator_error(message):
+    instance = telemetry.client()
+    if instance is not None:
+        instance.update_current_span(level="ERROR", status_message=message)
+
+
+def _record_evaluation(result):
+    instance = telemetry.client()
+    if instance is None:
+        return
+    instance.update_current_span(
+        metadata={
+            "answer_id": result["output"].get("run_id"),
+            "answer_trace_id": result.get("answer_trace_id"),
+        }
+    )
+    for name, judgment in result["evaluators"].items():
+        for metric, value in judgment.items():
+            if metric != "k" and isinstance(value, (int, float)):
+                instance.score_current_span(
+                    name=metric,
+                    value=value,
+                    data_type="NUMERIC",
+                    comment=judgment.get("reason"),
+                )
+        if judgment.get("error"):
+            _mark_evaluator_error(f"{name} evaluator failed")
+    if result["output"]["status"] != "COMPLETED":
+        _mark_evaluator_error(result["output"]["status"])
+
+
+async def _generate_answer(case, timeout, eval_context):
     """Run the answer directly; stable IDs prevent duplicate submissions."""
     info = activity.info()
     run_id = (

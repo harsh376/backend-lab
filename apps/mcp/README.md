@@ -86,7 +86,8 @@ Start the eval worker alongside the answer stack:
 docker compose -f compose/evals.yaml up --build
 ```
 
-Call `run_evals` with optional `case_id`, `limit` (default `1`), `tags` (all
+Call `run_evals` with optional `case_id`, `limit` (default `3`), `tags` (defaults
+to `["page_verified"]`; pass `[]` to disable filtering; all
 must match), and `timeout` (default `120`, positive and at most `3600` seconds).
 It selects eligible cases from the bundled KILT dev dataset, excluding
 `rejected` cases, and returns an eval `run_id` and `RUNNING` status. Poll
@@ -97,5 +98,5 @@ per-case execution output and judgments keyed by evaluator name, such as
 Eval activities invoke `AnswerWorkflow` directly through Temporal. Each case
 has separate, linked answer and eval traces sharing the eval run session ID.
 Gold labels are used for judging and are not sent to the answer workflow.
-See the [eval README](../evals/README.md) for CLI commands, judge configuration,
+See the [eval README](../evals/README.md) for tool usage, judge configuration,
 and result details.

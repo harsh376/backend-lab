@@ -110,6 +110,7 @@ async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
         "record_answer_result",
     ]
     assert result.citations == [p]
+    assert result.retrieved_passages == [p]
 
 
 async def test_mcp_polling(monkeypatch):

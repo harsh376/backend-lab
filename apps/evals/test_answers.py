@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock, Mock
 import litellm
 import pytest
 
+from apps.evals.dataset import load_cases
 from apps.evals.evaluators.answers import evaluate_correctness
-from apps.evals.run import load_cases
-from apps.evals.test_run import DATASET
+from apps.evals.test_dataset import DATASET
 from backend.llm import StructuredCompletion
 
 

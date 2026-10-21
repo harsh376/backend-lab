@@ -18,8 +18,8 @@ from pydantic import ValidationError
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
+from apps.evals.dataset import load_cases  # noqa: E402
 from apps.evals.models import EvalCase, Evidence, VerificationTag  # noqa: E402
-from apps.evals.run import load_cases  # noqa: E402
 from backend.config import Settings  # noqa: E402
 
 

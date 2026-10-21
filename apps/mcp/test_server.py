@@ -181,12 +181,25 @@ async def test_evals_tools_start_and_read(monkeypatch):
     started = await server.run_evals(limit=2, timeout=30)
     invocation = client.start_workflow.call_args
     assert invocation.args[0] == server.EvalWorkflow.run
-    assert len(invocation.args[1].cases) == 2
+    assert invocation.args[1].limit == 2
     assert invocation.args[1].timeout == 30
     assert invocation.kwargs["task_queue"] == "kilt-evals"
     result = await server.get_evals(started["run_id"])
     assert result["results"] == await handle.result()
     with pytest.raises(ValueError):
         await server.get_evals("kilt-answer-invalid")
-    with pytest.raises(ValueError):
-        await server.run_evals(timeout=0)
+    await server.run_evals(timeout=0)
+    assert client.start_workflow.call_args.args[1].timeout == 0
+
+
+@pytest.mark.parametrize("tags", [None, []])
+async def test_evals_default_selection(monkeypatch, tags):
+    client = Mock(start_workflow=AsyncMock())
+    monkeypatch.setattr(server.Client, "connect", AsyncMock(return_value=client))
+    if tags is None:
+        await server.run_evals()
+    else:
+        await server.run_evals(tags=tags)
+    request = client.start_workflow.call_args.args[1]
+    assert request.limit == 3
+    assert request.tags == (["page_verified"] if tags is None else [])

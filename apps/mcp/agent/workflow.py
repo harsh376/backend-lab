@@ -38,7 +38,7 @@ class AnswerWorkflow:
         model_retry_policy = RetryPolicy(maximum_attempts=1 if budget_report else 3)
         answer = AnswerResult("", "No evidence was retrieved.", abstained=True)
         if budget_report is not None and not passages:
-            return await self._finish(answer, budget_report, request)
+            return await self._finish(answer, budget_report, request, passages)
         synthesis = SynthesisInput(
             request.question, passages, request.trace_context, request.session_id
         )
@@ -54,7 +54,7 @@ class AnswerWorkflow:
                 )
                 stage.record_cost(answer.usage_cost_usd)
             if answer.abstained:
-                return await self._finish(answer, budget_report, request)
+                return await self._finish(answer, budget_report, request, passages)
 
             verification = VerificationInput(
                 request.question, answer, request.trace_context, request.session_id
@@ -75,14 +75,16 @@ class AnswerWorkflow:
                 )
         except BudgetStopped:
             pass
-        return await self._finish(answer, budget_report, request)
+        return await self._finish(answer, budget_report, request, passages)
 
     async def _finish(
         self,
         answer: AnswerResult,
         budget_report: BudgetReport | None,
         request: AnswerRequest,
+        passages: list[Passage],
     ) -> AnswerResult:
+        answer.retrieved_passages = passages
         if budget_report is not None and budget_report.stop_reason:
             answer.short_answer = ""
             answer.citations = []

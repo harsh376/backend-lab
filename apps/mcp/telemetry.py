@@ -116,6 +116,7 @@ def observe(
     reuse_current=False,
     input=None,
     output=None,
+    session_id=None,
 ):
     """Capture async arguments/results and infer trace context and Temporal metadata.
 
@@ -166,7 +167,7 @@ def observe(
                 else getattr(definition, "name", None) or function.__name__
             )
             with observation(
-                name or inferred_name,
+                (name(arguments) if callable(name) else name) or inferred_name,
                 input=_serialize(span_input),
                 trace_context=(
                     trace_context(arguments)
@@ -175,7 +176,11 @@ def observe(
                 ),
                 metadata=span_metadata,
                 as_type=as_type,
-                session_id=_session_from_arguments(arguments),
+                session_id=(
+                    session_id(arguments)
+                    if session_id
+                    else _session_from_arguments(arguments)
+                ),
             ) as span:
                 result = await function(*args, **kwargs)
                 if span is not None:

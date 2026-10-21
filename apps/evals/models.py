@@ -1,9 +1,23 @@
-"""Dataset schema; execution outputs and gold labels are stored separately."""
+"""Evaluation dataset schemas and execution response contracts."""
 
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Any, Literal, NotRequired, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+class RetrievalSummary(TypedDict):
+    map_at_k: float | None
+    map_at_k_count: int
+    mrr_at_k: float | None
+    mrr_at_k_count: int
+
+
+class EvalRunResponse(TypedDict):
+    run_id: str
+    status: str
+    results: NotRequired[list[dict]]
+    summary: NotRequired[RetrievalSummary]
 
 
 class VerificationTag(StrEnum):

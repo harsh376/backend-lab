@@ -55,6 +55,7 @@ class AnswerResult:
     usage_cost_usd: float | None = None
     verification: VerificationResult | None = None
     budget: BudgetReport | None = None
+    retrieved_passages: list[Passage] | None = None
 
 
 class SynthesisAdapter(Protocol):

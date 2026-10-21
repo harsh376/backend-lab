@@ -1,11 +1,11 @@
 """Durable eval orchestration; answer execution and scoring run in activities."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 
 from temporalio import workflow
 from temporalio.common import RetryPolicy
-from temporalio.exceptions import ActivityError
+from temporalio.exceptions import ActivityError, ApplicationError
 
 with workflow.unsafe.imports_passed_through():
     from apps.evals.models import EvalCase
@@ -15,24 +15,55 @@ TASK_QUEUE = "kilt-evals"
 
 @dataclass
 class EvalRunRequest:
-    cases: list[EvalCase]
+    case_id: str | None = None
+    limit: int = 3
+    tags: list[str] = field(default_factory=lambda: ["page_verified"])
     timeout: float = 120
     trace_context: dict[str, str] | None = None
+    retrieval_k: int = 5
+
+    def validate(self) -> None:
+        if not 0 < self.timeout <= 3600:
+            raise ValueError("timeout must be between 0 and 3600 seconds")
+        if self.retrieval_k <= 0:
+            raise ValueError("retrieval_k must be positive")
+        if self.limit <= 0:
+            raise ValueError("limit must be positive")
+
+
+@dataclass
+class EvalCaseRequest:
+    case: EvalCase
+    timeout: float = 120
+    trace_context: dict[str, str] | None = None
+    retrieval_k: int = 5
 
 
 @workflow.defn
 class EvalWorkflow:
     @workflow.run
     async def run(self, request: EvalRunRequest) -> list[dict]:
+        try:
+            request.validate()
+        except ValueError as error:
+            raise ApplicationError(str(error), non_retryable=True) from error
+        cases = await workflow.execute_activity(
+            "load_eval_cases",
+            request,
+            result_type=list[EvalCase],
+            start_to_close_timeout=timedelta(seconds=30),
+            retry_policy=RetryPolicy(maximum_attempts=1),
+        )
         results = []
-        for case in request.cases:
+        for case in cases:
             try:
                 result = await workflow.execute_activity(
                     "evaluate_mcp_case",
-                    EvalRunRequest(
-                        cases=[case],
+                    EvalCaseRequest(
+                        case=case,
                         timeout=request.timeout,
                         trace_context=request.trace_context,
+                        retrieval_k=request.retrieval_k,
                     ),
                     result_type=dict,
                     start_to_close_timeout=timedelta(seconds=request.timeout + 90),

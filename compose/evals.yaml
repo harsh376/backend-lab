@@ -1,4 +1,5 @@
-# Start after Temporal and the answer worker: docker compose -f compose/evals.yaml up --build
+# Start after Temporal and the answer worker:
+# docker compose -f compose/evals.yaml up --build
 
 services:
   eval-worker:
@@ -23,19 +24,3 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     restart: unless-stopped
-
-  eval-run:
-    image: backend-lab-evals
-    build:
-      context: ..
-      dockerfile: apps/evals/Dockerfile
-      args:
-        GIT_COMMIT_SHA: ${GIT_COMMIT_SHA:-}
-    profiles: [cli]
-    entrypoint: [python, -m, apps.evals.run]
-    command: [--help]
-    environment:
-      TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
-    depends_on:
-      eval-worker:
-        condition: service_started

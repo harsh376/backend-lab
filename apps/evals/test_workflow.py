@@ -1,30 +1,38 @@
 from pathlib import Path
 from unittest.mock import AsyncMock
 
+import pytest
 from temporalio.contrib.pydantic import pydantic_data_converter
-from temporalio.exceptions import ActivityError
+from temporalio.exceptions import ActivityError, ApplicationError
 
-from apps.evals.run import load_cases
-from apps.evals.workflow import EvalRunRequest, EvalWorkflow
+from apps.evals.dataset import load_cases
+from apps.evals.workflow import EvalCaseRequest, EvalRunRequest, EvalWorkflow
 
 
 async def test_eval_payload_round_trip():
-    cases = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[:2]
     request = EvalRunRequest(
-        cases,
+        limit=2,
         trace_context={"trace_id": "a" * 32, "parent_span_id": "b" * 16},
     )
     converter = pydantic_data_converter
     assert await converter.decode(
         await converter.encode([request]), [EvalRunRequest]
     ) == [request]
+    case = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
+    case_request = EvalCaseRequest(case)
+    assert await converter.decode(
+        await converter.encode([case_request]), [EvalCaseRequest]
+    ) == [case_request]
 
 
 async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
     from apps.evals import workflow as module
 
+    base = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
+    cases = [base.model_copy(update={"case_id": case_id}) for case_id in ("one", "two")]
     execute = AsyncMock(
         side_effect=[
+            cases,
             ActivityError(
                 "activity failed",
                 scheduled_event_id=1,
@@ -41,17 +49,36 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
         ]
     )
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
-    base = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
-    cases = [base.model_copy(update={"case_id": case_id}) for case_id in ("one", "two")]
     context = {"trace_id": "a" * 32, "parent_span_id": "b" * 16}
     result = await EvalWorkflow().run(
-        EvalRunRequest(cases, timeout=10, trace_context=context)
+        EvalRunRequest(limit=2, timeout=10, trace_context=context)
     )
     assert result[0]["output"]["status"] == "FAILED"
     assert result[0]["evaluators"] == {}
     assert result[1]["evaluators"]["answer_correctness"]["correctness"] == 1
-    for invocation in execute.call_args_list:
+    assert execute.call_args_list[0].args[0] == "load_eval_cases"
+    for invocation in execute.call_args_list[1:]:
         assert invocation.args[0] == "evaluate_mcp_case"
         assert invocation.args[1].trace_context == context
         assert invocation.kwargs["retry_policy"].maximum_attempts == 1
         assert invocation.kwargs["start_to_close_timeout"].total_seconds() == 100
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"timeout": 0},
+        {"timeout": 3601},
+        {"limit": 0},
+        {"retrieval_k": 0},
+    ],
+)
+async def test_invalid_requests_fail_before_loading(monkeypatch, kwargs):
+    from apps.evals import workflow as module
+
+    execute = AsyncMock()
+    monkeypatch.setattr(module.workflow, "execute_activity", execute)
+    with pytest.raises(ApplicationError) as error:
+        await EvalWorkflow().run(EvalRunRequest(**kwargs))
+    assert error.value.non_retryable
+    execute.assert_not_awaited()

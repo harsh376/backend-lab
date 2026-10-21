@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from apps.evals.dataset import load_cases
 from apps.evals.models import Evidence
-from apps.evals.run import load_cases
 
 spec = importlib.util.spec_from_file_location(
     "kilt_verify", Path(__file__).with_name("main.py")

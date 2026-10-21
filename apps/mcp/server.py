@@ -1,7 +1,6 @@
 import json
 from dataclasses import asdict
 from hashlib import sha256
-from pathlib import Path
 from uuid import uuid4
 
 from mcp.server import MCPServer
@@ -10,6 +9,8 @@ from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
 from temporalio.contrib.pydantic import pydantic_data_converter
 from temporalio.exceptions import WorkflowAlreadyStartedError
 
+from apps.evals.evaluators.retrieval import summarize_retrieval
+from apps.evals.models import EvalRunResponse
 from apps.evals.workflow import TASK_QUEUE as EVAL_TASK_QUEUE
 from apps.evals.workflow import EvalRunRequest, EvalWorkflow
 from apps.mcp.agent.models import AnswerRequest, AnswerResult
@@ -161,24 +162,24 @@ async def _get_answer(run_id: str) -> dict:
 @observe(reuse_current=True, as_type="tool")
 async def run_evals(
     case_id: str | None = None,
-    limit: int = 1,
+    limit: int = 3,
     tags: list[str] | None = None,
     timeout: float = 120,
+    retrieval_k: int = 5,
 ) -> dict:
     """Start dataset evals through AnswerWorkflow directly. Poll get_evals.
 
     Select cases from the bundled KILT dev dataset by ID or tags.
+    Defaults to three page_verified cases. Pass tags=[] to disable tag filtering.
     Each case has independent, linked eval and answer traces.
     """
-    from apps.evals.run import load_cases, select_cases
-
-    if not 0 < timeout <= 3600:
-        raise ValueError("timeout must be between 0 and 3600 seconds")
-    cases = select_cases(
-        load_cases(Path(__file__).parents[1] / "evals/datasets/kilt-v1/dev.json"),
+    request = EvalRunRequest(
         case_id=case_id,
         limit=limit,
-        tags=tags,
+        tags=["page_verified"] if tags is None else tags,
+        timeout=timeout,
+        retrieval_k=retrieval_k,
+        trace_context=current_context(),
     )
     client = await Client.connect(
         Settings().temporal_address, data_converter=pydantic_data_converter
@@ -187,7 +188,7 @@ async def run_evals(
     update_metadata({"eval_run_id": run_id})
     await client.start_workflow(
         EvalWorkflow.run,
-        EvalRunRequest(cases, timeout=timeout, trace_context=current_context()),
+        request,
         id=run_id,
         task_queue=EVAL_TASK_QUEUE,
     )
@@ -200,7 +201,7 @@ async def run_evals(
     as_type="tool",
     metadata=lambda args: {"eval_run_id": args["run_id"]},
 )
-async def get_evals(run_id: str) -> dict:
+async def get_evals(run_id: str) -> EvalRunResponse:
     """Return eval status and completed per-case outputs, scores and trace IDs."""
     if not run_id.startswith("kilt-eval-"):
         raise ValueError("invalid eval run ID")
@@ -209,9 +210,10 @@ async def get_evals(run_id: str) -> dict:
     )
     handle = client.get_workflow_handle(run_id, result_type=list[dict])
     description = await handle.describe()
-    result = {"run_id": run_id, "status": description.status.name}
+    result: EvalRunResponse = {"run_id": run_id, "status": description.status.name}
     if description.status == WorkflowExecutionStatus.COMPLETED:
         result["results"] = await handle.result()
+        result["summary"] = summarize_retrieval(result["results"])
     return result
 
 

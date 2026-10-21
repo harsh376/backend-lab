@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from apps.evals import activities
-from apps.evals.run import load_cases
-from apps.evals.workflow import EvalRunRequest
+from apps.evals.dataset import load_cases
+from apps.evals.workflow import EvalCaseRequest, EvalRunRequest
 
 
 @pytest.mark.parametrize(
@@ -22,7 +22,7 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
 
     @contextmanager
     def observation(name, **kwargs):
-        if name == "eval":
+        if name == "eval_case":
             observed.update(name=name, **kwargs)
             yield span if enabled else None
         else:
@@ -31,6 +31,13 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
             yield child if enabled else None
 
     monkeypatch.setattr(activities, "observation", observation)
+    monkeypatch.setattr(activities.telemetry, "observation", observation)
+    instance = Mock(update_current_span=span.update, score_current_span=span.score)
+    monkeypatch.setattr(
+        activities.telemetry, "client", lambda: instance if enabled else None
+    )
+    monkeypatch.setattr(activities.activity, "in_activity", lambda: True)
+
     monkeypatch.setattr(
         activities,
         "current_context",
@@ -61,17 +68,17 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
 
     judge = AsyncMock(return_value={"correctness": score})
     second = AsyncMock(return_value={"quality": score})
-    evaluators = [("answer_correctness", judge)]
+    evaluators = [("answer_correctness", judge, "answer")]
     if evaluator_count == 2:
-        evaluators.append(("additional_quality", second))
+        evaluators.append(("additional_quality", second, "answer"))
     monkeypatch.setattr(activities, "EVALUATORS", evaluators)
 
     evaluate = AsyncMock(return_value=result)
-    monkeypatch.setattr(activities, "evaluate_answer_case", evaluate)
+    monkeypatch.setattr(activities, "_generate_answer", evaluate)
     parent_context = {"trace_id": "a" * 32, "parent_span_id": "b" * 16}
     assert (
         await activities.evaluate_mcp_case(
-            EvalRunRequest([case], trace_context=parent_context)
+            EvalCaseRequest(case, trace_context=parent_context)
         )
         == result
     )
@@ -93,10 +100,21 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
         else:
             second.assert_not_awaited()
     assert observed["session_id"] == "eval-run"
+    assert observed["input"]["accepted_pages"] == sorted(
+        {
+            evidence.wikipedia_id
+            for evidence_set in case.evidence_sets
+            for evidence in evidence_set
+        }
+    )
     assert observed["metadata"]["case_id"] == case.case_id
     if enabled:
         assert result["trace_id"] == "eval-trace"
-        output = span.update.call_args_list[0].kwargs["output"]
+        output = next(
+            c.kwargs["output"]
+            for c in span.update.call_args_list
+            if "output" in c.kwargs
+        )
         assert output["evaluators"]["answer_correctness"].get("correctness") == score
         assert "answers" not in output["evaluators"]
         if evaluator_count == 2:
@@ -113,7 +131,9 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
             )
         else:
             span.score.assert_not_called()
-            assert span.update.call_args.kwargs["level"] == "ERROR"
+            assert any(
+                c.kwargs.get("level") == "ERROR" for c in span.update.call_args_list
+            )
     else:
         span.update.assert_not_called()
 
@@ -150,7 +170,7 @@ async def test_direct_answer_has_separate_linked_trace(monkeypatch):
         )
     )
     monkeypatch.setattr(activities.Client, "connect", AsyncMock(return_value=client))
-    result = await activities.evaluate_answer_case(case, 10, {"trace_id": "eval-trace"})
+    result = await activities._generate_answer(case, 10, {"trace_id": "eval-trace"})
     invocation = client.start_workflow.call_args
     assert invocation.args[0] == activities.AnswerWorkflow.run
     request = invocation.args[1]
@@ -186,10 +206,122 @@ async def test_direct_answer_timeout(monkeypatch):
         )
     )
     monkeypatch.setattr(activities.Client, "connect", AsyncMock(return_value=client))
-    result = await activities.evaluate_answer_case(case, 10, None)
+    result = await activities._generate_answer(case, 10, None)
     assert result["output"]["status"] == "TIMEOUT"
     assert result["output"]["run_id"].startswith("kilt-answer-eval-")
     assert (
         client.start_workflow.call_args.kwargs["execution_timeout"].total_seconds()
         == 10
+    )
+
+
+async def test_decorated_evaluators_are_direct_children(monkeypatch):
+    from langfuse import Langfuse
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
+        InMemorySpanExporter,
+    )
+
+    exporter = InMemorySpanExporter()
+    instance = Langfuse(
+        public_key="pk-lf-eval-helper-test",
+        secret_key="sk-lf-test",
+        tracer_provider=TracerProvider(),
+        span_exporter=exporter,
+    )
+    monkeypatch.setattr(activities.telemetry, "client", lambda: instance)
+    monkeypatch.setattr(
+        activities.activity, "info", lambda: Mock(workflow_id="eval-run")
+    )
+    case = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
+    monkeypatch.setattr(
+        activities,
+        "_generate_answer",
+        AsyncMock(
+            return_value={
+                "output": {"status": "COMPLETED", "result": {"short_answer": "answer"}},
+                "evaluators": {},
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        activities,
+        "EVALUATORS",
+        [
+            (
+                "answer_correctness",
+                AsyncMock(return_value={"correctness": 1}),
+                "answer",
+            ),
+            ("retrieval_mapk", AsyncMock(return_value={"ap_at_k": 0.5}), "retrieval"),
+        ],
+    )
+    try:
+        result = await activities.evaluate_mcp_case(EvalCaseRequest(case))
+        instance.flush()
+        spans = exporter.get_finished_spans()
+        assert {s.name for s in spans} == {
+            "eval_case",
+            "answer_correctness",
+            "retrieval_mapk",
+        }
+        root = next(s for s in spans if s.name == "eval_case")
+        for child in (s for s in spans if s.name != "eval_case"):
+            assert child.parent.span_id == root.context.span_id
+            assert child.context.trace_id == root.context.trace_id
+        assert result["trace_id"] == format(root.context.trace_id, "032x")
+    finally:
+        instance.shutdown()
+
+
+@pytest.mark.parametrize("tags", [["page_verified"], []])
+async def test_load_eval_cases_selects_on_worker(tags, monkeypatch):
+    from apps.evals.dataset import select_cases
+
+    monkeypatch.setattr(
+        activities.activity, "info", lambda: Mock(workflow_id="eval-run")
+    )
+    expected = select_cases(
+        load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json"),
+        limit=3,
+        tags=tags,
+    )
+    assert await activities.load_eval_cases(EvalRunRequest(tags=tags)) == expected
+
+
+async def test_load_eval_cases_no_matches_fails_without_retry(monkeypatch):
+    from temporalio.exceptions import ApplicationError
+
+    monkeypatch.setattr(
+        activities.activity, "info", lambda: Mock(workflow_id="eval-run")
+    )
+    with pytest.raises(ApplicationError) as error:
+        await activities.load_eval_cases(EvalRunRequest(case_id="missing"))
+    assert error.value.non_retryable
+
+
+async def test_load_eval_cases_observes_selection(monkeypatch):
+    span = Mock()
+    observed = {}
+
+    @contextmanager
+    def observation(name, **kwargs):
+        observed.update(name=name, **kwargs)
+        yield span
+
+    monkeypatch.setattr(activities.telemetry, "observation", observation)
+    monkeypatch.setattr(
+        activities.activity, "info", lambda: Mock(workflow_id="eval-run")
+    )
+    parent = {"trace_id": "a" * 32, "parent_span_id": "b" * 16}
+    cases = await activities.load_eval_cases(EvalRunRequest(trace_context=parent))
+    assert observed["name"] == "load_eval_cases"
+    assert observed["trace_context"] == parent
+    assert observed["session_id"] == "eval-run"
+    assert observed["input"] == {"case_id": None, "limit": 3, "tags": ["page_verified"]}
+    span.update.assert_called_once_with(
+        output={
+            "count": 3,
+            "case_ids": [case.case_id for case in cases],
+        }
     )

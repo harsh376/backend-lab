@@ -58,9 +58,8 @@ workers in `mcp.yaml`, and eval workers in `evals.yaml`. All use the same defaul
 Compose project and network because their files live in `compose/`. If using
 `-p`, supply the same name in every terminal. Use Ctrl+C or `stop` to stop one
 stack independently; avoid `--remove-orphans`, since the other stacks share
-the project. The eval CLI submits directly to Temporal; MCP exposes
-`run_evals` and `get_evals` for starting and polling the same eval workflow.
-See the
+the project. MCP exposes `run_evals` and `get_evals` for starting and polling
+eval workflows. See the
 [MCP](apps/mcp/README.md) and [eval](apps/evals/README.md) READMEs for commands.
 
 ## Checks
