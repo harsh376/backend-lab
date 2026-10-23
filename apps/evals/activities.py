@@ -10,7 +10,8 @@ from temporalio import activity
 from temporalio.client import Client, WorkflowFailureError
 from temporalio.exceptions import ApplicationError
 
-from apps.evals.dataset import load_cases, select_cases
+from apps.evals.datasets.dataset import load_cases, select_cases
+from apps.evals.datasets.hosted_dataset import HostedDatasetService
 from apps.evals.evaluators.answers import evaluate_correctness
 from apps.evals.experiments import (
     case_trace_context,
@@ -35,6 +36,11 @@ EVALUATORS = [
         "case_id": args["request"].case_id,
         "limit": args["request"].limit,
         "tags": args["request"].tags,
+        **(
+            {"hosted_dataset": args["request"].hosted_dataset}
+            if args["request"].hosted_dataset is not None
+            else {}
+        ),
     },
     output=lambda cases: {"count": len(cases), "case_ids": [c.case_id for c in cases]},
     session_id=lambda args: activity.info().workflow_id,
@@ -45,8 +51,14 @@ EVALUATORS = [
 )
 async def load_eval_cases(request: EvalRunRequest) -> list[EvalCase]:
     try:
+        request.validate()
+        cases = (
+            await HostedDatasetService().read(request.hosted_dataset)
+            if request.hosted_dataset is not None
+            else load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")
+        )
         return select_cases(
-            cases=load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json"),
+            cases=cases,
             case_id=request.case_id,
             limit=request.limit,
             tags=request.tags,
@@ -59,17 +71,7 @@ async def load_eval_cases(request: EvalRunRequest) -> list[EvalCase]:
 @observe(
     "eval_case",
     trace_context=case_trace_context,
-    input=lambda args: {
-        "question": args["request"].case.question,
-        "accepted_answers": args["request"].case.accepted_answers,
-        "accepted_pages": sorted(
-            {
-                evidence.wikipedia_id
-                for evidence_set in args["request"].case.evidence_sets
-                for evidence in evidence_set
-            }
-        ),
-    },
+    input=lambda args: args["request"].case.model_dump(mode="json"),
     session_id=lambda args: activity.info().workflow_id,
     metadata=lambda args: {
         "eval_run_id": activity.info().workflow_id,

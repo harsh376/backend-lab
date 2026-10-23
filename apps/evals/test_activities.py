@@ -2,10 +2,11 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
+import httpx
 import pytest
 
 from apps.evals import activities
-from apps.evals.dataset import load_cases
+from apps.evals.datasets.dataset import load_cases
 from apps.evals.workflow import EvalCaseRequest, EvalRunRequest
 
 
@@ -103,13 +104,7 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
             second.assert_not_awaited()
     assert "answer_cost_usd" not in result
     assert observed["session_id"] == "eval-run"
-    assert observed["input"]["accepted_pages"] == sorted(
-        {
-            evidence.wikipedia_id
-            for evidence_set in case.evidence_sets
-            for evidence in evidence_set
-        }
-    )
+    assert observed["input"] == case.model_dump(mode="json")
     assert observed["metadata"]["case_id"] == case.case_id
     if enabled:
         assert result["trace_id"] == "eval-trace"
@@ -221,7 +216,10 @@ async def test_direct_answer_timeout(monkeypatch):
 
 
 @pytest.mark.parametrize("experiment_name", [None, "BM25 baseline"])
-async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_name):
+@pytest.mark.parametrize("hosted", [False, True])
+async def test_decorated_evaluators_are_direct_children(
+    monkeypatch, experiment_name, hosted
+):
     from langfuse import Langfuse
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
@@ -230,10 +228,17 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_
 
     exporter = InMemorySpanExporter()
     instance = Langfuse(
-        public_key=f"pk-lf-eval-helper-test-{experiment_name or 'default'}",
+        public_key=f"pk-lf-eval-helper-test-{experiment_name or 'default'}-{hosted}",
         secret_key="sk-lf-test",
         tracer_provider=TracerProvider(),
         span_exporter=exporter,
+        httpx_client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200, json={"successes": [], "errors": []}
+                )
+            )
+        ),
     )
     monkeypatch.setattr(activities.telemetry, "client", lambda: instance)
     monkeypatch.setattr(
@@ -245,6 +250,16 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_
         lambda: Mock(workflow_id="eval-run", workflow_run_id="execution"),
     )
     case = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
+    if hosted:
+        case.source = case.source.model_copy(
+            update={
+                "kind": "langfuse",
+                "dataset_id": "hosted-dataset",
+                "dataset": "errors",
+                "record_id": "hosted-item",
+                "version": "2026-10-22T00:00:00+00:00",
+            }
+        )
     monkeypatch.setattr(
         activities,
         "_generate_answer",
@@ -289,12 +304,17 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_
         assert root.attributes["langfuse.experiment.name"] == expected_name
         # A local label must not masquerade as a hosted dataset ID: the UI
         # uses that attribute to turn input cells into dataset-item links.
-        assert "langfuse.experiment.dataset.id" not in root.attributes
-        assert (
-            root.attributes["langfuse.experiment.metadata.local_dataset"]
-            == "kilt-v1/dev"
-        )
-        assert root.attributes["langfuse.experiment.item.id"] == case.case_id
+        if hosted:
+            assert root.attributes["langfuse.experiment.dataset.id"] == "hosted-dataset"
+            assert "langfuse.experiment.metadata.local_dataset" not in root.attributes
+        else:
+            assert "langfuse.experiment.dataset.id" not in root.attributes
+            assert (
+                root.attributes["langfuse.experiment.metadata.local_dataset"]
+                == "kilt-v1/dev"
+            )
+        item_id = "hosted-item" if hosted else case.case_id
+        assert root.attributes["langfuse.experiment.item.id"] == item_id
         assert (
             root.attributes["langfuse.experiment.item.root_observation_id"] == root_id
         )
@@ -304,9 +324,15 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_
         )
         for child in (s for s in spans if s.name != "eval_case"):
             assert child.attributes["langfuse.experiment.name"] == expected_name
-            assert "langfuse.experiment.dataset.id" not in child.attributes
+            if hosted:
+                assert (
+                    child.attributes["langfuse.experiment.dataset.id"]
+                    == "hosted-dataset"
+                )
+            else:
+                assert "langfuse.experiment.dataset.id" not in child.attributes
             assert child.attributes["langfuse.experiment.id"] == result["experiment_id"]
-            assert child.attributes["langfuse.experiment.item.id"] == case.case_id
+            assert child.attributes["langfuse.experiment.item.id"] == item_id
             assert (
                 child.attributes["langfuse.experiment.item.root_observation_id"]
                 == root_id
@@ -321,7 +347,7 @@ async def test_decorated_evaluators_are_direct_children(monkeypatch, experiment_
 
 @pytest.mark.parametrize("tags", [["page_verified"], []])
 async def test_load_eval_cases_selects_on_worker(tags, monkeypatch):
-    from apps.evals.dataset import select_cases
+    from apps.evals.datasets.dataset import select_cases
 
     monkeypatch.setattr(
         activities.activity, "info", lambda: Mock(workflow_id="eval-run")

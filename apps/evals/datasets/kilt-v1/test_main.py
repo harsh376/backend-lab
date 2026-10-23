@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from apps.evals.dataset import load_cases
+from apps.evals.datasets.dataset import load_cases
 from apps.evals.models import Evidence
 
 spec = importlib.util.spec_from_file_location(

@@ -48,13 +48,19 @@ def experiment_item(request):
     metadata = {
         "temporal_workflow_id": info.workflow_id,
         "temporal_run_id": info.workflow_run_id,
-        "local_dataset": "kilt-v1/dev",
-        "dataset_version": hashlib.sha256(DATASET_PATH.read_bytes()).hexdigest(),
         "git_commit_sha": settings.git_commit_sha or "unknown",
         "evaluator_version": "1",
         "answer_model": settings.mcp_answer_model,
         "judge_model": settings.eval_judge_model,
     }
+    source = request.case.source
+    if source.kind == "local":
+        metadata.update(
+            local_dataset="kilt-v1/dev",
+            dataset_version=hashlib.sha256(DATASET_PATH.read_bytes()).hexdigest(),
+        )
+    else:
+        metadata.update(dataset_name=source.dataset, dataset_version=source.version)
     values = {
         "experiment_id": run_id,
         "experiment_name": (
@@ -66,6 +72,9 @@ def experiment_item(request):
         "experiment_item_root_observation_id": instance.get_current_observation_id(),
         **{f"experiment_metadata_{key}": value for key, value in metadata.items()},
     }
+    if source.kind == "langfuse":
+        values["experiment_dataset_id"] = source.dataset_id
+        values["experiment_item_id"] = source.record_id
     span = trace.get_current_span()
     for key, value in values.items():
         attribute = (
@@ -73,6 +82,7 @@ def experiment_item(request):
             if key.startswith("experiment_metadata_")
             else {
                 "experiment_id": "langfuse.experiment.id",
+                "experiment_dataset_id": "langfuse.experiment.dataset.id",
                 "experiment_name": "langfuse.experiment.name",
                 "experiment_item_id": "langfuse.experiment.item.id",
                 "experiment_item_root_observation_id": (
@@ -84,15 +94,7 @@ def experiment_item(request):
             span.set_attribute(attribute, value)
     span.set_attribute(
         "langfuse.experiment.item.expected_output",
-        json.dumps(
-            {
-                "accepted_answers": request.case.accepted_answers,
-                "evidence_sets": [
-                    [e.model_dump() for e in group]
-                    for group in request.case.evidence_sets
-                ],
-            }
-        ),
+        json.dumps(request.case.accepted_answers),
     )
     ctx = context.get_current()
     for key, value in values.items():

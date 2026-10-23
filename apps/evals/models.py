@@ -31,6 +31,9 @@ class VerificationTag(StrEnum):
 class EvalSource(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    kind: Literal["local", "langfuse"] = "local"
+    dataset_id: str | None = Field(default=None, min_length=1)
+    version: str | None = Field(default=None, min_length=1)
     dataset: str = Field(min_length=1)
     split: Literal["train", "dev", "test"]
     record_id: str = Field(min_length=1)
@@ -77,8 +80,6 @@ class EvalCase(BaseModel):
     def check_gold(self):
         if self.answerable and not any(a.strip() for a in self.accepted_answers):
             raise ValueError("answerable cases require an accepted answer")
-        if self.answerable and not any(self.evidence_sets):
-            raise ValueError("answerable cases require a complete evidence set")
         if any(not evidence_set for evidence_set in self.evidence_sets):
             raise ValueError("evidence sets must not be empty")
         return self

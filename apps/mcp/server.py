@@ -9,7 +9,7 @@ from temporalio.common import WorkflowIDConflictPolicy, WorkflowIDReusePolicy
 from temporalio.contrib.pydantic import pydantic_data_converter
 from temporalio.exceptions import WorkflowAlreadyStartedError
 
-from apps.evals.evaluators.answers import summarize_answers
+from apps.evals.datasets.hosted_dataset import HostedDatasetService, ScoreFilter
 from apps.evals.models import EvalRunResponse
 from apps.evals.workflow import TASK_QUEUE as EVAL_TASK_QUEUE
 from apps.evals.workflow import EvalRunRequest, EvalWorkflow
@@ -162,24 +162,30 @@ async def _get_answer(run_id: str) -> dict:
 @observe(reuse_current=True, as_type="tool")
 async def run_evals(
     case_id: str | None = None,
-    limit: int = 3,
+    limit: int | None = None,
     tags: list[str] | None = None,
     timeout: float = 120,
     experiment_name: str | None = None,
+    hosted_dataset: str | None = None,
 ) -> dict:
     """Start dataset evals through AnswerWorkflow directly. Poll get_evals.
 
-    Select cases from the bundled KILT dev dataset by ID or tags.
-    Defaults to three page_verified cases. Pass tags=[] to disable tag filtering.
+    Set hosted_dataset to load a hosted Langfuse dataset (all active items by default).
+    Otherwise defaults to three page_verified cases from bundled KILT dev.
+    Use limit to cap cases, case_id to select an item, or tags to filter metadata.
+    Pass tags=[] to disable tag filtering. Hosted datasets default to no tag filter.
     Each case has independent, linked eval and answer traces.
     Set experiment_name for a readable Langfuse label; omitted uses Temporal IDs.
     """
     request = EvalRunRequest(
         case_id=case_id,
-        limit=limit,
-        tags=["page_verified"] if tags is None else tags,
+        limit=3 if limit is None and hosted_dataset is None else limit,
+        tags=(["page_verified"] if hosted_dataset is None else [])
+        if tags is None
+        else tags,
         timeout=timeout,
         experiment_name=experiment_name,
+        hosted_dataset=hosted_dataset,
         trace_context=current_context(),
     )
     client = await Client.connect(
@@ -192,6 +198,7 @@ async def run_evals(
         request,
         id=run_id,
         task_queue=EVAL_TASK_QUEUE,
+        memo={"eval_name": experiment_name},
     )
     return {"run_id": run_id, "status": "RUNNING"}
 
@@ -204,38 +211,27 @@ async def run_evals(
 )
 async def get_evals(run_id: str) -> EvalRunResponse:
     """Return eval status and completed per-case outputs, scores and trace IDs."""
-    if not run_id.startswith("kilt-eval-"):
-        raise ValueError("invalid eval run ID")
-    client = await Client.connect(
-        Settings().temporal_address, data_converter=pydantic_data_converter
+    return await HostedDatasetService().read_eval(run_id)
+
+
+@mcp.tool()
+@observe(reuse_current=True, as_type="tool")
+async def create_dataset_from_eval(
+    eval_name: str, score_filters: list[ScoreFilter], dataset_name: str
+) -> dict:
+    """Create a hosted Langfuse dataset from scored cases in a completed eval.
+
+    eval_name is the exact experiment_name passed to run_evals. Duplicate names
+    are rejected; use unique experiment names. Filters use AND semantics;
+    missing/non-numeric scores never match. Each filter
+    has name (evaluator key), operator (eq/ne/lt/lte/gt/gte), value, and optional
+    score_field (default correctness). Original inputs and references are copied.
+    No matches creates no dataset. Retry identical arguments after partial errors;
+    existing dataset names are accepted only for the same run and filters.
+    """
+    return await HostedDatasetService().create_from_eval(
+        eval_name, score_filters, dataset_name
     )
-    handle = client.get_workflow_handle(run_id, result_type=list[dict])
-    description = await handle.describe()
-    result: EvalRunResponse = {"run_id": run_id, "status": description.status.name}
-    if description.status == WorkflowExecutionStatus.COMPLETED:
-        result["results"] = await handle.result()
-        result["summary"] = summarize_answers(result["results"])
-        for case_result in result["results"]:
-            if "experiment_id" in case_result:
-                result["experiment_id"] = case_result["experiment_id"]
-            if "experiment_url" in case_result:
-                result["experiment_url"] = case_result["experiment_url"]
-        result["coverage"] = {
-            "total": len(result["results"]),
-            "completed": sum(
-                r.get("output", {}).get("status") == "COMPLETED"
-                for r in result["results"]
-            ),
-            "failed": sum(
-                r.get("output", {}).get("status") != "COMPLETED"
-                for r in result["results"]
-            ),
-            "correctness_scored": result["summary"]["correctness_count"],
-            "correctness_skipped": (
-                len(result["results"]) - result["summary"]["correctness_count"]
-            ),
-        }
-    return result
 
 
 def main() -> None:

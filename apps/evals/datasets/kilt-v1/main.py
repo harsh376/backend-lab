@@ -18,7 +18,7 @@ from pydantic import ValidationError
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[4]))
 
-from apps.evals.dataset import load_cases  # noqa: E402
+from apps.evals.datasets.dataset import load_cases, question_group_id  # noqa: E402
 from apps.evals.models import EvalCase, Evidence, VerificationTag  # noqa: E402
 from backend.config import Settings  # noqa: E402
 
@@ -93,8 +93,7 @@ def build_cases(
             seen_ids.add(case_id)
             case = {
                 "case_id": case_id,
-                "group_id": "question-"
-                + hashlib.sha256(normalized.encode()).hexdigest()[:16],
+                "group_id": question_group_id(record["input"]),
                 "question": record["input"],
                 "source": {
                     "dataset": dataset,

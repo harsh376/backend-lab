@@ -5,7 +5,7 @@ import pytest
 from temporalio.contrib.pydantic import pydantic_data_converter
 from temporalio.exceptions import ActivityError, ApplicationError
 
-from apps.evals.dataset import load_cases
+from apps.evals.datasets.dataset import load_cases
 from apps.evals.workflow import EvalCaseRequest, EvalRunRequest, EvalWorkflow
 
 
@@ -58,6 +58,8 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
     )
     assert result[0]["output"]["status"] == "FAILED"
     assert result[0]["evaluators"] == {}
+    assert result[0]["case"] == cases[0].model_dump(mode="json")
+    assert result[1]["case"] == cases[1].model_dump(mode="json")
     assert result[1]["evaluators"]["answer_correctness"]["correctness"] == 1
     assert execute.call_args_list[0].args[0] == "load_eval_cases"
     for invocation in execute.call_args_list[1:]:
@@ -76,6 +78,8 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
         {"limit": 0},
         {"experiment_name": ""},
         {"experiment_name": "   "},
+        {"hosted_dataset": ""},
+        {"hosted_dataset": "   "},
     ],
 )
 async def test_invalid_requests_fail_before_loading(monkeypatch, kwargs):

@@ -46,6 +46,7 @@ async def test_mcp_answer_protocol(monkeypatch):
                 "get_answer",
                 "run_evals",
                 "get_evals",
+                "create_dataset_from_eval",
             }
 
             invalid = await session.call_tool("answer", {"question": " "})
@@ -219,3 +220,29 @@ async def test_evals_default_selection(monkeypatch, tags):
     request = client.start_workflow.call_args.args[1]
     assert request.limit == 3
     assert request.tags == (["page_verified"] if tags is None else [])
+
+
+async def test_hosted_evals_default_to_all_items_without_tag_filter(monkeypatch):
+    client = Mock(start_workflow=AsyncMock())
+    monkeypatch.setattr(server.Client, "connect", AsyncMock(return_value=client))
+    await server.run_evals(hosted_dataset="basline-v5-errors")
+    request = client.start_workflow.call_args.args[1]
+    assert request.hosted_dataset == "basline-v5-errors"
+    assert request.limit is None
+    assert request.tags == []
+    await server.run_evals(hosted_dataset="errors", limit=2, tags=["retrieval"])
+    request = client.start_workflow.call_args.args[1]
+    assert request.limit == 2
+    assert request.tags == ["retrieval"]
+
+
+async def test_create_dataset_from_eval_delegates_to_service(monkeypatch):
+    from apps.evals.datasets.hosted_dataset import ScoreFilter
+
+    create = AsyncMock(return_value={"status": "COMPLETED"})
+    monkeypatch.setattr(server.HostedDatasetService, "create_from_eval", create)
+    filters = [ScoreFilter(name="answer_correctness", value=0)]
+    assert await server.create_dataset_from_eval("test-v5", filters, "errors") == {
+        "status": "COMPLETED"
+    }
+    create.assert_awaited_once_with("test-v5", filters, "errors")

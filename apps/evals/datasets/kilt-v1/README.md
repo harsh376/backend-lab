@@ -87,8 +87,10 @@ paragraph range; evidence may also retain source character offsets.
 
 The builder samples eligible records deterministically with the selected seed
 and avoids duplicate normalized questions across sources. Schema validation
-requires answerable cases to have a nonblank accepted answer and at least one
-nonempty evidence set. It does not establish semantic support or split isolation.
+requires answerable cases to have a nonblank accepted answer. Evidence sets are
+optional for correctness scoring; any supplied set must be nonempty. The KILT
+builder selects cases with gold evidence, independently of the shared contract.
+Schema validation does not establish semantic support or split isolation.
 
 Evaluation excludes cases tagged `rejected`. `--tags` requires every requested
 tag and filters before `--limit`; verification tags are not required by default.

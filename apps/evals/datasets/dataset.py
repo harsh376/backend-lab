@@ -1,6 +1,8 @@
 """Dataset loading, validation, and case selection shared by MCP and builders."""
 
+import hashlib
 import json
+import re
 from pathlib import Path
 
 from apps.evals.models import EvalCase
@@ -33,11 +35,11 @@ def select_cases(
     cases: list[EvalCase],
     *,
     case_id: str | None = None,
-    limit: int = 1,
+    limit: int | None = 1,
     tags: list[str] | None = None,
 ) -> list[EvalCase]:
     """Select eligible cases in dataset order, requiring every requested tag."""
-    if limit <= 0:
+    if limit is not None and limit <= 0:
         raise ValueError("limit must be positive")
     selected = [
         case
@@ -49,3 +51,9 @@ def select_cases(
     if not selected:
         raise ValueError("No eligible cases match the requested case ID and tags")
     return selected
+
+
+def question_group_id(question: str) -> str:
+    """Group the same normalized question across dataset sources."""
+    normalized = re.sub(r"\W+", " ", question.casefold()).strip()
+    return "question-" + hashlib.sha256(normalized.encode()).hexdigest()[:16]
