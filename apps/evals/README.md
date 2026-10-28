@@ -35,7 +35,7 @@ codex mcp add answers --url http://localhost:8001/mcp
 Ask Codex:
 
 ```text
-Use answers.run_evals with limit 5, tags ["page_verified"], timeout 120. Poll answers.get_evals until finished and show the summary.
+Use answers.run_evals with limit 5, tags ["page_verified"], timeout 600. Poll answers.get_evals until finished and show the summary.
 ```
 
 `run_evals` arguments:
@@ -44,7 +44,7 @@ Use answers.run_evals with limit 5, tags ["page_verified"], timeout 120. Poll an
 {
   "limit": 5,
   "tags": ["page_verified"],
-  "timeout": 120,
+  "timeout": 600,
   "experiment_name": "BM25 baseline"
 }
 ```
@@ -63,8 +63,35 @@ Poll `get_evals` with the returned ID:
 
 The case limit defaults to `3` for both local and hosted datasets. Pass
 `limit=null` to run all eligible cases for either source. Local defaults:
-`tags=["page_verified"]`, `timeout=120`.
+`tags=["page_verified"]`, `timeout=600` for answer evals.
 Tags require all matches; pass `tags=[]` to disable tag filtering.
+
+All answer and eval timeouts are fields on `Settings` in `backend/config.py`.
+Consumers construct `Settings()` at runtime. Fields beginning with `timeout_`
+read matching `TIMEOUT_*` environment variables; Compose forwards these without
+providing separate defaults. For example:
+
+```dotenv
+TIMEOUT_MODEL_REQUEST_SECONDS=180
+TIMEOUT_ANSWER_EVAL_SECONDS=600
+TIMEOUT_RETRIEVAL_EVAL_SECONDS=120
+```
+
+Activity and scoring deadlines are properties derived from the model ceiling
+(`TIMEOUT_MODEL_REQUEST_MAX_SECONDS`) and activity overhead
+(`TIMEOUT_ACTIVITY_OVERHEAD_SECONDS`). Increase the ceiling too if raising the
+model request timeout above it. The `timeout` tool argument still overrides an
+individual run's answer or retrieval deadline.
+
+At submission, only timeout/retry fields are copied into workflow inputs.
+Workflows reconstruct `Settings` from that snapshot, so environment changes
+cannot alter replay. No credentials or other application settings are recorded.
+Older workflows without a snapshot use the declared Settings defaults.
+
+Answer evals explicitly pass the top **10 articles** to answer generation. The
+`run_evals.limit` argument selects dataset cases, not articles. Retrieval uses a
+larger internal candidate pool for ranking before returning those 10 articles.
+Standalone retrieval evals configure their output size with `retrieval_limit`.
 
 ### Run a hosted Langfuse dataset
 

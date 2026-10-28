@@ -85,3 +85,72 @@ model calls. Both local eval and answer workers were rebuilt and restarted.
 
 Validation: 105 targeted repository, service, retrieval-evaluator, eval workflow,
 answer workflow, and MCP tests passed; Ruff lint and format checks passed.
+
+## Model-free retrieval ensemble: 80% recall@10
+
+[`retrieval-at10-002`](https://us.cloud.langfuse.com/project/cmv8er3760322ad0gyvm1n67l/experiments/results?baseline=ebf0d7fa25905ad5b2f3741c67ff73b5)
+measured the production implementation of a lexical and link-based retrieval
+ensemble. No model calls, embeddings, new dependencies, or index changes are used.
+
+1. Retrieve 100 candidates with the existing cross-field BM25 query, independently
+   of whether the caller requests 10 or 100 results. Larger requested limits are
+   still supported. The stopword-only fallback is retained.
+2. Score paragraphs from the first three seed articles by question-term overlap
+   divided by `1 + unique_word_count ** 0.3`. Each seed contributes its five most
+   relevant paragraphs; only positive-overlap paragraphs contribute links.
+3. Decode linked Wikipedia titles, aggregate paragraph scores weighted by inverse
+   seed rank, and select up to 100 titles. Search those titles with the original
+   query to recover related articles. Expansion is one hop, with no recursion.
+4. Rerank the union using local passage BM25 (`k1=1.2`, `b=0.75`). Windows contain
+   120 non-stopword tokens, advancing by 80 tokens within each original paragraph;
+   the title is included three times for context. Each article takes its best
+   passage score. Statistics come only from the candidate passages.
+5. Fuse the article, linked-article, and passage rankings with equal-weight
+   reciprocal rank fusion (`k=10`), deduplicate Wikipedia IDs, and return the
+   requested prefix. Search hit `score` is now the fused ranking score.
+
+Local tokenization folds accents and removes question framing. It operates on
+copies for scoring, preserving original paragraphs and citation offsets. Local
+scoring runs in threads to avoid blocking the async worker loop. A normal query
+with useful links makes two Elasticsearch searches and considers at most 200
+articles for a requested limit of 100 or less. Missing anchors skip expansion.
+
+`retrieval-at10-002-trials.json` records the comparison summaries, including
+unsuccessful field-weight, term-coverage, and fuzzy-search variants. Field-weight
+changes alone reduced recall@10; links and passage ranking provided complementary
+gains. These trials used references only for evaluation, not candidate generation
+or ranking. The selected code is in `backend/repositories/kilt_ranking.py` and
+`backend/repositories/kilt.py`.
+
+| Metric | Previous (`at10-001`) | Ensemble (`at10-002`) |
+| --- | ---: | ---: |
+| Recall@5 | 60.00% | 75.56% |
+| Recall@10 | 67.78% | **80.00%** |
+| Recall@50 | 78.89% | 85.56% |
+| Recall@100 | 80.00% | 85.56% |
+
+All 45 cases completed and were scored at every cutoff, with no failures or skips.
+The full case snapshots matched the previous run exactly; dataset SHA-256 remains
+`f37abbe8dfd9962907b5848a28b6b025567a7169c17d029cdbcd47db3690f89e`.
+At recall@10, seven cases improved, none regressed, and 38 were unchanged.
+`retrieval-at10-002.json` records per-case changes, scores, source hashes, and traces.
+
+| Retrieval latency | Previous | Ensemble |
+| --- | ---: | ---: |
+| Mean | 54 ms | 148 ms |
+| Median | 54 ms | 135 ms |
+| p95 | 76 ms | 227 ms |
+
+These timings are observations from sequential local eval runs, not a controlled
+load benchmark. The extra search and passage scoring trade latency and CPU for
+recall. As with the previous change, the 45-case set was used to select the method;
+80% is a development-set result and has not been validated on an independent
+holdout. The corpus was unchanged during comparison, but its name is not a
+content fingerprint.
+
+Validation: 113 targeted tests passed; Ruff lint and formatting checks passed.
+Tests cover accent normalization, link decoding and bounds, paragraph relevance,
+stable fusion and deduplication, fallback queries, citation preservation, and
+consistent candidate pools across output limits. Both local workers were rebuilt
+and restarted. To repeat, call `answers.run_retrieval_evals` with `limit=null`,
+`retrieval_limit=100`, and a unique experiment name, then poll `answers.get_evals`.

@@ -96,7 +96,9 @@ async def evaluate_mcp_case(request: EvalCaseRequest) -> dict:
     case = request.case
     context = current_context()
     with experiment_item(request) as report:
-        result = await _generate_answer(case, request.timeout, context)
+        result = await _generate_answer(
+            case, request.timeout, context, request.timeout_settings
+        )
         result["evaluators"] = await _run_evaluators(case, result["output"])
         if context:
             result["trace_id"] = context["trace_id"]
@@ -164,7 +166,7 @@ def _record_evaluation(result):
         _mark_evaluator_error(result["output"]["status"])
 
 
-async def _generate_answer(case, timeout, eval_context):
+async def _generate_answer(case, timeout, eval_context, timeout_settings=None):
     """Run the answer directly; stable IDs prevent duplicate submissions."""
     info = activity.info()
     run_id = (
@@ -197,6 +199,8 @@ async def _generate_answer(case, timeout, eval_context):
                     AnswerWorkflow.run,
                     AnswerRequest(
                         case.question,
+                        limit=10,
+                        timeout_settings=timeout_settings,
                         trace_context=current_context(),
                         session_id=info.workflow_id,
                     ),

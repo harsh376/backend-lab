@@ -11,6 +11,7 @@ from temporalio.exceptions import ActivityError
 with workflow.unsafe.imports_passed_through():
     from apps.mcp.agent.models import SynthesisInput, VerificationInput
     from backend.budget import BudgetReport, Reservation
+    from backend.config import Settings
 
 
 class BudgetStopped(Exception):
@@ -30,7 +31,10 @@ async def budget_stage(
     budget_report: BudgetReport | None,
     stage: str,
     data: SynthesisInput | VerificationInput,
+    *,
+    settings: Settings | None = None,
 ):
+    settings = settings or Settings.from_timeout_snapshot(None)
     if budget_report is None:
         yield BudgetStage()
         return
@@ -39,8 +43,12 @@ async def budget_stage(
             f"quote_{stage}",
             data,
             result_type=Reservation,
-            start_to_close_timeout=timedelta(seconds=30),
-            schedule_to_close_timeout=timedelta(minutes=1),
+            start_to_close_timeout=timedelta(
+                seconds=settings.timeout_budget_quote_seconds
+            ),
+            schedule_to_close_timeout=timedelta(
+                seconds=settings.timeout_budget_quote_total_seconds
+            ),
             retry_policy=RetryPolicy(maximum_attempts=1),
         )
     except ActivityError as error:

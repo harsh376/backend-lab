@@ -1,5 +1,6 @@
 """KILT repository contract and Elasticsearch persistence."""
 
+import asyncio
 import logging
 from collections.abc import Iterable, Iterator
 from typing import Protocol
@@ -11,6 +12,13 @@ from backend.domains.kilt import (
     KiltSearchHit,
     extract_sections,
     split_categories,
+)
+from backend.repositories.kilt_ranking import (
+    CANDIDATE_LIMIT,
+    fuse_rankings,
+    page_id,
+    rank_passages,
+    related_titles,
 )
 
 logger = logging.getLogger(__name__)
@@ -120,21 +128,23 @@ class ElasticsearchKiltRepository:
                 # characters, so truncate very long articles instead of failing.
                 "max_analyzed_offset": 999_999,
             },
-            "source": ["wikipedia_title", "wikipedia_id", "text"],
-            "size": limit,
+            "source": ["wikipedia_title", "wikipedia_id", "text", "anchors"],
+            # Candidate generation is independent of the requested output size.
+            "size": max(CANDIDATE_LIMIT, limit),
         }
         match = {"query": query, "fields": ["wikipedia_title^3", "text"]}
+        article_query = {
+            "multi_match": {
+                **match,
+                # Blend term statistics across title and body. Their index
+                # analyzers differ, so an explicit shared analyzer is needed.
+                # Drop common words without stemming the indexed terms.
+                "type": "cross_fields",
+                "analyzer": "stop",
+            }
+        }
         response = await self._client.search(
-            query={
-                "multi_match": {
-                    **match,
-                    # Blend term statistics across title and body. Their index
-                    # analyzers differ, so an explicit shared analyzer is needed.
-                    # Drop common words without stemming the indexed terms.
-                    "type": "cross_fields",
-                    "analyzer": "stop",
-                }
-            },
+            query=article_query,
             **search_options,
         )
         if not response["hits"]["hits"]:
@@ -143,17 +153,43 @@ class ElasticsearchKiltRepository:
             response = await self._client.search(
                 query={"multi_match": match}, **search_options
             )
-        return [
-            KiltSearchHit(
-                id=hit["_id"],
-                wikipedia_id=str(hit["_source"].get("wikipedia_id", hit["_id"])),
-                paragraphs=tuple(hit["_source"].get("text", [])),
-                title=hit["_source"]["wikipedia_title"],
-                score=hit["_score"],
-                snippets=tuple(hit.get("highlight", {}).get("text", [])),
+        hits = response["hits"]["hits"]
+        linked_hits = []
+        titles = await asyncio.to_thread(related_titles, query, hits)
+        if titles:
+            linked_response = await self._client.search(
+                query={
+                    "bool": {
+                        "must": [article_query],
+                        "filter": [{"terms": {"wikipedia_title.keyword": titles}}],
+                    }
+                },
+                **search_options,
             )
-            for hit in response["hits"]["hits"]
+            linked_hits = linked_response["hits"]["hits"]
+        candidates = {page_id(hit): hit for hit in hits + linked_hits}
+        passage_ranking = await asyncio.to_thread(
+            rank_passages, query, list(candidates.values())
+        )
+        rankings = [
+            [page_id(hit) for hit in hits],
+            [page_id(hit) for hit in linked_hits],
+            passage_ranking,
         ]
+        results = []
+        for article_id, score in fuse_rankings(rankings)[:limit]:
+            hit = candidates[article_id]
+            results.append(
+                KiltSearchHit(
+                    id=hit["_id"],
+                    wikipedia_id=str(hit["_source"].get("wikipedia_id", hit["_id"])),
+                    paragraphs=tuple(hit["_source"].get("text", [])),
+                    title=hit["_source"]["wikipedia_title"],
+                    score=score,
+                    snippets=tuple(hit.get("highlight", {}).get("text", [])),
+                )
+            )
+        return results
 
     async def aget_article(self, article_id: str) -> KiltArticle:
         response = await self._client.get(index=self._index_name, id=article_id)

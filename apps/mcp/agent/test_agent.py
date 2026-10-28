@@ -12,6 +12,7 @@ from apps.mcp.agent.models import (
     Paragraph,
     SynthesisInput,
 )
+from backend.config import Settings
 from backend.repositories.kilt import ElasticsearchKiltRepository
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerSynthesisService,
@@ -87,7 +88,10 @@ def test_request_validation(question, limit):
         AnswerRequest(question, limit).validate()
 
 
-async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
+@pytest.mark.parametrize("ceiling,overhead", [(180, 30), (240, 45)])
+async def test_workflow_retrieves_synthesizes_then_verifies(
+    monkeypatch, ceiling, overhead
+):
     from apps.mcp.agent import workflow as module
 
     p = Paragraph("v:1:0", "v", "1", 0, "Title", "Evidence")
@@ -102,6 +106,11 @@ async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
             assert argument.session_id == "codex:chat-a"
             return None
         assert kwargs["retry_policy"].maximum_attempts == 3
+        assert kwargs["start_to_close_timeout"].total_seconds() == ceiling + overhead
+        assert (
+            kwargs["schedule_to_close_timeout"].total_seconds()
+            == 3 * (ceiling + overhead) + overhead
+        )
         if name == "verify_answer":
             assert argument.answer.citations == [p]
             assert argument.session_id == "codex:chat-a"
@@ -112,7 +121,14 @@ async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
 
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
     result = await module.AnswerWorkflow().run(
-        AnswerRequest("question", session_id="codex:chat-a")
+        AnswerRequest(
+            "question",
+            session_id="codex:chat-a",
+            timeout_settings=Settings(
+                timeout_model_request_max_seconds=ceiling,
+                timeout_activity_overhead_seconds=overhead,
+            ).timeout_snapshot(),
+        )
     )
     assert calls == [
         "retrieve_answer_evidence",

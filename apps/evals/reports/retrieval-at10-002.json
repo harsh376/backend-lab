@@ -1,0 +1,1681 @@
+{
+  "run_id": "kilt-eval-retrieval-7b69784d-9a87-4b3f-8d73-e83b4af112ad",
+  "status": "COMPLETED",
+  "experiment_id": "ebf0d7fa25905ad5b2f3741c67ff73b5",
+  "experiment_url": "https://us.cloud.langfuse.com/project/cmv8er3760322ad0gyvm1n67l/experiments/results?baseline=ebf0d7fa25905ad5b2f3741c67ff73b5",
+  "coverage": {
+    "total": 45,
+    "completed": 45,
+    "failed": 0,
+    "recall@5_scored": 45,
+    "recall@5_skipped": 0,
+    "recall@10_scored": 45,
+    "recall@10_skipped": 0,
+    "recall@50_scored": 45,
+    "recall@50_skipped": 0,
+    "recall@100_scored": 45,
+    "recall@100_skipped": 0
+  },
+  "results": [
+    {
+      "case_id": "nq-dev-737118727843422688",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.19760729186236858,
+      "trace_id": "e5e3bd7fd76256ac8bb165c2e6caf144"
+    },
+    {
+      "case_id": "nq-dev-343968022755473370",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.11267858417704701,
+      "trace_id": "fa0d3ecc162c5663af4a9412d9a86e5c"
+    },
+    {
+      "case_id": "nq-dev-3311962143974666464",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.17863524984568357,
+      "trace_id": "5f59ecfa7d7653adb737a66d820de16d"
+    },
+    {
+      "case_id": "nq-dev--7779084475859441741",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.19451716681942344,
+      "trace_id": "fa03a6eb9a9358ec96514e78eaa86f76"
+    },
+    {
+      "case_id": "nq-dev-5150934530929664244",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.17378999991342425,
+      "trace_id": "0b1fb8ff45185760aa2f6b93edae2066"
+    },
+    {
+      "case_id": "nq-dev-7311273005529291652",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.090660166926682,
+      "trace_id": "12c8c523ccac56928ab89fef91f3c318"
+    },
+    {
+      "case_id": "nq-dev-1096973491164113721",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.11881783418357372,
+      "trace_id": "c076fb393f445994baa6b28845c412f5"
+    },
+    {
+      "case_id": "nq-dev--9141276525854297532",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.10899350000545382,
+      "trace_id": "a283382628135773a52af359ba895810"
+    },
+    {
+      "case_id": "nq-dev-8239463385147663167",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.07318254094570875,
+      "trace_id": "a7962bc1af7d51288acebbb635a25051"
+    },
+    {
+      "case_id": "nq-dev--3431328641910966671",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.08886995818465948,
+      "trace_id": "4ec0970321c157ceb81f04192f2de545"
+    },
+    {
+      "case_id": "nq-dev-8888584875401414044",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.11046441690996289,
+      "trace_id": "f241f9e5696a580a88b34159008e8e21"
+    },
+    {
+      "case_id": "nq-dev--4909301147922823976",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.30217387480661273,
+      "trace_id": "568df27d75165c30ba21205bbb0cf521"
+    },
+    {
+      "case_id": "nq-dev--2796541333611735730",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.12977783381938934,
+      "trace_id": "00e6f642c94f5b2db5674f07fb32df65"
+    },
+    {
+      "case_id": "nq-dev--6171145136739461013",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.20045429235324264,
+      "trace_id": "4dadeb6e1fcf5bdf94ff4ba946162bde"
+    },
+    {
+      "case_id": "nq-dev--5579812134939807145",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.19015029119327664,
+      "trace_id": "2fc7d91b344754edbadc06d20cfdf121"
+    },
+    {
+      "case_id": "nq-dev-9188394543955260450",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.11601500026881695,
+      "trace_id": "da7e046fdbb953b2af205caec54444de"
+    },
+    {
+      "case_id": "nq-dev--4392475526001139368",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.1734047499485314,
+      "trace_id": "8d1be0e828fd5581a1f46d05492afdf9"
+    },
+    {
+      "case_id": "nq-dev--1413547797481632580",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.09680929081514478,
+      "trace_id": "542e52dc692a5740ac9010ebe1ebcf23"
+    },
+    {
+      "case_id": "nq-dev-5098377822521811712",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.1705380012281239,
+      "trace_id": "f3267fe5c34c5cf6af361087760bfe06"
+    },
+    {
+      "case_id": "nq-dev-1864282688423355455",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.22675674967467785,
+      "trace_id": "b7ddbd98ccf0580c99d564b58971d76d"
+    },
+    {
+      "case_id": "nq-dev-2098168902147822379",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.1955404169857502,
+      "trace_id": "521022b7563e5153aca9f0972a9462ed"
+    },
+    {
+      "case_id": "nq-dev-6229275979490979874",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.07279716711491346,
+      "trace_id": "5c54149e18865ca89a55644c701aca10"
+    },
+    {
+      "case_id": "nq-dev-2545607965679456162",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.20568062458187342,
+      "trace_id": "4c5b45af9dcd5b1f86c25196e9e5121c"
+    },
+    {
+      "case_id": "nq-dev--8834996069938989383",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.15552770905196667,
+      "trace_id": "5e7b56bc37d85abf8187cdc2724b568c"
+    },
+    {
+      "case_id": "nq-dev-7210975046317501288",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.09906333312392235,
+      "trace_id": "11f777f73a165fe4b855ec3283a71a93"
+    },
+    {
+      "case_id": "nq-dev--5864856625806411702",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.11418654210865498,
+      "trace_id": "1590d0333d3e5c3eb28af615e373c488"
+    },
+    {
+      "case_id": "nq-dev--6145868466021183224",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.13512800028547645,
+      "trace_id": "e1aa1108c5d9580d973c9c1c2090bbf4"
+    },
+    {
+      "case_id": "nq-dev--8491993331568056625",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.21430524997413158,
+      "trace_id": "a546b25eaeb75fbba93c99dd39ead23d"
+    },
+    {
+      "case_id": "nq-dev--7052052953885262396",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.17465800000354648,
+      "trace_id": "a6a106d457ff5c6999d6f16b6ba8fb4d"
+    },
+    {
+      "case_id": "nq-dev--8947071197382617621",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.13874387508258224,
+      "trace_id": "aeae8cda552d524b8cd0075af9ecd2f3"
+    },
+    {
+      "case_id": "hotpotqa-dev-5ae0345855429924de1b705f",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.11055995803326368,
+      "trace_id": "d8cdcfcbf84a5dd0a6e1c07e24093c1d"
+    },
+    {
+      "case_id": "hotpotqa-dev-5a73b2cb55429908901be31a",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.13338937517255545,
+      "trace_id": "a292e06a0c8b5afa828d5634505c7aa9"
+    },
+    {
+      "case_id": "hotpotqa-dev-5a8b50475542997f31a41cd4",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.17952954210340977,
+      "trace_id": "7b53e9f666dc5192bd931ed8c81b882e"
+    },
+    {
+      "case_id": "hotpotqa-dev-5ae2c509554299492dc91c68",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 0.5,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.12738554226234555,
+      "trace_id": "b87a8b909abe532eb54e6021b7d9d5db"
+    },
+    {
+      "case_id": "hotpotqa-dev-5ade51515542992fa25da745",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.1394179998897016,
+      "trace_id": "96788e376ea55edab9d1c8b25d879b8f"
+    },
+    {
+      "case_id": "hotpotqa-dev-5a80a7f6554299485f598680",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.12020583311095834,
+      "trace_id": "ecd1bd9ba17b5feaa14436909e673725"
+    },
+    {
+      "case_id": "hotpotqa-dev-5a85ecf25542991dd0999ec6",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0.5,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.24911229126155376,
+      "trace_id": "855c40d29b8c53308a71552aa10388b3"
+    },
+    {
+      "case_id": "hotpotqa-dev-5a8887a055429938390d3f72",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0.5,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.16803908394649625,
+      "trace_id": "a7a753462f3b578ea3ad0c123500b072"
+    },
+    {
+      "case_id": "hotpotqa-dev-5ab499a55542996a3a969f9f",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0.5,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.13740962464362383,
+      "trace_id": "a52d64abe4115a248f76a72e2432560a"
+    },
+    {
+      "case_id": "hotpotqa-dev-5a8ba3ff55429971feec4744",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.12635820917785168,
+      "trace_id": "9c136c0cf7f0516e999e0913337e6543"
+    },
+    {
+      "case_id": "hotpotqa-dev-5abfaa445542990832d3a18c",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.11634966731071472,
+      "trace_id": "c7a064d40a5b5d17a200c454be81148d"
+    },
+    {
+      "case_id": "hotpotqa-dev-5ae17f1e5542990adbacf7a6",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0.5,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.10038775019347668,
+      "trace_id": "019fb10f988456edba2c9500477d9d92"
+    },
+    {
+      "case_id": "hotpotqa-dev-5a78b209554299148911f93e",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.09976649982854724,
+      "trace_id": "c4da7bc5bf78589fb94bbf45227606ef"
+    },
+    {
+      "case_id": "hotpotqa-dev-5ae50c345542993aec5ec11f",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.17705837497487664,
+      "trace_id": "3200e7ea6d015b8bb6794602b005fbf1"
+    },
+    {
+      "case_id": "hotpotqa-dev-5a7a03225542996c55b2dcd5",
+      "evaluators": {
+        "retrieval_recall_at_k": {
+          "version": "article-recall-v2",
+          "stage": "article_candidates",
+          "ks": [
+            5,
+            10,
+            50,
+            100
+          ],
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 1,
+          "recall@100": 1,
+          "corpus_version": "kilt",
+          "candidate_limit": 100,
+          "scored_ks": [
+            5,
+            10,
+            50,
+            100
+          ]
+        }
+      },
+      "elapsed_seconds": 0.12258233269676566,
+      "trace_id": "e893a54b2e4957e497016a40462d664e"
+    }
+  ],
+  "retrieval_summary": {
+    "recall@5": 0.7555555555555555,
+    "recall@5_count": 45,
+    "recall@10": 0.8,
+    "recall@10_count": 45,
+    "recall@50": 0.8555555555555555,
+    "recall@50_count": 45,
+    "recall@100": 0.8555555555555555,
+    "recall@100_count": 45
+  },
+  "experiment_name": "retrieval-at10-002",
+  "configuration": {
+    "limit": null,
+    "retrieval_limit": 100,
+    "tags": [
+      "page_verified"
+    ],
+    "dataset_sha256": "f37abbe8dfd9962907b5848a28b6b025567a7169c17d029cdbcd47db3690f89e",
+    "source_sha256": {
+      "backend/repositories/kilt.py": "37633922d81b25c0ed643407a1c949e08899f845c71595e36de7e12ef6408270",
+      "backend/repositories/kilt_ranking.py": "d151fd3b15aec8907f619b9e8051f3dbc60db8092e6a8c5d9292d0c1cdd83b97"
+    }
+  },
+  "comparison": {
+    "baseline_run_id": "kilt-eval-retrieval-ceecd9b6-5922-4615-856e-51aa0c1192f5",
+    "latency_seconds": {
+      "before": {
+        "mean": 0.05403080928242869,
+        "median": 0.05382225010544062,
+        "p95": 0.07631833292543888
+      },
+      "after": {
+        "mean": 0.14816621770668362,
+        "median": 0.13512800028547645,
+        "p95": 0.22675674967467785
+      }
+    },
+    "case_changes": [
+      {
+        "id": "nq-dev-737118727843422688",
+        "q": "what year did bennie and the jets come out",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-343968022755473370",
+        "q": "kings and queens of england in the 1900s",
+        "before": 0,
+        "after": 0,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-3311962143974666464",
+        "q": "how much venom can a king cobra produce",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--7779084475859441741",
+        "q": "where did the northernmost land action of the american civil war occur",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-5150934530929664244",
+        "q": "who led the conquest of the incas in south america",
+        "before": 0,
+        "after": 0,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-7311273005529291652",
+        "q": "which layer of the osi model handles physical addressing",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-1096973491164113721",
+        "q": "what type of legal system is used in the uk",
+        "before": 0,
+        "after": 0,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--9141276525854297532",
+        "q": "when did the three little pigs come out",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-8239463385147663167",
+        "q": "is jaffa cakes a biscuit or a cake",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--3431328641910966671",
+        "q": "who has the most followers on the instagram",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-8888584875401414044",
+        "q": "when does kubo and the two strings release",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--4909301147922823976",
+        "q": "who did puerto rico belong to before the u.s",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--2796541333611735730",
+        "q": "when's the last time army won the army navy game",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--6171145136739461013",
+        "q": "who sings the rap in baby by justin bieber",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--5579812134939807145",
+        "q": "who has the most rings in the nba right now 2017",
+        "before": 0,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-9188394543955260450",
+        "q": "who sings it's my party and i cry if i want to",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--4392475526001139368",
+        "q": "who was first governor general of british india",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--1413547797481632580",
+        "q": "when was the r10+20 summit in rio de janeiro held",
+        "before": 0,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-5098377822521811712",
+        "q": "when is season 2 of jessica jones being released",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-1864282688423355455",
+        "q": "when did the astros change from the national league to the american league",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-2098168902147822379",
+        "q": "where will the next summer and winter olympics be held",
+        "before": 0,
+        "after": 0,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-6229275979490979874",
+        "q": "is there a name for the at symbol",
+        "before": 0,
+        "after": 0,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-2545607965679456162",
+        "q": "whens the last time the patriots played the eagles",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--8834996069938989383",
+        "q": "when did clifford the big red dog first air on tv",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev-7210975046317501288",
+        "q": "what breed of cat has spots and stripes",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--5864856625806411702",
+        "q": "chief ministers of tamil nadu mentioned on wikipedia",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--6145868466021183224",
+        "q": "who played solomon in little house on the prairie",
+        "before": 0,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--8491993331568056625",
+        "q": "when did world war 2 end in the pacific",
+        "before": 0,
+        "after": 0,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--7052052953885262396",
+        "q": "who are the permanent member of un security council",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "nq-dev--8947071197382617621",
+        "q": "when did dragon ball z air in australia",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5ae0345855429924de1b705f",
+        "q": "Which company owns the hotel on whose premises the Cotal Arena is located ?",
+        "before": 0,
+        "after": 0,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5a73b2cb55429908901be31a",
+        "q": "The members of the von Trapp musical group are related to which woman who wrote \"The Story of the Trapp Family Singers\"?",
+        "before": 0.5,
+        "after": 0.5,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5a8b50475542997f31a41cd4",
+        "q": "Wing Chun starred Michelle Yeoh and a Hong Kong actor, martial artist, and film director who won what tournament multiple times?",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5ae2c509554299492dc91c68",
+        "q": "What reward did the founder of Chick-Fil-A receive?",
+        "before": 0,
+        "after": 0.5,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5ade51515542992fa25da745",
+        "q": "Why did Rudolf Hess stop serving Hitler in 1941?",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5a80a7f6554299485f598680",
+        "q": "Abraham Lincoln Neiman and his wife Carrie Marcus Neiman cofounded Neiman Marcus with Carrie's brother Herbert in which American city in 1907?",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5a85ecf25542991dd0999ec6",
+        "q": "Who plays opposite the double Olivier Award-winning English actress in the 2000 TV film following the relationship between \"Carry On\" film actors Sid James and Barbara Windsor?",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5a8887a055429938390d3f72",
+        "q": "Which reservation is located in Hill and Chouteau and named after the principal leader of the Montana Chippewa-Cree?",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5ab499a55542996a3a969f9f",
+        "q": "Were Shadows Over Camelot and Battle Sheep released by the same publisher?",
+        "before": 0.5,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5a8ba3ff55429971feec4744",
+        "q": "Stokely Webster has paintings can be found at the official residence of whom?",
+        "before": 0.5,
+        "after": 0.5,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5abfaa445542990832d3a18c",
+        "q": "When they were formed, did The Fatima Mansions or Nude have more members?",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5ae17f1e5542990adbacf7a6",
+        "q": "In what region of Argentina is the city of Gualeguaychu located? ",
+        "before": 0,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5a78b209554299148911f93e",
+        "q": "Which playwright lived a longer life, Edward Albee or J. M. Barrie?",
+        "before": 1,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5ae50c345542993aec5ec11f",
+        "q": "What did Felix Salten originally title his most famous work?",
+        "before": 0.5,
+        "after": 1,
+        "same_case": true
+      },
+      {
+        "id": "hotpotqa-dev-5a7a03225542996c55b2dcd5",
+        "q": "What railroad in which Challengers were most common was completed in 1915?",
+        "before": 0.5,
+        "after": 0.5,
+        "same_case": true
+      }
+    ]
+  }
+}

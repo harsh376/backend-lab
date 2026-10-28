@@ -10,6 +10,7 @@ from temporalio.client import WorkflowExecutionStatus
 from apps.mcp import server
 from apps.mcp.agent.models import AnswerRequest, AnswerResult, Paragraph
 from apps.mcp.agent.workflow import AnswerWorkflow
+from backend.config import Settings
 
 
 async def test_mcp_answer_protocol(monkeypatch):
@@ -61,7 +62,9 @@ async def test_mcp_answer_protocol(monkeypatch):
             run = json.loads(started.content[0].text)
             client.start_workflow.assert_awaited_once_with(
                 AnswerWorkflow.run,
-                AnswerRequest("question", 5),
+                AnswerRequest(
+                    "question", 5, timeout_settings=Settings().timeout_snapshot()
+                ),
                 id=run["run_id"],
                 task_queue="kilt-answers",
             )

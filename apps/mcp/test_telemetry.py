@@ -552,9 +552,10 @@ async def test_eval_tools_enrich_sdk_root_spans(monkeypatch):
         with provider.get_tracer("mcp-python-sdk").start_as_current_span(
             "run_evals", attributes={"gen_ai.operation.name": "execute_tool"}
         ):
-            started = await server.run_evals(limit=1, timeout=120)
+            started = await server.run_evals(limit=1)
             parent = telemetry.current_context()
         assert temporal.start_workflow.call_args.args[1].trace_context == parent
+        assert temporal.start_workflow.call_args.args[1].timeout == 600
         with provider.get_tracer("mcp-python-sdk").start_as_current_span(
             "get_evals", attributes={"gen_ai.operation.name": "execute_tool"}
         ):
@@ -567,7 +568,7 @@ async def test_eval_tools_enrich_sdk_root_spans(monkeypatch):
             "case_id": None,
             "limit": 1,
             "tags": None,
-            "timeout": 120,
+            "timeout": None,
             "experiment_name": None,
             "hosted_dataset": None,
         }
@@ -585,3 +586,22 @@ async def test_eval_tools_enrich_sdk_root_spans(monkeypatch):
             )
     finally:
         instance.shutdown()
+
+
+@pytest.mark.parametrize(
+    "tool,configured", [("run_evals", 900), ("run_retrieval_evals", 240)]
+)
+@pytest.mark.parametrize("explicit", [None, 25])
+async def test_eval_submission_records_runtime_timeout_settings(
+    monkeypatch, tool, configured, explicit
+):
+    monkeypatch.setenv("TIMEOUT_ANSWER_EVAL_SECONDS", "900")
+    monkeypatch.setenv("TIMEOUT_RETRIEVAL_EVAL_SECONDS", "240")
+    monkeypatch.setenv("TIMEOUT_MODEL_REQUEST_SECONDS", "90")
+    start = AsyncMock(return_value={"run_id": "test"})
+    monkeypatch.setattr(server, "_start_evals", start)
+    await getattr(server, tool)(timeout=explicit)
+    request = start.call_args.args[0]
+    assert request.timeout == (configured if explicit is None else explicit)
+    assert request.timeout_settings["timeout_model_request_seconds"] == 90
+    assert request.timeout_settings["timeout_answer_eval_seconds"] == 900

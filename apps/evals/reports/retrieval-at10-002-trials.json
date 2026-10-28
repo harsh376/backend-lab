@@ -1,0 +1,410 @@
+{
+  "selection": {
+    "limit": null,
+    "retrieval_limit": 100,
+    "tags": [
+      "page_verified"
+    ],
+    "corpus": "kilt"
+  },
+  "trials": {
+    "field_changes": {
+      "current": {
+        "summary": {
+          "recall@5": 0.6,
+          "recall@10": 0.6777777777777778,
+          "recall@50": 0.7888888888888889,
+          "recall@100": 0.8
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title^3",
+              "text"
+            ],
+            "type": "cross_fields",
+            "analyzer": "stop"
+          }
+        }
+      },
+      "balanced-fields": {
+        "summary": {
+          "recall@5": 0.5888888888888889,
+          "recall@10": 0.6444444444444445,
+          "recall@50": 0.7333333333333333,
+          "recall@100": 0.7777777777777778
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title^1",
+              "text"
+            ],
+            "type": "cross_fields",
+            "analyzer": "stop"
+          }
+        }
+      },
+      "body-emphasis": {
+        "summary": {
+          "recall@5": 0.5888888888888889,
+          "recall@10": 0.6444444444444445,
+          "recall@50": 0.7333333333333333,
+          "recall@100": 0.7777777777777778
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title^0.3",
+              "text"
+            ],
+            "type": "cross_fields",
+            "analyzer": "stop"
+          }
+        }
+      },
+      "text-only": {
+        "summary": {
+          "recall@5": 0.5888888888888889,
+          "recall@10": 0.6444444444444445,
+          "recall@50": 0.7333333333333333,
+          "recall@100": 0.7777777777777778
+        },
+        "query": {
+          "match": {
+            "text": {
+              "query": "<question>",
+              "analyzer": "stop"
+            }
+          }
+        }
+      },
+      "balanced-msm": {
+        "summary": {
+          "recall@5": 0.5,
+          "recall@10": 0.5222222222222223,
+          "recall@50": 0.5888888888888889,
+          "recall@100": 0.6333333333333333
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title^1",
+              "text"
+            ],
+            "type": "cross_fields",
+            "analyzer": "stop",
+            "minimum_should_match": "2<75%"
+          }
+        }
+      },
+      "current-msm": {
+        "summary": {
+          "recall@5": 0.4888888888888889,
+          "recall@10": 0.5666666666666667,
+          "recall@50": 0.6333333333333333,
+          "recall@100": 0.6333333333333333
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title^3",
+              "text"
+            ],
+            "type": "cross_fields",
+            "analyzer": "stop",
+            "minimum_should_match": "2<75%"
+          }
+        }
+      },
+      "balanced-most-fields": {
+        "summary": {
+          "recall@5": 0.5888888888888889,
+          "recall@10": 0.6444444444444445,
+          "recall@50": 0.7444444444444445,
+          "recall@100": 0.8111111111111111
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title",
+              "text"
+            ],
+            "type": "most_fields",
+            "analyzer": "stop"
+          }
+        }
+      }
+    },
+    "fuzzy_and_fusion": {
+      "current": {
+        "summary": {
+          "recall@5": 0.6,
+          "recall@10": 0.6777777777777778,
+          "recall@50": 0.7888888888888889,
+          "recall@100": 0.8
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title^3",
+              "text"
+            ],
+            "type": "cross_fields",
+            "analyzer": "stop"
+          }
+        }
+      },
+      "content-terms": {
+        "summary": {
+          "recall@5": 0.6111111111111112,
+          "recall@10": 0.6777777777777778,
+          "recall@50": 0.7888888888888889,
+          "recall@100": 0.8
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title^3",
+              "text"
+            ],
+            "type": "cross_fields",
+            "analyzer": "stop"
+          }
+        }
+      },
+      "fuzzy": {
+        "summary": {
+          "recall@5": 0.5,
+          "recall@10": 0.5555555555555556,
+          "recall@50": 0.6777777777777778,
+          "recall@100": 0.7222222222222222
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title^3",
+              "text"
+            ],
+            "analyzer": "stop",
+            "fuzziness": "AUTO",
+            "prefix_length": 1,
+            "max_expansions": 25
+          }
+        }
+      },
+      "content-fuzzy": {
+        "summary": {
+          "recall@5": 0.5222222222222223,
+          "recall@10": 0.5555555555555556,
+          "recall@50": 0.6888888888888889,
+          "recall@100": 0.7222222222222222
+        },
+        "query": {
+          "multi_match": {
+            "query": "<question>",
+            "fields": [
+              "wikipedia_title^3",
+              "text"
+            ],
+            "analyzer": "stop",
+            "fuzziness": "AUTO",
+            "prefix_length": 1,
+            "max_expansions": 25
+          }
+        }
+      },
+      "rrf-current-fuzzy-10": {
+        "summary": {
+          "recall@5": 0.6111111111111112,
+          "recall@10": 0.6888888888888889,
+          "recall@50": 0.8,
+          "recall@100": 0.8333333333333334
+        }
+      },
+      "rrf-current-fuzzy-60": {
+        "summary": {
+          "recall@5": 0.6111111111111112,
+          "recall@10": 0.6666666666666666,
+          "recall@50": 0.8,
+          "recall@100": 0.8333333333333334
+        }
+      },
+      "rrf-current-content-terms-10": {
+        "summary": {
+          "recall@5": 0.6111111111111112,
+          "recall@10": 0.6777777777777778,
+          "recall@50": 0.8,
+          "recall@100": 0.8
+        }
+      },
+      "rrf-current-content-terms-60": {
+        "summary": {
+          "recall@5": 0.6111111111111112,
+          "recall@10": 0.6777777777777778,
+          "recall@50": 0.8,
+          "recall@100": 0.8
+        }
+      },
+      "rrf-content-terms-content-fuzzy-10": {
+        "summary": {
+          "recall@5": 0.6222222222222222,
+          "recall@10": 0.6777777777777778,
+          "recall@50": 0.8111111111111111,
+          "recall@100": 0.8333333333333334
+        }
+      },
+      "rrf-content-terms-content-fuzzy-60": {
+        "summary": {
+          "recall@5": 0.6,
+          "recall@10": 0.6888888888888889,
+          "recall@50": 0.8111111111111111,
+          "recall@100": 0.8333333333333334
+        }
+      }
+    },
+    "link_expansion": {
+      "current": {
+        "summary": {
+          "recall@5": 0.6,
+          "recall@10": 0.6777777777777778,
+          "recall@50": 0.7888888888888889,
+          "recall@100": 0.8
+        }
+      },
+      "links": {
+        "summary": {
+          "recall@5": 0.4888888888888889,
+          "recall@10": 0.5111111111111111,
+          "recall@50": 0.5111111111111111,
+          "recall@100": 0.5111111111111111
+        }
+      },
+      "rrf10": {
+        "summary": {
+          "recall@5": 0.6222222222222222,
+          "recall@10": 0.7222222222222222,
+          "recall@50": 0.8555555555555555,
+          "recall@100": 0.8555555555555555
+        }
+      },
+      "rrf60": {
+        "summary": {
+          "recall@5": 0.6,
+          "recall@10": 0.7222222222222222,
+          "recall@50": 0.8555555555555555,
+          "recall@100": 0.8555555555555555
+        }
+      },
+      "rrf-half": {
+        "summary": {
+          "recall@5": 0.6,
+          "recall@10": 0.7111111111111111,
+          "recall@50": 0.8555555555555555,
+          "recall@100": 0.8555555555555555
+        }
+      }
+    },
+    "passage_reranking": {
+      "current": {
+        "summary": {
+          "recall@5": 0.6,
+          "recall@10": 0.6777777777777778,
+          "recall@50": 0.7888888888888889,
+          "recall@100": 0.8
+        }
+      },
+      "passage": {
+        "summary": {
+          "recall@5": 0.6,
+          "recall@10": 0.7,
+          "recall@50": 0.7666666666666667,
+          "recall@100": 0.8
+        }
+      },
+      "passage-title3": {
+        "summary": {
+          "recall@5": 0.6333333333333333,
+          "recall@10": 0.7,
+          "recall@50": 0.7888888888888889,
+          "recall@100": 0.8
+        }
+      },
+      "fused": {
+        "summary": {
+          "recall@5": 0.7,
+          "recall@10": 0.7,
+          "recall@50": 0.8,
+          "recall@100": 0.8
+        }
+      },
+      "fused-title3": {
+        "summary": {
+          "recall@5": 0.6888888888888889,
+          "recall@10": 0.7222222222222222,
+          "recall@50": 0.8,
+          "recall@100": 0.8
+        }
+      }
+    },
+    "combined": {
+      "current": {
+        "summary": {
+          "recall@5": 0.6,
+          "recall@10": 0.6777777777777778,
+          "recall@50": 0.7888888888888889,
+          "recall@100": 0.8
+        }
+      },
+      "graph": {
+        "summary": {
+          "recall@5": 0.6333333333333333,
+          "recall@10": 0.7333333333333333,
+          "recall@50": 0.8444444444444444,
+          "recall@100": 0.8555555555555555
+        }
+      },
+      "passage-union": {
+        "summary": {
+          "recall@5": 0.6888888888888889,
+          "recall@10": 0.7333333333333333,
+          "recall@50": 0.8333333333333334,
+          "recall@100": 0.8555555555555555
+        }
+      },
+      "base-passage": {
+        "summary": {
+          "recall@5": 0.7,
+          "recall@10": 0.7111111111111111,
+          "recall@50": 0.8333333333333334,
+          "recall@100": 0.8444444444444444
+        }
+      },
+      "graph-passage": {
+        "summary": {
+          "recall@5": 0.7666666666666667,
+          "recall@10": 0.7888888888888889,
+          "recall@50": 0.8555555555555555,
+          "recall@100": 0.8555555555555555
+        }
+      },
+      "three-way": {
+        "summary": {
+          "recall@5": 0.7555555555555555,
+          "recall@10": 0.8,
+          "recall@50": 0.8555555555555555,
+          "recall@100": 0.8555555555555555
+        }
+      }
+    }
+  }
+}

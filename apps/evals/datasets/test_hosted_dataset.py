@@ -135,6 +135,8 @@ async def test_paginated_snapshot_skips_archived_items(monkeypatch):
             langfuse_public_key="pk",
             langfuse_secret_key=Mock(get_secret_value=lambda: "sk"),
             langfuse_base_url="https://example.com",
+            timeout_dataset_fetch_http_seconds=20,
+            timeout_dataset_export_http_seconds=30,
         ),
     )
     cases = await HostedDatasetService().read("errors")
@@ -193,6 +195,8 @@ async def test_api_errors_are_sanitized(monkeypatch):
             langfuse_public_key="pk",
             langfuse_secret_key=Mock(get_secret_value=lambda: "sk"),
             langfuse_base_url="https://example.com",
+            timeout_dataset_fetch_http_seconds=20,
+            timeout_dataset_export_http_seconds=30,
         ),
     )
     with pytest.raises(ValueError, match="RuntimeError") as error:
@@ -284,6 +288,8 @@ def api(monkeypatch):
             langfuse_public_key="pk",
             langfuse_secret_key=Mock(get_secret_value=lambda: "sk"),
             langfuse_base_url="https://example.com",
+            timeout_dataset_fetch_http_seconds=20,
+            timeout_dataset_export_http_seconds=30,
         ),
     )
     return api

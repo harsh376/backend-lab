@@ -35,6 +35,7 @@ class AnswerRequest:
     session_id: str | None = None
 
     budget_usd: float | None = None
+    timeout_settings: dict[str, float | int] | None = None
 
     def validate(self) -> None:
         if self.budget_usd is not None and (

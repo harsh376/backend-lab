@@ -119,7 +119,9 @@ async def export_dataset(
         json.dumps(specification, sort_keys=True).encode()
     ).hexdigest()
     try:
-        async with httpx.AsyncClient(timeout=30) as transport:
+        async with httpx.AsyncClient(
+            timeout=settings.timeout_dataset_export_http_seconds
+        ) as transport:
             api = AsyncLangfuseAPI(
                 base_url=settings.langfuse_base_url,
                 username=settings.langfuse_public_key,
@@ -210,7 +212,9 @@ async def load_hosted_cases(name: str) -> list[EvalCase]:
         raise ValueError("Langfuse dataset loading requires public and secret keys")
     version = datetime.now(UTC)
     # Dataset reads must also work when tracing is disabled.
-    async with httpx.AsyncClient(timeout=20) as transport:
+    async with httpx.AsyncClient(
+        timeout=settings.timeout_dataset_fetch_http_seconds
+    ) as transport:
         api = AsyncLangfuseAPI(
             base_url=settings.langfuse_base_url,
             username=settings.langfuse_public_key,

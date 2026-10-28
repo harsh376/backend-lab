@@ -1,10 +1,12 @@
 """Tests for environment-driven application settings."""
 
 import pytest
+from pydantic import ValidationError
 
 from backend.config import Settings
 
 _ENV_VARS = (
+    "TIMEOUT_MODEL_REQUEST_SECONDS",
     "TEMPORAL_ADDRESS",
     "ELASTICSEARCH_URL",
     "KILT_INDEX",
@@ -50,6 +52,49 @@ def test_defaults_when_unset(monkeypatch) -> None:
     assert settings.otel_service_name == "api"
     assert settings.otlp_enabled is False
     assert settings.otel_metric_export_interval == 60_000
+    assert settings.timeout_model_request_seconds == 180
+
+
+@pytest.mark.parametrize("seconds", [25, 180])
+def test_model_timeout_environment_override(monkeypatch, seconds):
+    monkeypatch.setenv("TIMEOUT_MODEL_REQUEST_SECONDS", str(seconds))
+    assert Settings(_env_file=None).timeout_model_request_seconds == seconds
+
+
+@pytest.mark.parametrize("seconds", [0, 181, float("inf"), float("nan")])
+def test_model_timeout_cannot_exceed_activity_ceiling(monkeypatch, seconds):
+    monkeypatch.setenv("TIMEOUT_MODEL_REQUEST_SECONDS", str(seconds))
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)
+
+
+def test_timeout_snapshot_ignores_later_environment_changes(monkeypatch):
+    settings = Settings(
+        timeout_model_request_seconds=150,
+        timeout_model_request_max_seconds=240,
+        timeout_activity_overhead_seconds=45,
+        timeout_answer_eval_seconds=900,
+        openai_api_key="must-not-be-recorded",
+    )
+    snapshot = settings.timeout_snapshot()
+    monkeypatch.setenv("TIMEOUT_MODEL_REQUEST_SECONDS", "20")
+    monkeypatch.setenv("TIMEOUT_MODEL_REQUEST_MAX_SECONDS", "30")
+    monkeypatch.setenv("TIMEOUT_ANSWER_EVAL_SECONDS", "120")
+    restored = Settings.from_timeout_snapshot(snapshot)
+    assert restored.timeout_snapshot() == snapshot
+    assert restored.timeout_model_activity_seconds == 285
+    assert restored.timeout_model_activity_total_seconds == 900
+    assert restored.timeout_eval_scoring_seconds == 285
+    assert "openai_api_key" not in snapshot
+    assert "must-not-be-recorded" not in str(snapshot)
+
+
+def test_legacy_workflow_timeouts_do_not_depend_on_environment(monkeypatch):
+    monkeypatch.setenv("TIMEOUT_MODEL_REQUEST_SECONDS", "10")
+    monkeypatch.setenv("TIMEOUT_ANSWER_EVAL_SECONDS", "30")
+    restored = Settings.from_timeout_snapshot(None)
+    assert restored.timeout_model_request_seconds == 180
+    assert restored.timeout_answer_eval_seconds == 600
 
 
 def test_reads_environment_variables(monkeypatch) -> None:

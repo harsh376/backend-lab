@@ -53,7 +53,13 @@ async def answer(
     Retry with the same idempotency_key and arguments to reuse a run. Keys are
     shared within the Temporal namespace and expire with workflow retention.
     """
-    request = AnswerRequest(question, limit, budget_usd=budget_usd)
+    settings = Settings()
+    request = AnswerRequest(
+        question,
+        limit,
+        budget_usd=budget_usd,
+        timeout_settings=settings.timeout_snapshot(),
+    )
     request.validate()
     run_id = f"kilt-answer-{uuid4()}"
     start_options = {}
@@ -166,7 +172,7 @@ async def run_evals(
     case_id: str | None = None,
     limit: int | None = 3,
     tags: list[str] | None = None,
-    timeout: float = 120,
+    timeout: float | None = None,
     experiment_name: str | None = None,
     hosted_dataset: str | None = None,
 ) -> dict:
@@ -178,15 +184,19 @@ async def run_evals(
     Use case_id to select an item, or tags to filter metadata.
     Pass tags=[] to disable tag filtering. Hosted datasets default to no tag filter.
     Each case has independent, linked eval and answer traces.
+    timeout bounds each answer workflow. Its default is read from Settings
+    at submission time.
     Set experiment_name for a readable Langfuse label; omitted uses Temporal IDs.
     """
+    settings = Settings()
     request = EvalRunRequest(
         case_id=case_id,
         limit=limit,
         tags=(["page_verified"] if hosted_dataset is None else [])
         if tags is None
         else tags,
-        timeout=timeout,
+        timeout=settings.timeout_answer_eval_seconds if timeout is None else timeout,
+        timeout_settings=settings.timeout_snapshot(),
         experiment_name=experiment_name,
         hosted_dataset=hosted_dataset,
         trace_context=current_context(),
@@ -200,7 +210,7 @@ async def run_retrieval_evals(
     case_id: str | None = None,
     limit: int | None = 3,
     tags: list[str] | None = None,
-    timeout: float = 120,
+    timeout: float | None = None,
     experiment_name: str | None = None,
     hosted_dataset: str | None = None,
     retrieval_limit: int = 100,
@@ -214,13 +224,15 @@ async def run_retrieval_evals(
     default to page_verified; hosted cases have no default tag filter.
     Requires the eval worker and Elasticsearch; no answer worker is needed.
     """
+    settings = Settings()
     request = EvalRunRequest(
         case_id=case_id,
         limit=limit,
         tags=(["page_verified"] if hosted_dataset is None else [])
         if tags is None
         else tags,
-        timeout=timeout,
+        timeout=settings.timeout_retrieval_eval_seconds if timeout is None else timeout,
+        timeout_settings=settings.timeout_snapshot(),
         experiment_name=experiment_name,
         hosted_dataset=hosted_dataset,
         trace_context=current_context(),

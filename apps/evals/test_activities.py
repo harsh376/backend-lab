@@ -87,7 +87,7 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
     assert observed["trace_context"] != parent_context
     assert "parent_span_id" not in observed["trace_context"]
     evaluate.assert_awaited_once_with(
-        case, 120, {"trace_id": "eval-trace"} if enabled else None
+        case, 600, {"trace_id": "eval-trace"} if enabled else None, None
     )
     assert [name for name, _ in children] == [entry[0] for entry in evaluators]
     judge.assert_awaited_once_with(case, result["output"])
@@ -168,6 +168,7 @@ async def test_direct_answer_continues_experiment_trace(monkeypatch):
     assert invocation.args[0] == activities.AnswerWorkflow.run
     request = invocation.args[1]
     assert request.question == case.question
+    assert request.limit == 10
     assert request.trace_context["trace_id"] == "answer-trace"
     assert invocation.kwargs["task_queue"] == "kilt-answers"
     assert observed["name"] == "answer"

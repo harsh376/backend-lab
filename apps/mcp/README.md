@@ -97,7 +97,7 @@ docker compose -f compose/evals.yaml up --build
 Call `run_evals` with optional `case_id`, `limit` (default `3` for both local and
 hosted datasets; pass `null` for all eligible cases), `tags` (defaults
 to `["page_verified"]`; pass `[]` to disable filtering; all
-must match), and `timeout` (default `120`, positive and at most `3600` seconds).
+must match), and `timeout` (default `600`, positive and at most `3600` seconds).
 It selects eligible cases from the bundled KILT dev dataset, excluding
 `rejected` cases, and returns an eval `run_id` and `RUNNING` status. Poll
 `get_evals` with that ID; on completion it returns `results` containing

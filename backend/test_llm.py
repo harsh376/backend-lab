@@ -86,6 +86,7 @@ async def test_ollama_translation_without_cloud_credentials(monkeypatch):
 
     async def send(client, request, **kwargs):
         assert str(request.url) == "http://localhost:11434/api/chat"
+        assert request.extensions["timeout"]["read"] == 180
         body = json.loads(request.content)
         assert body["model"] == "qwen3.8"
         assert body["format"] == Answer.model_json_schema()
@@ -111,6 +112,7 @@ async def test_ollama_translation_without_cloud_credentials(monkeypatch):
         Settings(
             _env_file=None,
             mcp_answer_model="ollama_chat/qwen3.8",
+            timeout_model_request_seconds=180,
             openai_api_key=None,
             anthropic_api_key=None,
         )

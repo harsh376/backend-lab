@@ -7,6 +7,7 @@ from temporalio.exceptions import ActivityError, ApplicationError
 
 from apps.evals.datasets.dataset import load_cases
 from apps.evals.workflow import EvalCaseRequest, EvalRunRequest, EvalWorkflow
+from backend.config import Settings
 
 
 async def test_eval_payload_round_trip():
@@ -14,20 +15,25 @@ async def test_eval_payload_round_trip():
         limit=2,
         experiment_name="BM25 baseline",
         trace_context={"trace_id": "a" * 32, "parent_span_id": "b" * 16},
+        timeout_settings=Settings(timeout_answer_eval_seconds=900).timeout_snapshot(),
     )
     converter = pydantic_data_converter
     assert await converter.decode(
         await converter.encode([request]), [EvalRunRequest]
     ) == [request]
     case = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
-    case_request = EvalCaseRequest(case)
+    case_request = EvalCaseRequest(case, timeout_settings=request.timeout_settings)
+    assert request.timeout == case_request.timeout == 900
     assert await converter.decode(
         await converter.encode([case_request]), [EvalCaseRequest]
     ) == [case_request]
 
 
 @pytest.mark.parametrize("eval_type", ["answer", "retrieval"])
-async def test_eval_workflow_continues_after_activity_failure(monkeypatch, eval_type):
+@pytest.mark.parametrize("timeout", [None, 10])
+async def test_eval_workflow_continues_after_activity_failure(
+    monkeypatch, eval_type, timeout
+):
     from apps.evals import workflow as module
 
     base = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
@@ -55,7 +61,7 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch, eval_
     result = await EvalWorkflow().run(
         EvalRunRequest(
             limit=2,
-            timeout=10,
+            **({"timeout": timeout} if timeout is not None else {}),
             trace_context=context,
             experiment_name="BM25 baseline",
             eval_type=eval_type,
@@ -79,7 +85,15 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch, eval_
         assert invocation.args[1].trace_context == context
         assert invocation.args[1].experiment_name == "BM25 baseline"
         assert invocation.kwargs["retry_policy"].maximum_attempts == 1
-        assert invocation.kwargs["start_to_close_timeout"].total_seconds() == 100
+        expected_timeout = (
+            (600 if eval_type == "answer" else 120) if timeout is None else timeout
+        )
+        assert invocation.args[1].timeout == expected_timeout
+        assert (
+            invocation.kwargs["start_to_close_timeout"].total_seconds()
+            == expected_timeout
+            + Settings.from_timeout_snapshot(None).timeout_eval_scoring_seconds
+        )
 
 
 @pytest.mark.parametrize(

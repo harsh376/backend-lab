@@ -85,7 +85,7 @@ class LiteLLMStructuredModel:
                 )
             self._provider_options = {"api_key": key.get_secret_value()}
         self.max_tokens = settings.mcp_answer_max_tokens
-        self.timeout = settings.mcp_answer_timeout_seconds
+        self.timeout = settings.timeout_model_request_seconds
 
     def quote(self, messages, response_schema) -> Reservation:
         # UTF-8 bytes plus schema and framing allowance deliberately overestimate

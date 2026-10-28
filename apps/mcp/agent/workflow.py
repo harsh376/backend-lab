@@ -18,25 +18,33 @@ with workflow.unsafe.imports_passed_through():
         VerificationInput,
     )
     from backend.budget import BudgetReport
+    from backend.config import Settings
 
 
 @workflow.defn
 class AnswerWorkflow:
     @workflow.run
     async def run(self, request: AnswerRequest) -> AnswerResult:
+        settings = Settings.from_timeout_snapshot(request.timeout_settings)
         request.validate()
         evidences = await workflow.execute_activity(
             "retrieve_answer_evidence",
             request,
             result_type=list[ArticleEvidence],
-            start_to_close_timeout=timedelta(seconds=30),
-            schedule_to_close_timeout=timedelta(minutes=2),
+            start_to_close_timeout=timedelta(
+                seconds=settings.timeout_retrieval_activity_seconds
+            ),
+            schedule_to_close_timeout=timedelta(
+                seconds=settings.timeout_retrieval_activity_total_seconds
+            ),
             retry_policy=RetryPolicy(maximum_attempts=3),
         )
         budget_report = (
             BudgetReport(request.budget_usd) if request.budget_usd is not None else None
         )
-        model_retry_policy = RetryPolicy(maximum_attempts=1 if budget_report else 3)
+        model_retry_policy = RetryPolicy(
+            maximum_attempts=1 if budget_report else settings.model_max_attempts
+        )
         answer = AnswerResult("", "No evidence was retrieved.", abstained=True)
         if budget_report is not None and not evidences:
             return await self._finish(answer, budget_report, request, evidences)
@@ -47,13 +55,19 @@ class AnswerWorkflow:
             evidences=evidences,
         )
         try:
-            async with budget_stage(budget_report, "synthesis", synthesis) as stage:
+            async with budget_stage(
+                budget_report, "synthesis", synthesis, settings=settings
+            ) as stage:
                 answer = await workflow.execute_activity(
                     "synthesize_answer",
                     synthesis,
                     result_type=AnswerResult,
-                    start_to_close_timeout=timedelta(seconds=60),
-                    schedule_to_close_timeout=timedelta(minutes=3),
+                    start_to_close_timeout=timedelta(
+                        seconds=settings.timeout_model_activity_seconds
+                    ),
+                    schedule_to_close_timeout=timedelta(
+                        seconds=settings.timeout_model_activity_total_seconds
+                    ),
                     retry_policy=model_retry_policy,
                 )
                 stage.record_cost(answer.usage_cost_usd)
@@ -64,14 +78,18 @@ class AnswerWorkflow:
                 request.question, answer, request.trace_context, request.session_id
             )
             async with budget_stage(
-                budget_report, "verification", verification
+                budget_report, "verification", verification, settings=settings
             ) as stage:
                 answer = await workflow.execute_activity(
                     "verify_answer",
                     verification,
                     result_type=AnswerResult,
-                    start_to_close_timeout=timedelta(seconds=60),
-                    schedule_to_close_timeout=timedelta(minutes=3),
+                    start_to_close_timeout=timedelta(
+                        seconds=settings.timeout_model_activity_seconds
+                    ),
+                    schedule_to_close_timeout=timedelta(
+                        seconds=settings.timeout_model_activity_total_seconds
+                    ),
                     retry_policy=model_retry_policy,
                 )
                 stage.record_cost(
@@ -88,6 +106,7 @@ class AnswerWorkflow:
         request: AnswerRequest,
         evidences: list[ArticleEvidence],
     ) -> AnswerResult:
+        settings = Settings.from_timeout_snapshot(request.timeout_settings)
         answer.article_candidates = ArticleCandidates(
             [evidence.wikipedia_id for evidence in evidences],
             request.limit,
@@ -106,8 +125,12 @@ class AnswerWorkflow:
                 "record_answer_result",
                 FinalAnswerInput(answer, request.trace_context, request.session_id),
                 result_type=FinalAnswerOutput,
-                start_to_close_timeout=timedelta(seconds=10),
-                schedule_to_close_timeout=timedelta(seconds=30),
+                start_to_close_timeout=timedelta(
+                    seconds=settings.timeout_record_result_seconds
+                ),
+                schedule_to_close_timeout=timedelta(
+                    seconds=settings.timeout_record_result_total_seconds
+                ),
                 retry_policy=RetryPolicy(maximum_attempts=3),
             )
         except ActivityError:
