@@ -1,10 +1,17 @@
+from dataclasses import asdict
 from unittest.mock import AsyncMock, Mock
 
 import pytest
 from temporalio.converter import DataConverter
 
 from apps.mcp.agent.activities import AnswerActivities
-from apps.mcp.agent.models import AnswerRequest, AnswerResult, Passage, SynthesisInput
+from apps.mcp.agent.models import (
+    AnswerRequest,
+    AnswerResult,
+    ArticleEvidence,
+    Paragraph,
+    SynthesisInput,
+)
 from backend.repositories.kilt import ElasticsearchKiltRepository
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerSynthesisService,
@@ -33,20 +40,24 @@ async def test_original_paragraph_identity():
             ],
         }
     }
+    es.search.return_value["hits"]["hits"][0]["_source"] = es.get.return_value[
+        "_source"
+    ]
     service = KiltService(ElasticsearchKiltRepository(es, "kilt-v1"))
-    passages = await service.aretrieve_passages("Arthur's Magazine", 1)
-    assert passages == [await service.aget_passage("42", 1)]
-    assert passages[0]["passage_id"] == "kilt-v1:42:1"
-    assert passages[0]["wikipedia_id"] == "123"
-    assert passages[0]["paragraph_id"] == 1
+    evidences = await service.asearch_evidences("Arthur's Magazine", 1)
+    paragraphs = [vars(p) for e in evidences for p in e.citation_paragraphs()]
+    assert paragraphs == [await service.aget_paragraph("42", i) for i in range(3)]
+    assert paragraphs[1]["paragraph_ref"] == "kilt-v1:42:1"
+    assert paragraphs[0]["wikipedia_id"] == "123"
+    assert paragraphs[1]["paragraph_id"] == 1
 
 
 async def test_abstention_and_forged_citations():
     assert (
         await ExtractiveSynthesis().synthesize(SynthesisInput("question", []))
     ).abstained
-    p = Passage("v:1:0", "v", "1", 0, "Title", "Original text")
-    forged = Passage("v:1:0", "v", "1", 0, "Title", "Fabricated text")
+    p = Paragraph("v:1:0", "v", "1", 0, "Title", "Original text")
+    forged = Paragraph("v:1:0", "v", "1", 0, "Title", "Fabricated text")
     activities = AnswerActivities(
         Mock(),
         AnswerSynthesisService(
@@ -63,14 +74,14 @@ async def test_abstention_and_forged_citations():
 
 async def test_temporal_result_round_trip():
     result = AnswerResult(
-        "text", "explanation", [Passage("v:1:0", "v", "1", 0, "Title", "text")]
+        "text", "explanation", [Paragraph("v:1:0", "v", "1", 0, "Title", "text")]
     )
     converter = DataConverter.default
     payloads = await converter.encode([result])
     assert await converter.decode(payloads, [AnswerResult]) == [result]
 
 
-@pytest.mark.parametrize("question,limit", [(" ", 5), ("q", 0), ("q", 11)])
+@pytest.mark.parametrize("question,limit", [(" ", 5), ("q", 0), ("q", 101)])
 def test_request_validation(question, limit):
     with pytest.raises(ValueError):
         AnswerRequest(question, limit).validate()
@@ -79,13 +90,13 @@ def test_request_validation(question, limit):
 async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
     from apps.mcp.agent import workflow as module
 
-    p = Passage("v:1:0", "v", "1", 0, "Title", "Evidence")
+    p = Paragraph("v:1:0", "v", "1", 0, "Title", "Evidence")
     calls = []
 
     async def execute(name, argument, **kwargs):
         calls.append(name)
         if name == "retrieve_answer_evidence":
-            return [p]
+            return [ArticleEvidence("1", "v", "1", "Title", [p.text])]
         if name == "record_answer_result":
             assert argument.answer.citations == [p]
             assert argument.session_id == "codex:chat-a"
@@ -95,7 +106,7 @@ async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
             assert argument.answer.citations == [p]
             assert argument.session_id == "codex:chat-a"
             return argument.answer
-        assert argument.passages == [p]
+        assert argument.citation_paragraphs() == [p]
         assert argument.session_id == "codex:chat-a"
         return await ExtractiveSynthesis().synthesize(argument)
 
@@ -110,7 +121,7 @@ async def test_workflow_retrieves_synthesizes_then_verifies(monkeypatch):
         "record_answer_result",
     ]
     assert result.citations == [p]
-    assert result.retrieved_passages == [p]
+    assert "retrieved_evidences" not in asdict(result)
 
 
 async def test_mcp_polling(monkeypatch):
@@ -145,3 +156,36 @@ async def test_workflow_skips_verification_for_abstention(monkeypatch):
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
     assert await module.AnswerWorkflow().run(AnswerRequest("question")) == candidate
     assert execute.await_count == 3
+
+
+async def test_workflow_preserves_article_candidates_before_paragraph_filtering(
+    monkeypatch,
+):
+    from apps.mcp.agent import workflow as module
+    from apps.mcp.agent.models import ArticleCandidates
+
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Evidence")
+    candidates = ArticleCandidates(["1", "2"], 100, "v")
+    evidences = [
+        ArticleEvidence("1", "v", "1", "Title", [paragraph.text]),
+        ArticleEvidence("2", "v", "2", "Other", []),
+    ]
+
+    async def execute(name, argument, **kwargs):
+        if name == "retrieve_answer_evidence":
+            return evidences
+        if name == "synthesize_answer":
+            assert argument.evidences == evidences
+            assert argument.paragraphs == []
+            return AnswerResult("", "Insufficient evidence", abstained=True)
+        assert argument.answer.article_candidates == candidates
+
+    monkeypatch.setattr(module.workflow, "execute_activity", execute)
+    result = await module.AnswerWorkflow().run(AnswerRequest("question", limit=100))
+    assert result.article_candidates == candidates
+    assert "retrieved_evidences" not in asdict(result)
+    converter = DataConverter.default
+    encoded = await converter.encode([evidences])
+    assert await converter.decode(encoded, [list[ArticleEvidence]]) == [evidences]
+    encoded = await converter.encode([result])
+    assert await converter.decode(encoded, [AnswerResult]) == [result]

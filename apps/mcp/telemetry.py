@@ -8,12 +8,27 @@ from functools import lru_cache, wraps
 from inspect import signature
 
 from langfuse import Langfuse, propagate_attributes
-from opentelemetry import trace
+from opentelemetry import baggage, context, trace
 from temporalio import activity
 
 from backend.config import Settings
 
 _session_id: ContextVar[str | None] = ContextVar("langfuse_session_id", default=None)
+_EXPERIMENT_BAGGAGE_PREFIX = "langfuse_experiment_"
+
+
+@contextmanager
+def _restore_experiment_context(trace_context):
+    """Restore only experiment baggage transported in Temporal payloads."""
+    ctx = context.get_current()
+    for key, value in (trace_context or {}).items():
+        if key.startswith(_EXPERIMENT_BAGGAGE_PREFIX) and isinstance(value, str):
+            ctx = baggage.set_baggage(key, value, context=ctx)
+    token = context.attach(ctx)
+    try:
+        yield
+    finally:
+        context.detach(token)
 
 
 def current_session_id() -> str | None:
@@ -78,11 +93,20 @@ def observation(
         yield None
         return
     with (
+        _restore_experiment_context(trace_context),
         instance.start_as_current_observation(
             name=name,
             input=input,
             as_type=as_type,
-            trace_context=trace_context,
+            trace_context=(
+                {
+                    key: value
+                    for key, value in trace_context.items()
+                    if key in {"trace_id", "parent_span_id"}
+                }
+                if trace_context
+                else None
+            ),
             metadata=metadata,
         ) as span,
         propagate_attributes(session_id=session_id),
@@ -103,7 +127,15 @@ def current_context() -> dict[str, str] | None:
     trace_id = instance.get_current_trace_id()
     parent_span_id = instance.get_current_observation_id()
     if trace_id and parent_span_id:
-        return {"trace_id": trace_id, "parent_span_id": parent_span_id}
+        return {
+            "trace_id": trace_id,
+            "parent_span_id": parent_span_id,
+            **{
+                key: value
+                for key, value in baggage.get_all().items()
+                if key.startswith(_EXPERIMENT_BAGGAGE_PREFIX) and isinstance(value, str)
+            },
+        }
     return None
 
 

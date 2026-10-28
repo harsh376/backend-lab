@@ -26,7 +26,8 @@ async def test_eval_payload_round_trip():
     ) == [case_request]
 
 
-async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
+@pytest.mark.parametrize("eval_type", ["answer", "retrieval"])
+async def test_eval_workflow_continues_after_activity_failure(monkeypatch, eval_type):
     from apps.evals import workflow as module
 
     base = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
@@ -53,7 +54,12 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
     context = {"trace_id": "a" * 32, "parent_span_id": "b" * 16}
     result = await EvalWorkflow().run(
         EvalRunRequest(
-            limit=2, timeout=10, trace_context=context, experiment_name="BM25 baseline"
+            limit=2,
+            timeout=10,
+            trace_context=context,
+            experiment_name="BM25 baseline",
+            eval_type=eval_type,
+            retrieval_limit=50,
         )
     )
     assert result[0]["output"]["status"] == "FAILED"
@@ -63,7 +69,13 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
     assert result[1]["evaluators"]["answer_correctness"]["correctness"] == 1
     assert execute.call_args_list[0].args[0] == "load_eval_cases"
     for invocation in execute.call_args_list[1:]:
-        assert invocation.args[0] == "evaluate_mcp_case"
+        assert invocation.args[0] == (
+            "evaluate_retrieval_case"
+            if eval_type == "retrieval"
+            else "evaluate_mcp_case"
+        )
+        assert invocation.args[1].retrieval_limit == 50
+        assert invocation.args[1].eval_type == eval_type
         assert invocation.args[1].trace_context == context
         assert invocation.args[1].experiment_name == "BM25 baseline"
         assert invocation.kwargs["retry_policy"].maximum_attempts == 1
@@ -80,6 +92,9 @@ async def test_eval_workflow_continues_after_activity_failure(monkeypatch):
         {"experiment_name": "   "},
         {"hosted_dataset": ""},
         {"hosted_dataset": "   "},
+        {"eval_type": "unknown"},
+        {"eval_type": "retrieval", "retrieval_limit": 0},
+        {"eval_type": "retrieval", "retrieval_limit": 101},
     ],
 )
 async def test_invalid_requests_fail_before_loading(monkeypatch, kwargs):

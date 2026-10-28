@@ -8,17 +8,19 @@ from mcp.shared.memory import create_client_server_memory_streams
 from temporalio.client import WorkflowExecutionStatus
 
 from apps.mcp import server
-from apps.mcp.agent.models import AnswerRequest, AnswerResult, Passage
+from apps.mcp.agent.models import AnswerRequest, AnswerResult, Paragraph
 from apps.mcp.agent.workflow import AnswerWorkflow
 
 
 async def test_mcp_answer_protocol(monkeypatch):
-    passage = Passage("v:1:0", "v", "1", 0, "Title", "Evidence")
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Evidence")
     handle = Mock()
     handle.describe = AsyncMock(
         return_value=Mock(status=WorkflowExecutionStatus.RUNNING)
     )
-    handle.result = AsyncMock(return_value=AnswerResult("Evidence", "quote", [passage]))
+    handle.result = AsyncMock(
+        return_value=AnswerResult("Evidence", "quote", [paragraph])
+    )
     client = Mock()
     client.start_workflow = AsyncMock()
     client.get_workflow_handle.return_value = handle
@@ -45,6 +47,7 @@ async def test_mcp_answer_protocol(monkeypatch):
                 "answer",
                 "get_answer",
                 "run_evals",
+                "run_retrieval_evals",
                 "get_evals",
                 "create_dataset_from_eval",
             }
@@ -70,12 +73,25 @@ async def test_mcp_answer_protocol(monkeypatch):
             completed = await session.call_tool("get_answer", {"run_id": run["run_id"]})
             result = json.loads(completed.content[0].text)["result"]
             assert result["short_answer"] == "Evidence"
-            assert result["citations"][0]["passage_id"] == passage.passage_id
+            assert result["citations"][0]["paragraph_ref"] == paragraph.paragraph_ref
 
             handle.describe.return_value.status = WorkflowExecutionStatus.FAILED
             failed = await session.call_tool("get_answer", {"run_id": run["run_id"]})
             assert json.loads(failed.content[0].text)["status"] == "FAILED"
             assert handle.result.await_count == 1
+
+            monkeypatch.setattr(server.Client, "connect", connect)
+            client.start_workflow.reset_mock()
+            retrieval = await session.call_tool(
+                "run_retrieval_evals", {"limit": 2, "retrieval_limit": 50}
+            )
+            assert not retrieval.is_error
+            retrieval_run = json.loads(retrieval.content[0].text)
+            assert retrieval_run["run_id"].startswith("kilt-eval-retrieval-")
+            request = client.start_workflow.call_args.args[1]
+            assert request.eval_type == "retrieval"
+            assert request.retrieval_limit == 50
+            assert request.limit == 2
         tasks.cancel_scope.cancel()
 
 
@@ -222,18 +238,71 @@ async def test_evals_default_selection(monkeypatch, tags):
     assert request.tags == (["page_verified"] if tags is None else [])
 
 
-async def test_hosted_evals_default_to_all_items_without_tag_filter(monkeypatch):
+async def test_hosted_evals_default_limit_without_tag_filter(monkeypatch):
     client = Mock(start_workflow=AsyncMock())
     monkeypatch.setattr(server.Client, "connect", AsyncMock(return_value=client))
     await server.run_evals(hosted_dataset="basline-v5-errors")
     request = client.start_workflow.call_args.args[1]
     assert request.hosted_dataset == "basline-v5-errors"
-    assert request.limit is None
+    assert request.limit == 3
     assert request.tags == []
     await server.run_evals(hosted_dataset="errors", limit=2, tags=["retrieval"])
     request = client.start_workflow.call_args.args[1]
     assert request.limit == 2
     assert request.tags == ["retrieval"]
+
+
+@pytest.mark.parametrize("hosted_dataset", [None, "errors"])
+@pytest.mark.parametrize("limit", [None, 2, 3])
+async def test_retrieval_evals_share_dataset_selection(
+    monkeypatch, hosted_dataset, limit
+):
+    client = Mock(start_workflow=AsyncMock())
+    connect = AsyncMock(return_value=client)
+    monkeypatch.setattr(server.Client, "connect", connect)
+    started = await server.run_retrieval_evals(
+        hosted_dataset=hosted_dataset,
+        limit=limit,
+        retrieval_limit=50,
+        experiment_name="retrieval-baseline",
+    )
+    invocation = client.start_workflow.call_args
+    assert invocation.args[0] == server.EvalWorkflow.run
+    request = invocation.args[1]
+    assert request.eval_type == "retrieval"
+    assert request.retrieval_limit == 50
+    assert request.limit == limit
+    assert request.hosted_dataset == hosted_dataset
+    assert request.tags == (["page_verified"] if hosted_dataset is None else [])
+    assert invocation.kwargs["memo"] == {"eval_name": "retrieval-baseline"}
+    assert started["run_id"].startswith("kilt-eval-retrieval-")
+    assert invocation.kwargs["task_queue"] == "kilt-evals"
+
+
+async def test_retrieval_evals_defaults_and_explicit_filters(monkeypatch):
+    client = Mock(start_workflow=AsyncMock())
+    monkeypatch.setattr(server.Client, "connect", AsyncMock(return_value=client))
+    await server.run_retrieval_evals()
+    request = client.start_workflow.call_args.args[1]
+    assert request.limit == 3
+    assert request.retrieval_limit == 100
+    await server.run_retrieval_evals(case_id="one", tags=[], timeout=10)
+    request = client.start_workflow.call_args.args[1]
+    assert request.tags == []
+    assert request.case_id == "one"
+    assert request.timeout == 10
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [{"retrieval_limit": 0}, {"retrieval_limit": 101}, {"limit": 0}, {"timeout": 0}],
+)
+async def test_invalid_retrieval_evals_do_not_submit_work(monkeypatch, kwargs):
+    connect = AsyncMock()
+    monkeypatch.setattr(server.Client, "connect", connect)
+    with pytest.raises(ValueError):
+        await server.run_retrieval_evals(**kwargs)
+    connect.assert_not_awaited()
 
 
 async def test_create_dataset_from_eval_delegates_to_service(monkeypatch):
@@ -246,3 +315,14 @@ async def test_create_dataset_from_eval_delegates_to_service(monkeypatch):
         "status": "COMPLETED"
     }
     create.assert_awaited_once_with("test-v5", filters, "errors")
+
+
+@pytest.mark.parametrize("hosted_dataset", [None, "errors"])
+@pytest.mark.parametrize("limit", [None, 1, 5])
+async def test_eval_limit_passes_through_for_either_source(
+    monkeypatch, hosted_dataset, limit
+):
+    client = Mock(start_workflow=AsyncMock())
+    monkeypatch.setattr(server.Client, "connect", AsyncMock(return_value=client))
+    await server.run_evals(hosted_dataset=hosted_dataset, limit=limit)
+    assert client.start_workflow.call_args.args[1].limit == limit

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import timedelta
+from typing import Literal
 
 from temporalio import workflow
 from temporalio.common import RetryPolicy
@@ -22,8 +23,14 @@ class EvalRunRequest:
     trace_context: dict[str, str] | None = None
     experiment_name: str | None = None
     hosted_dataset: str | None = None
+    eval_type: Literal["answer", "retrieval"] = "answer"
+    retrieval_limit: int = 100
 
     def validate(self) -> None:
+        if self.eval_type not in {"answer", "retrieval"}:
+            raise ValueError("eval_type must be answer or retrieval")
+        if not 1 <= self.retrieval_limit <= 100:
+            raise ValueError("retrieval_limit must be between 1 and 100")
         if not 0 < self.timeout <= 3600:
             raise ValueError("timeout must be between 0 and 3600 seconds")
         if self.experiment_name is not None and not self.experiment_name.strip():
@@ -40,6 +47,8 @@ class EvalCaseRequest:
     timeout: float = 120
     trace_context: dict[str, str] | None = None
     experiment_name: str | None = None
+    eval_type: Literal["answer", "retrieval"] = "answer"
+    retrieval_limit: int = 100
 
 
 @workflow.defn
@@ -63,12 +72,16 @@ class EvalWorkflow:
         for case in cases:
             try:
                 result = await workflow.execute_activity(
-                    "evaluate_mcp_case",
+                    "evaluate_retrieval_case"
+                    if request.eval_type == "retrieval"
+                    else "evaluate_mcp_case",
                     EvalCaseRequest(
                         case=case,
                         timeout=request.timeout,
                         trace_context=request.trace_context,
                         experiment_name=request.experiment_name,
+                        eval_type=request.eval_type,
+                        retrieval_limit=request.retrieval_limit,
                     ),
                     result_type=dict,
                     start_to_close_timeout=timedelta(seconds=request.timeout + 90),

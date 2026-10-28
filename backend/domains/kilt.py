@@ -1,6 +1,7 @@
 """KILT corpus records and structural metadata."""
 
 import re
+from dataclasses import dataclass
 
 from backend.domains.base import DomainModel
 
@@ -9,8 +10,40 @@ SECTION_MARKER = "Section::::"
 SECTION_PATH_SEPARATOR = ".:"
 
 
-class KiltPassage(DomainModel):
-    passage_id: str
+@dataclass
+class Paragraph:
+    paragraph_ref: str
+    corpus_version: str
+    wikipedia_id: str
+    paragraph_id: int
+    title: str
+    text: str
+
+
+@dataclass
+class ArticleEvidence:
+    article_id: str
+    corpus_version: str
+    wikipedia_id: str
+    title: str
+    paragraphs: list[str]
+
+    def citation_paragraphs(self) -> list[Paragraph]:
+        return [
+            Paragraph(
+                f"{self.corpus_version}:{self.article_id}:{i}",
+                self.corpus_version,
+                self.wikipedia_id,
+                i,
+                self.title,
+                text,
+            )
+            for i, text in enumerate(self.paragraphs)
+        ]
+
+
+class KiltParagraph(DomainModel):
+    paragraph_ref: str
     corpus_version: str
     wikipedia_id: str
     paragraph_id: int
@@ -24,13 +57,13 @@ class KiltArticle(DomainModel):
     title: str
     paragraphs: tuple[str, ...]
 
-    def passage(self, corpus_version: str, paragraph_id: int) -> KiltPassage:
+    def paragraph(self, corpus_version: str, paragraph_id: int) -> KiltParagraph:
         if paragraph_id < 0:
             raise ValueError("paragraph_id must be non-negative")
         if paragraph_id >= len(self.paragraphs):
             raise ValueError("paragraph_id is out of range")
-        return KiltPassage(
-            passage_id=f"{corpus_version}:{self.id}:{paragraph_id}",
+        return KiltParagraph(
+            paragraph_ref=f"{corpus_version}:{self.id}:{paragraph_id}",
             corpus_version=corpus_version,
             wikipedia_id=self.wikipedia_id,
             paragraph_id=paragraph_id,
@@ -39,9 +72,7 @@ class KiltArticle(DomainModel):
         )
 
 
-class KiltSearchHit(DomainModel):
-    id: str
-    title: str
+class KiltSearchHit(KiltArticle):
     score: float | None
     snippets: tuple[str, ...] = ()
 

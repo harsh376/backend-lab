@@ -17,6 +17,7 @@ from temporalio.client import Client, WorkflowExecutionStatus
 from temporalio.contrib.pydantic import pydantic_data_converter
 
 from apps.evals.evaluators.answers import summarize_answers
+from apps.evals.evaluators.retrieval import RECALL_KS, summarize_retrieval
 from apps.evals.models import EvalCase, EvalRunResponse, EvalSource
 from apps.evals.workflow import EvalRunRequest
 from backend.config import Settings
@@ -304,7 +305,14 @@ class HostedDatasetService:
         result: EvalRunResponse = {"run_id": run_id, "status": description.status.name}
         if description.status == WorkflowExecutionStatus.COMPLETED:
             result["results"] = await handle.result()
-            result["summary"] = summarize_answers(result["results"])
+            retrieval_run = run_id.startswith("kilt-eval-retrieval-")
+            if not retrieval_run:
+                result["summary"] = summarize_answers(result["results"])
+            if retrieval_run or any(
+                "retrieval_recall_at_k" in r.get("evaluators", {})
+                for r in result["results"]
+            ):
+                result["retrieval_summary"] = summarize_retrieval(result["results"])
             for case_result in result["results"]:
                 if "experiment_id" in case_result:
                     result["experiment_id"] = case_result["experiment_id"]
@@ -320,11 +328,20 @@ class HostedDatasetService:
                     r.get("output", {}).get("status") != "COMPLETED"
                     for r in result["results"]
                 ),
-                "correctness_scored": result["summary"]["correctness_count"],
-                "correctness_skipped": (
-                    len(result["results"]) - result["summary"]["correctness_count"]
-                ),
             }
+            if retrieval_run:
+                for k in RECALL_KS:
+                    count = result["retrieval_summary"][f"recall@{k}_count"]
+                    result["coverage"][f"recall@{k}_scored"] = count
+                    result["coverage"][f"recall@{k}_skipped"] = (
+                        len(result["results"]) - count
+                    )
+            else:
+                count = result["summary"]["correctness_count"]
+                result["coverage"].update(
+                    correctness_scored=count,
+                    correctness_skipped=len(result["results"]) - count,
+                )
         return result
 
     async def resolve_eval_name(self, eval_name: str) -> str:

@@ -47,6 +47,8 @@ async def answer(
 ) -> dict:
     """Start an answer run, optionally limiting model spend with budget_usd.
 
+    limit selects complete articles for synthesis (1–100, default 5).
+    Every retrieved article is sent in full, preserving its original paragraphs.
     Poll get_answer for its result and per-call budget reservations.
     Retry with the same idempotency_key and arguments to reuse a run. Keys are
     shared within the Temporal namespace and expire with workflow retention.
@@ -162,7 +164,7 @@ async def _get_answer(run_id: str) -> dict:
 @observe(reuse_current=True, as_type="tool")
 async def run_evals(
     case_id: str | None = None,
-    limit: int | None = None,
+    limit: int | None = 3,
     tags: list[str] | None = None,
     timeout: float = 120,
     experiment_name: str | None = None,
@@ -170,16 +172,17 @@ async def run_evals(
 ) -> dict:
     """Start dataset evals through AnswerWorkflow directly. Poll get_evals.
 
-    Set hosted_dataset to load a hosted Langfuse dataset (all active items by default).
-    Otherwise defaults to three page_verified cases from bundled KILT dev.
-    Use limit to cap cases, case_id to select an item, or tags to filter metadata.
+    Set hosted_dataset to load a hosted Langfuse dataset;
+    otherwise use bundled KILT dev.
+    limit defaults to three cases for either source; pass None for all eligible cases.
+    Use case_id to select an item, or tags to filter metadata.
     Pass tags=[] to disable tag filtering. Hosted datasets default to no tag filter.
     Each case has independent, linked eval and answer traces.
     Set experiment_name for a readable Langfuse label; omitted uses Temporal IDs.
     """
     request = EvalRunRequest(
         case_id=case_id,
-        limit=3 if limit is None and hosted_dataset is None else limit,
+        limit=limit,
         tags=(["page_verified"] if hosted_dataset is None else [])
         if tags is None
         else tags,
@@ -188,17 +191,59 @@ async def run_evals(
         hosted_dataset=hosted_dataset,
         trace_context=current_context(),
     )
+    return await _start_evals(request)
+
+
+@mcp.tool()
+@observe(reuse_current=True, as_type="tool")
+async def run_retrieval_evals(
+    case_id: str | None = None,
+    limit: int | None = 3,
+    tags: list[str] | None = None,
+    timeout: float = 120,
+    experiment_name: str | None = None,
+    hosted_dataset: str | None = None,
+    retrieval_limit: int = 100,
+) -> dict:
+    """Evaluate production article retrieval without answer generation or a judge.
+
+    Poll get_evals for recall@5/10/50/100 and per-case ranked Wikipedia IDs.
+    retrieval_limit selects articles per query (1–100); only cutoffs at or below
+    that limit are scored. limit selects dataset cases (default 3; None for all).
+    Uses the same local/hosted datasets and filters as run_evals: local cases
+    default to page_verified; hosted cases have no default tag filter.
+    Requires the eval worker and Elasticsearch; no answer worker is needed.
+    """
+    request = EvalRunRequest(
+        case_id=case_id,
+        limit=limit,
+        tags=(["page_verified"] if hosted_dataset is None else [])
+        if tags is None
+        else tags,
+        timeout=timeout,
+        experiment_name=experiment_name,
+        hosted_dataset=hosted_dataset,
+        trace_context=current_context(),
+        eval_type="retrieval",
+        retrieval_limit=retrieval_limit,
+    )
+    request.validate()
+    return await _start_evals(request)
+
+
+async def _start_evals(request: EvalRunRequest) -> dict:
     client = await Client.connect(
         Settings().temporal_address, data_converter=pydantic_data_converter
     )
-    run_id = f"kilt-eval-{uuid4()}"
+    prefix = "kilt-eval-retrieval" if request.eval_type == "retrieval" else "kilt-eval"
+    run_id = f"{prefix}-{uuid4()}"
     update_metadata({"eval_run_id": run_id})
     await client.start_workflow(
         EvalWorkflow.run,
         request,
         id=run_id,
         task_queue=EVAL_TASK_QUEUE,
-        memo={"eval_name": experiment_name},
+        memo={"eval_name": request.experiment_name},
     )
     return {"run_id": run_id, "status": "RUNNING"}
 
@@ -221,7 +266,8 @@ async def create_dataset_from_eval(
 ) -> dict:
     """Create a hosted Langfuse dataset from scored cases in a completed eval.
 
-    eval_name is the exact experiment_name passed to run_evals. Duplicate names
+    eval_name is the experiment_name passed to run_evals or run_retrieval_evals.
+    Duplicate names
     are rejected; use unique experiment names. Filters use AND semantics;
     missing/non-numeric scores never match. Each filter
     has name (evaluator key), operator (eq/ne/lt/lte/gt/gte), value, and optional

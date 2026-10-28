@@ -5,6 +5,8 @@ from typing import Any, Literal, NotRequired, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+type RetrievalSummary = dict[str, float | int | None]
+
 
 class AnswerSummary(TypedDict):
     correctness: float | None
@@ -19,6 +21,7 @@ class EvalRunResponse(TypedDict):
     coverage: NotRequired[dict[str, int]]
     results: NotRequired[list[dict]]
     summary: NotRequired[AnswerSummary]
+    retrieval_summary: NotRequired[RetrievalSummary]
 
 
 class VerificationTag(StrEnum):

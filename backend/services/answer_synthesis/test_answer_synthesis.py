@@ -13,14 +13,14 @@ from backend.services.answer_synthesis.answer_synthesis import (
     AnswerSynthesisService,
     ExtractiveSynthesis,
     LiteLLMSynthesis,
-    Passage,
+    Paragraph,
     SynthesisInput,
 )
 
 
 @pytest.fixture
 def evidence():
-    return Passage("v:1:0", "v", "1", 0, "Magazine", "It began in 1844.")
+    return Paragraph("v:1:0", "v", "1", 0, "Magazine", "It began in 1844.")
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def completion(monkeypatch, evidence):
                         {
                             "short_answer": "1844",
                             "explanation": "The magazine began in 1844.",
-                            "citation_ids": [evidence.passage_id],
+                            "citation_ids": [evidence.paragraph_ref],
                             "abstained": False,
                         }
                     ),
@@ -91,9 +91,9 @@ async def test_provider_selection_and_original_citations(
     assert args["caching"] is False
     assert args["timeout"] < 60  # Temporal's activity start-to-close timeout
     assert args["response_format"]["json_schema"]["strict"] is True
-    assert json.loads(args["messages"][1]["content"])["passages"][0]["text"] == (
-        evidence.text
-    )
+    assert json.loads(args["messages"][1]["content"])["articles"][0]["paragraphs"][0][
+        "text"
+    ] == (evidence.text)
 
 
 @pytest.mark.parametrize(
@@ -248,7 +248,7 @@ async def test_real_litellm_provider_translation(
         {
             "short_answer": "1844",
             "explanation": "It began in 1844.",
-            "citation_ids": [evidence.passage_id],
+            "citation_ids": [evidence.paragraph_ref],
             "abstained": False,
         }
     )
@@ -318,46 +318,46 @@ async def test_extractive_adapter():
     service = AnswerSynthesisService(ExtractiveSynthesis())
     empty = await service.synthesize(SynthesisInput("question", []))
     assert empty.abstained
-    passage = Passage("v:1:0", "v", "1", 0, "Title", "Original text")
-    result = await service.synthesize(SynthesisInput("question", [passage]))
-    assert result.short_answer == passage.text
-    assert result.citations == [passage]
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Original text")
+    result = await service.synthesize(SynthesisInput("question", [paragraph]))
+    assert result.short_answer == paragraph.text
+    assert result.citations == [paragraph]
     assert result.usage == {}
     assert result.usage_cost_usd is None
 
 
 async def test_custom_adapter_needs_only_synthesize_method():
-    passage = Passage("v:1:0", "v", "1", 0, "Title", "Original text")
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Original text")
 
     class CustomSynthesis:
         async def synthesize(self, data: SynthesisInput) -> AnswerResult:
             assert data.question == "question"
             return AnswerResult(
-                "answer", "explanation", data.passages, provider="custom"
+                "answer", "explanation", data.paragraphs, provider="custom"
             )
 
     result = await AnswerSynthesisService(CustomSynthesis()).synthesize(
-        SynthesisInput("question", [passage])
+        SynthesisInput("question", [paragraph])
     )
     assert result.provider == "custom"
     assert result.short_answer == "answer"
-    assert result.citations[0] is passage
+    assert result.citations[0] is paragraph
 
 
 @pytest.mark.parametrize("variation", ["forged", "missing", "empty", "abstained"])
 async def test_shared_validation_preserves_accounting(variation):
-    passage = Passage("v:1:0", "v", "1", 0, "Title", "Original text")
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Original text")
     result = AnswerResult(
         "answer",
         "explanation",
-        [passage],
+        [paragraph],
         provider="custom",
         model="custom/model",
         usage={"total_tokens": 120},
         usage_cost_usd=0.001,
     )
     if variation == "forged":
-        result.citations = [replace(passage, text="Fabricated text")]
+        result.citations = [replace(paragraph, text="Fabricated text")]
     elif variation == "missing":
         result.citations = []
     elif variation == "empty":
@@ -365,7 +365,7 @@ async def test_shared_validation_preserves_accounting(variation):
     else:
         result.abstained = True
     adapter = Mock(synthesize=AsyncMock(return_value=result))
-    data = SynthesisInput("question", [passage])
+    data = SynthesisInput("question", [paragraph])
     checked = await AnswerSynthesisService(adapter).synthesize(data)
     adapter.synthesize.assert_awaited_once_with(data)
     assert checked.abstained
@@ -376,3 +376,46 @@ async def test_shared_validation_preserves_accounting(variation):
     assert checked.usage == {"total_tokens": 120}
     assert checked.usage_cost_usd == 0.001
     assert checked is not result
+
+
+def test_prompt_groups_complete_articles_without_filtering():
+    paragraphs = [
+        Paragraph("v:1:0", "v", "1", 0, "One", "Section::::History."),
+        Paragraph("v:1:1", "v", "1", 1, "One", ""),
+        Paragraph("v:1:2", "v", "1", 2, "One", "Unrelated words still included."),
+        Paragraph("v:2:0", "v", "2", 0, "Two", "Second article."),
+    ]
+    messages = LiteLLMSynthesis._build_messages(SynthesisInput("question", paragraphs))
+    payload = json.loads(messages[1]["content"])
+    assert [a["wikipedia_id"] for a in payload["articles"]] == ["1", "2"]
+    assert [p["text"] for p in payload["articles"][0]["paragraphs"]] == [
+        "Section::::History.",
+        "",
+        "Unrelated words still included.",
+    ]
+    assert [
+        p["paragraph_ref"] for a in payload["articles"] for p in a["paragraphs"]
+    ] == [p.paragraph_ref for p in paragraphs]
+
+
+def test_article_evidences_remain_separate_and_citations_keep_article_identity():
+    from backend.services.answer_synthesis.answer_synthesis import ArticleEvidence
+
+    evidences = [
+        ArticleEvidence("10", "v", "123", "First", ["Heading", "", "Full body"]),
+        ArticleEvidence("20", "v", "456", "Second", ["Other body"]),
+    ]
+    data = SynthesisInput(question="question", evidences=evidences)
+    payload = json.loads(LiteLLMSynthesis._build_messages(data)[1]["content"])
+    assert [a["article_id"] for a in payload["articles"]] == ["10", "20"]
+    assert [p["text"] for p in payload["articles"][0]["paragraphs"]] == [
+        "Heading",
+        "",
+        "Full body",
+    ]
+    assert [p.paragraph_ref for p in data.citation_paragraphs()] == [
+        "v:10:0",
+        "v:10:1",
+        "v:10:2",
+        "v:20:0",
+    ]

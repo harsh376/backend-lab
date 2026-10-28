@@ -43,3 +43,39 @@ async def test_import_is_lazy_preserves_source_and_counts_conflicts(monkeypatch)
     client.indices.create.assert_awaited_once()
     assert isinstance(source["categories"], str)
     assert "sections" not in source
+
+
+async def test_search_returns_complete_ranked_articles_without_gets():
+    client = AsyncMock()
+    client.search.return_value = {
+        "hits": {
+            "hits": [
+                {
+                    "_id": "internal-id",
+                    "_score": 3.5,
+                    "_source": {
+                        "wikipedia_id": "123",
+                        "wikipedia_title": "Article",
+                        "text": ["Section::::History.", "", "Full text."],
+                    },
+                },
+                {
+                    "_id": "456",
+                    "_score": 2.0,
+                    "_source": {"wikipedia_title": "Other", "text": ["Other text."]},
+                },
+            ]
+        }
+    }
+    hits = await ElasticsearchKiltRepository(client).asearch("question", 100)
+    assert [h.wikipedia_id for h in hits] == ["123", "456"]
+    assert hits[0].paragraphs == ("Section::::History.", "", "Full text.")
+    assert hits[0].score == 3.5
+    assert hits[0].paragraph("kilt", 2).paragraph_ref == "kilt:internal-id:2"
+    client.search.assert_awaited_once()
+    assert client.search.call_args.kwargs["source"] == [
+        "wikipedia_title",
+        "wikipedia_id",
+        "text",
+    ]
+    client.get.assert_not_awaited()

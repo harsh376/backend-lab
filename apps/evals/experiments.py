@@ -50,9 +50,16 @@ def experiment_item(request):
         "temporal_run_id": info.workflow_run_id,
         "git_commit_sha": settings.git_commit_sha or "unknown",
         "evaluator_version": "1",
-        "answer_model": settings.mcp_answer_model,
-        "judge_model": settings.eval_judge_model,
+        "eval_type": request.eval_type,
     }
+    if request.eval_type == "retrieval":
+        metadata["retrieval_limit"] = str(request.retrieval_limit)
+        metadata["corpus_version"] = settings.kilt_index
+    else:
+        metadata.update(
+            answer_model=settings.mcp_answer_model,
+            judge_model=settings.eval_judge_model,
+        )
     source = request.case.source
     if source.kind == "local":
         metadata.update(
@@ -94,7 +101,14 @@ def experiment_item(request):
             span.set_attribute(attribute, value)
     span.set_attribute(
         "langfuse.experiment.item.expected_output",
-        json.dumps(request.case.accepted_answers),
+        json.dumps(
+            [
+                list(dict.fromkeys(e.wikipedia_id for e in evidence_set))
+                for evidence_set in request.case.evidence_sets
+            ]
+            if request.eval_type == "retrieval"
+            else request.case.accepted_answers
+        ),
     )
     ctx = context.get_current()
     for key, value in values.items():

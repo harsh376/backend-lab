@@ -61,6 +61,14 @@ Codex submits the equivalent of:
 {"question": "Who wrote Photograph by Ringo Starr?", "limit": 5}
 ```
 
+`limit` is the number of articles to retrieve (1–100, default 5). Every
+retrieved article is returned as one `ArticleEvidence` in a list and supplied
+in full to synthesis, grouped into its original
+paragraphs. Section headings, empty paragraphs, and paragraph IDs are preserved;
+there is no paragraph-overlap scoring or second selection cutoff. Citations and
+verification continue to use the original paragraph IDs. Large inputs may exceed
+the model context window; articles are not silently truncated.
+
 ## Per-answer model budget
 
 Supply an optional positive `budget_usd` when starting a run:
@@ -86,7 +94,8 @@ Start the eval worker alongside the answer stack:
 docker compose -f compose/evals.yaml up --build
 ```
 
-Call `run_evals` with optional `case_id`, `limit` (default `3`), `tags` (defaults
+Call `run_evals` with optional `case_id`, `limit` (default `3` for both local and
+hosted datasets; pass `null` for all eligible cases), `tags` (defaults
 to `["page_verified"]`; pass `[]` to disable filtering; all
 must match), and `timeout` (default `120`, positive and at most `3600` seconds).
 It selects eligible cases from the bundled KILT dev dataset, excluding
@@ -95,7 +104,13 @@ It selects eligible cases from the bundled KILT dev dataset, excluding
 per-case execution output and judgments keyed by evaluator name, such as
 `evaluators.answer_correctness`.
 
-Eval activities invoke `AnswerWorkflow` directly through Temporal. Each case
+Use `run_retrieval_evals` for independent retrieval recall. It accepts the same
+case/dataset filters plus `retrieval_limit` (1–100, default 100 articles per query).
+Poll `get_evals` for ranked page IDs, latency, per-case recall@5/10/50/100, and
+`retrieval_summary`. It needs the eval worker and Elasticsearch; no answer worker
+or judge is used. Full article text stays inside the eval activity.
+
+E2E eval activities invoke `AnswerWorkflow` directly through Temporal. Each case
 has separate, linked answer and eval traces sharing the eval run session ID.
 Gold labels are used for judging and are not sent to the answer workflow.
 See the [eval README](../evals/README.md) for tool usage, judge configuration,

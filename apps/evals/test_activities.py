@@ -89,19 +89,12 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
     evaluate.assert_awaited_once_with(
         case, 120, {"trace_id": "eval-trace"} if enabled else None
     )
-    if status == "COMPLETED":
-        assert [name for name, _ in children] == [entry[0] for entry in evaluators]
-        judge.assert_awaited_once_with(case, "answer", abstained=False)
-    else:
-        assert children == []
-        judge.assert_not_awaited()
+    assert [name for name, _ in children] == [entry[0] for entry in evaluators]
+    judge.assert_awaited_once_with(case, result["output"])
     assert result["evaluators"]["answer_correctness"].get("correctness") == score
     if evaluator_count == 2:
         assert result["evaluators"]["additional_quality"].get("correctness") == score
-        if status == "COMPLETED":
-            second.assert_awaited_once_with(case, "answer", abstained=False)
-        else:
-            second.assert_not_awaited()
+        second.assert_awaited_once_with(case, result["output"])
     assert "answer_cost_usd" not in result
     assert observed["session_id"] == "eval-run"
     assert observed["input"] == case.model_dump(mode="json")
@@ -346,7 +339,8 @@ async def test_decorated_evaluators_are_direct_children(
 
 
 @pytest.mark.parametrize("tags", [["page_verified"], []])
-async def test_load_eval_cases_selects_on_worker(tags, monkeypatch):
+@pytest.mark.parametrize("eval_type", ["answer", "retrieval"])
+async def test_load_eval_cases_selects_on_worker(tags, monkeypatch, eval_type):
     from apps.evals.datasets.dataset import select_cases
 
     monkeypatch.setattr(
@@ -357,7 +351,10 @@ async def test_load_eval_cases_selects_on_worker(tags, monkeypatch):
         limit=3,
         tags=tags,
     )
-    assert await activities.load_eval_cases(EvalRunRequest(tags=tags)) == expected
+    assert (
+        await activities.load_eval_cases(EvalRunRequest(tags=tags, eval_type=eval_type))
+        == expected
+    )
 
 
 async def test_load_eval_cases_no_matches_fails_without_retry(monkeypatch):
@@ -423,4 +420,88 @@ def test_cost_fields_are_not_emitted_as_scores(monkeypatch):
     assert all(
         "cost_details" not in call.kwargs
         for call in instance.update_current_span.call_args_list
+    )
+
+
+@pytest.mark.parametrize("status", ["COMPLETED", "TIMEOUT", "FAILED"])
+async def test_e2e_only_scores_correctness(monkeypatch, status):
+    case = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
+    instance = Mock()
+    monkeypatch.setattr(activities.telemetry, "client", lambda: instance)
+    judge = AsyncMock(return_value={"correctness": 1})
+    monkeypatch.setattr(activities, "evaluate_correctness", judge)
+
+    async def evaluate_one(case, output, name, evaluator):
+        return await evaluator(case, output)
+
+    monkeypatch.setattr(activities, "_evaluate_one", evaluate_one)
+    result = {
+        "output": {"status": status, "result": {"short_answer": "answer"}},
+        "evaluators": {},
+    }
+    from copy import deepcopy
+
+    original = deepcopy(result)
+    judgments = await activities._run_evaluators(case, result["output"])
+    assert result == original
+    result["evaluators"] = judgments
+    assert set(judgments) == {"answer_correctness"}
+    if status == "COMPLETED":
+        judge.assert_awaited_once_with(case, "answer", abstained=False)
+    else:
+        judge.assert_not_awaited()
+    activities._record_evaluation(result)
+    if status != "COMPLETED":
+        assert "correctness" not in result["evaluators"]["answer_correctness"]
+    scores = {
+        c.kwargs["name"]: c.kwargs["value"]
+        for c in instance.score_current_span.call_args_list
+    }
+    expected = {}
+    if status == "COMPLETED":
+        expected["correctness"] = 1
+    assert scores == expected
+
+
+async def test_generate_answer_exposes_candidates_in_span_output(monkeypatch):
+    from apps.mcp.agent.models import AnswerResult, ArticleCandidates
+
+    monkeypatch.setattr(
+        activities.activity,
+        "info",
+        lambda: Mock(
+            workflow_id="eval-run",
+            workflow_run_id="execution",
+            activity_id="1",
+        ),
+    )
+    span = Mock()
+
+    @contextmanager
+    def observation(*args, **kwargs):
+        yield span
+
+    monkeypatch.setattr(activities, "observation", observation)
+    monkeypatch.setattr(activities, "current_context", lambda: None)
+    candidates = ArticleCandidates(["123", "456"], 5, "snapshot")
+    answer = AnswerResult(
+        "", "No answer", abstained=True, article_candidates=candidates
+    )
+    client = Mock(
+        start_workflow=AsyncMock(
+            return_value=Mock(result=AsyncMock(return_value=answer))
+        )
+    )
+    monkeypatch.setattr(activities.Client, "connect", AsyncMock(return_value=client))
+    case = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
+    result = await activities._generate_answer(case, 10, None)
+    expected = {
+        "ranked_page_ids": ["123", "456"],
+        "limit": 5,
+        "corpus_version": "snapshot",
+    }
+    assert result["output"]["result"]["article_candidates"] == expected
+    assert (
+        span.update.call_args.kwargs["output"]["result"]["article_candidates"]
+        == expected
     )

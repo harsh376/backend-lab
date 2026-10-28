@@ -127,12 +127,14 @@ class ElasticsearchKiltRepository:
                 # characters, so truncate very long articles instead of failing.
                 "max_analyzed_offset": 999_999,
             },
-            source=["wikipedia_title"],
+            source=["wikipedia_title", "wikipedia_id", "text"],
             size=limit,
         )
         return [
             KiltSearchHit(
                 id=hit["_id"],
+                wikipedia_id=str(hit["_source"].get("wikipedia_id", hit["_id"])),
+                paragraphs=tuple(hit["_source"].get("text", [])),
                 title=hit["_source"]["wikipedia_title"],
                 score=hit["_score"],
                 snippets=tuple(hit.get("highlight", {}).get("text", [])),

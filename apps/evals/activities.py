@@ -1,4 +1,4 @@
-"""Direct AnswerWorkflow execution and scoring for the eval worker."""
+"""Dataset loading, answer execution, and retrieval scoring for the eval worker."""
 
 import asyncio
 from dataclasses import asdict
@@ -13,6 +13,7 @@ from temporalio.exceptions import ApplicationError
 from apps.evals.datasets.dataset import load_cases, select_cases
 from apps.evals.datasets.hosted_dataset import HostedDatasetService
 from apps.evals.evaluators.answers import evaluate_correctness
+from apps.evals.evaluators.retrieval import RECALL_KS, evaluate_retrieval
 from apps.evals.experiments import (
     case_trace_context,
     experiment_item,
@@ -24,9 +25,20 @@ from apps.mcp.agent.models import AnswerRequest
 from apps.mcp.agent.workflow import AnswerWorkflow
 from apps.mcp.telemetry import current_context, observation, observe
 from backend.config import Settings
+from backend.services.kilt.kilt import KiltService
+
+
+async def _evaluate_answer_correctness(case: EvalCase, output: dict) -> dict:
+    if output["status"] != "COMPLETED":
+        return {"reason": "Answer run did not complete."}
+    answer = output["result"]
+    return await evaluate_correctness(
+        case, answer["short_answer"], abstained=answer.get("abstained", False)
+    )
+
 
 EVALUATORS = [
-    ("answer_correctness", evaluate_correctness),
+    ("answer_correctness", _evaluate_answer_correctness),
 ]
 
 
@@ -85,7 +97,7 @@ async def evaluate_mcp_case(request: EvalCaseRequest) -> dict:
     context = current_context()
     with experiment_item(request) as report:
         result = await _generate_answer(case, request.timeout, context)
-        await _run_evaluators(case, result)
+        result["evaluators"] = await _run_evaluators(case, result["output"])
         if context:
             result["trace_id"] = context["trace_id"]
         result.update(report)
@@ -93,36 +105,27 @@ async def evaluate_mcp_case(request: EvalCaseRequest) -> dict:
         return result
 
 
-async def _run_evaluators(case, result):
+async def _run_evaluators(case: EvalCase, output: dict) -> dict:
+    judgments = {}
     for evaluator_name, evaluator in EVALUATORS:
-        judgment = {"reason": "Answer run did not complete."}
-        if result["output"]["status"] == "COMPLETED":
-            judgment = await _evaluate_one(
-                case, result["output"]["result"], evaluator_name, evaluator
-            )
-        result["evaluators"][evaluator_name] = judgment
-
-
-def _evaluator_input(args):
-    case, answer = args["case"], args["answer"]
-    return {
-        "question": case.question,
-        "accepted_answers": case.accepted_answers,
-        "actual_answer": answer["short_answer"],
-    }
+        judgments[evaluator_name] = await _evaluate_one(
+            case, output, evaluator_name, evaluator
+        )
+    return judgments
 
 
 @observe(
     name=lambda args: args["evaluator_name"],
-    input=_evaluator_input,
+    input=lambda args: {
+        "case": args["case"].model_dump(mode="json"),
+        "output": args["output"],
+    },
     trace_context=lambda args: None,
     session_id=lambda args: activity.info().workflow_id,
     metadata=lambda args: {"case_id": args["case"].case_id},
 )
-async def _evaluate_one(case, answer, evaluator_name, evaluator):
-    judgment = await evaluator(
-        case, answer["short_answer"], abstained=answer.get("abstained", False)
-    )
+async def _evaluate_one(case, output, evaluator_name, evaluator):
+    judgment = await evaluator(case, output)
     if judgment.get("error"):
         _mark_evaluator_error("Evaluator failed")
     return judgment
@@ -146,7 +149,9 @@ def _record_evaluation(result):
     )
     for name, judgment in result["evaluators"].items():
         for metric, value in judgment.items():
-            if metric == "correctness" and isinstance(value, (int, float)):
+            if (
+                metric == "correctness" or metric in {f"recall@{k}" for k in RECALL_KS}
+            ) and isinstance(value, (int, float)):
                 instance.score_current_span(
                     name=metric,
                     value=value,
@@ -214,3 +219,50 @@ async def _generate_answer(case, timeout, eval_context):
         "elapsed_seconds": asyncio.get_running_loop().time() - started,
         "evaluators": {},
     }
+
+
+class RetrievalEvalActivities:
+    def __init__(self, kilt_service: KiltService):
+        self.kilt_service = kilt_service
+
+    @activity.defn(name="evaluate_retrieval_case")
+    @observe(
+        "retrieval_eval_case",
+        trace_context=case_trace_context,
+        input=lambda args: args["request"].case.model_dump(mode="json"),
+        session_id=lambda args: activity.info().workflow_id,
+        metadata=lambda args: {
+            "eval_run_id": activity.info().workflow_id,
+            "case_id": args["request"].case.case_id,
+            "eval_type": "retrieval",
+            "retrieval_limit": args["request"].retrieval_limit,
+        },
+    )
+    async def evaluate(self, request: EvalCaseRequest) -> dict:
+        case = request.case
+        context = current_context()
+        with experiment_item(request) as report:
+            started = asyncio.get_running_loop().time()
+            async with asyncio.timeout(request.timeout):
+                evidences = await self.kilt_service.asearch_evidences(
+                    case.question, request.retrieval_limit
+                )
+            elapsed = asyncio.get_running_loop().time() - started
+            candidates = {
+                "ranked_page_ids": [e.wikipedia_id for e in evidences],
+                "limit": request.retrieval_limit,
+                "corpus_version": self.kilt_service.corpus_version,
+            }
+            result = {
+                "case_id": case.case_id,
+                "output": {"status": "COMPLETED", "result": candidates},
+                "evaluators": {
+                    "retrieval_recall_at_k": evaluate_retrieval(case, candidates)
+                },
+                "elapsed_seconds": elapsed,
+                **report,
+            }
+            if context:
+                result["trace_id"] = context["trace_id"]
+            _record_evaluation(result)
+            return result

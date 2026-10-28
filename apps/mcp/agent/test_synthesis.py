@@ -10,7 +10,7 @@ from temporalio.exceptions import ApplicationError
 
 from apps.mcp import telemetry
 from apps.mcp.agent.activities import AnswerActivities
-from apps.mcp.agent.models import Passage, SynthesisInput
+from apps.mcp.agent.models import Paragraph, SynthesisInput
 from backend.config import Settings
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerSynthesisService,
@@ -20,7 +20,7 @@ from backend.services.answer_synthesis.answer_synthesis import (
 
 @pytest.fixture
 def evidence():
-    return Passage("v:1:0", "v", "1", 0, "Magazine", "It began in 1844.")
+    return Paragraph("v:1:0", "v", "1", 0, "Magazine", "It began in 1844.")
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def completion(monkeypatch, evidence):
                         {
                             "short_answer": "1844",
                             "explanation": "The magazine began in 1844.",
-                            "citation_ids": [evidence.passage_id],
+                            "citation_ids": [evidence.paragraph_ref],
                             "abstained": False,
                         }
                     ),
@@ -124,7 +124,7 @@ async def test_verification_generation_joins_activity_trace(
     )
 
     completion.return_value.choices[0].message.content = json.dumps(
-        {"supported": True, "reason": "The passage supports 1844."}
+        {"supported": True, "reason": "The paragraph supports 1844."}
     )
     exporter = InMemorySpanExporter()
     instance = Langfuse(

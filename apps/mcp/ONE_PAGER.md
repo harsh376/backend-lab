@@ -22,13 +22,13 @@ Future experiments will come from topics and literature I explore. For each, I w
 
 ## System and scope
 
-The initial corpus is a fixed KILT Wikipedia snapshot; private content is a future extension. Ingestion assigns stable, versioned passage IDs in Elasticsearch. Temporal runs the server-side answer workflow, with OpenTelemetry traces and a cost ledger.
+The initial corpus is a fixed KILT Wikipedia snapshot; private content is a future extension. Ingestion assigns stable, versioned paragraph IDs in Elasticsearch. Temporal runs the server-side answer workflow, with OpenTelemetry traces and a cost ledger.
 
 ```mermaid
 flowchart LR
-  CORPUS["Versioned Wikipedia snapshot"] --> ING["Temporal ingestion workflow"] --> ES[("Elasticsearch passages")]
+  CORPUS["Versioned Wikipedia snapshot"] --> ING["Temporal ingestion workflow"] --> ES[("Elasticsearch paragraphs")]
   HOST["Claude / ChatGPT"] --> MCP["MCP tools"]
-  MCP -- "search / get_passage" --> ES
+  MCP -- "search / get_paragraph" --> ES
   MCP -- "answer" --> WF["Temporal answer workflow"]
   WF --> ES
   WF --> LLM["LLM provider"]
@@ -37,12 +37,12 @@ flowchart LR
   MCP -. "tool-call spans" .-> OBS
 ```
 
-The proposed `answer` tool returns a run ID immediately; `get_answer(run_id)` returns status and, on completion, a structured result with `short_answer`, `explanation`, `citations`, usage and a trace link. Hosts may also synthesize from `search` and `get_passage`; server instrumentation covers those tool calls, while host reasoning and total host spend require separate telemetry.
+The proposed `answer` tool returns a run ID immediately; `get_answer(run_id)` returns status and, on completion, a structured result with `short_answer`, `explanation`, `citations`, usage and a trace link. Hosts may also synthesize from `search` and `get_paragraph`; server instrumentation covers those tool calls, while host reasoning and total host spend require separate telemetry.
 
 ## What the bench records and checks
 
-- **Answer quality:** return `short_answer`, `explanation` and `citations` separately. Check the answer and explanation against cited passages. For benchmark runs, score the short answer against gold answers and measure evidence retrieval; preserve KILT Wikipedia and paragraph identifiers and define how indexed chunks match provenance. Audit verifier judgments on a fixed sample.
-- **Durability and observability:** link each request to its workflow history, retrieved passages, prompts, outputs, latency and cost. Persist completed activity outputs and use idempotency where supported. Demonstrate recovery from a worker interruption and report duplicate or unresolved provider calls. Workflow-history replay and a fresh model run are distinct operations.
+- **Answer quality:** return `short_answer`, `explanation` and `citations` separately. Check the answer and explanation against cited paragraphs. For benchmark runs, score the short answer against gold answers and measure evidence retrieval; preserve KILT Wikipedia and paragraph identifiers and define how indexed chunks match provenance. Audit verifier judgments on a fixed sample.
+- **Durability and observability:** link each request to its workflow history, retrieved paragraphs, prompts, outputs, latency and cost. Persist completed activity outputs and use idempotency where supported. Demonstrate recovery from a worker interruption and report duplicate or unresolved provider calls. Workflow-history replay and a fresh model run are distinct operations.
 - **Economics and budgets:** record cost per answer, separating token usage and infrastructure overhead. Reserve budget before dispatch, reconcile actual usage, and stop new work at limits. Abstain when a supported answer cannot be completed; report overruns and in-flight-call exposure.
 
 Counterfactual tests, more detailed claim verification, concurrency tests and comparisons of agent patterns can be added as future investigations require them.
@@ -52,8 +52,8 @@ Counterfactual tests, more detailed claim verification, concurrency tests and co
 **Question:** “When did Arthur's Magazine begin publication?”
 
 1. **Call:** Claude calls `answer` with the question and a budget. The MCP server starts a Temporal workflow and returns a run ID.
-2. **Retrieve:** the workflow searches Elasticsearch and fetches a passage from the versioned Wikipedia snapshot giving the year 1844. It records the passage ID and text used.
-3. **Answer and check:** the workflow produces `short_answer`: “1844”, an `explanation`: “Arthur's Magazine began publication in 1844”, and a citation to the passage. A verifier checks that the evidence supports the answer; if it cannot establish support, the workflow abstains.
+2. **Retrieve:** the workflow searches Elasticsearch and fetches a paragraph from the versioned Wikipedia snapshot giving the year 1844. It records the paragraph ID and text used.
+3. **Answer and check:** the workflow produces `short_answer`: “1844”, an `explanation`: “Arthur's Magazine began publication in 1844”, and a citation to the paragraph. A verifier checks that the evidence supports the answer; if it cannot establish support, the workflow abstains.
 4. **Return:** Claude polls `get_answer(run_id)` and shows the answer and citation. The result includes usage and a trace link so the retrieval, model calls, verification and cost can be inspected.
 
 **First milestone:** this complete path works, a worker-interruption demonstration shows recovery behavior, and the run's evidence, trace and cost are inspectable. This is an illustrative flow, not a measured experimental result.

@@ -10,7 +10,7 @@ from opentelemetry.trace import StatusCode
 
 from apps.mcp import server, telemetry
 from apps.mcp.agent.activities import AnswerActivities
-from apps.mcp.agent.models import AnswerRequest, Passage, SynthesisInput
+from apps.mcp.agent.models import AnswerRequest, Paragraph, SynthesisInput
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerSynthesisService,
     ExtractiveSynthesis,
@@ -65,17 +65,29 @@ async def test_cross_process_context_and_errors(monkeypatch):
             started = await server.answer("question")
         request = temporal.start_workflow.call_args.args[1]
         assert request.trace_context
-        passage = Passage("v:1:0", "v", "1", 0, "Title", "Evidence")
+        from backend.domains.kilt import ArticleEvidence
+
+        paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Evidence")
         activities = AnswerActivities(
-            Mock(aretrieve_passages=AsyncMock(return_value=[asdict(passage)])),
+            Mock(
+                asearch_evidences=AsyncMock(
+                    return_value=[
+                        ArticleEvidence("1", "v", "1", "Title", [paragraph.text])
+                    ]
+                )
+            ),
             AnswerSynthesisService(ExtractiveSynthesis()),
         )
-        assert await activities.aretrieve(request) == [passage]
+        assert (await activities.aretrieve(request))[0].citation_paragraphs() == [
+            paragraph
+        ]
         result = await activities.agenerate(
-            SynthesisInput(request.question, [passage], request.trace_context)
+            SynthesisInput(request.question, [paragraph], request.trace_context)
         )
         assert not result.abstained
-        activities.kilt.aretrieve_passages.side_effect = RuntimeError("unavailable")
+        activities.kilt_service.asearch_evidences.side_effect = RuntimeError(
+            "unavailable"
+        )
         with pytest.raises(RuntimeError, match="unavailable"):
             await activities.aretrieve(request)
         instance.flush()
@@ -102,12 +114,18 @@ async def test_cross_process_context_and_errors(monkeypatch):
             "request": asdict(request),
         }
         assert json.loads(retrieval.attributes["langfuse.observation.output"]) == [
-            asdict(passage)
+            {
+                "article_id": "1",
+                "corpus_version": "v",
+                "wikipedia_id": "1",
+                "title": "Title",
+                "paragraphs": [paragraph.text],
+            }
         ]
         synthesis = next(s for s in children if s.name == "synthesize_answer")
         assert json.loads(synthesis.attributes["langfuse.observation.input"]) == {
             "data": asdict(
-                SynthesisInput(request.question, [passage], request.trace_context)
+                SynthesisInput(request.question, [paragraph], request.trace_context)
             ),
         }
         assert json.loads(
@@ -161,6 +179,120 @@ async def test_trace_context_survives_temporal_serialization():
     converter = DataConverter.default
     payloads = await converter.encode([request])
     assert await converter.decode(payloads, [AnswerRequest]) == [request]
+
+
+@pytest.mark.parametrize("hosted", [False, True])
+async def test_experiment_cost_attribution_survives_temporal_boundary(
+    monkeypatch, hosted
+):
+    from pathlib import Path
+
+    import httpx
+    from opentelemetry import baggage, context
+    from temporalio.converter import DataConverter
+
+    from apps.evals.datasets.dataset import load_cases
+    from apps.evals.experiments import experiment_item
+    from apps.evals.workflow import EvalCaseRequest
+    from apps.mcp.agent.models import AnswerResult, VerificationInput
+
+    exporter = InMemorySpanExporter()
+    instance = Langfuse(
+        public_key=f"pk-lf-temporal-experiment-{hosted}",
+        secret_key="sk-lf-test",
+        tracer_provider=TracerProvider(),
+        span_exporter=exporter,
+        httpx_client=httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json={}))
+        ),
+    )
+    monkeypatch.setattr(telemetry, "client", lambda: instance)
+    monkeypatch.setattr(instance, "get_trace_url", lambda **_: None)
+    monkeypatch.setattr(
+        telemetry.activity,
+        "info",
+        lambda: Mock(workflow_id="eval", workflow_run_id="run"),
+    )
+    case = load_cases(Path(__file__).parents[1] / "evals/datasets/kilt-v1/dev.json")[0]
+    if hosted:
+        case.source = case.source.model_copy(
+            update={"kind": "langfuse", "dataset_id": "dataset", "record_id": "item"}
+        )
+    answer = AnswerResult("answer", "explanation")
+
+    async def generate(_):
+        with telemetry.observation("synthesis", as_type="generation") as span:
+            span.update(cost_details={"total": 0.4})
+        return answer
+
+    async def verify(_):
+        with telemetry.observation("verification", as_type="generation") as span:
+            span.update(cost_details={"total": 0.0182})
+        return answer
+
+    activities = AnswerActivities(
+        Mock(), Mock(synthesize=generate), Mock(verify=verify)
+    )
+    try:
+        with (
+            telemetry.observation("eval_case"),
+            experiment_item(EvalCaseRequest(case, experiment_name="test-limit-5")),
+        ):
+            with telemetry.observation("answer"):
+                # Arbitrary baggage must not be copied into workflow payloads.
+                token = context.attach(baggage.set_baggage("private", "excluded"))
+                try:
+                    request = AnswerRequest(
+                        "question", trace_context=telemetry.current_context()
+                    )
+                finally:
+                    context.detach(token)
+            with telemetry.observation("judge", as_type="generation") as span:
+                span.update(cost_details={"total": 0.0008})
+        converter = DataConverter.default
+        request = (
+            await converter.decode(await converter.encode([request]), [AnswerRequest])
+        )[0]
+        assert "private" not in request.trace_context
+        # A different worker has neither the caller's active span nor its baggage.
+        token = context.attach(context.Context())
+        try:
+            await activities.agenerate(
+                SynthesisInput("question", [], request.trace_context)
+            )
+            assert not baggage.get_all()
+            await activities.averify(
+                VerificationInput("question", answer, request.trace_context)
+            )
+            assert not baggage.get_all()
+            with telemetry.observation("unrelated"):
+                pass
+        finally:
+            context.detach(token)
+        instance.flush()
+        spans = exporter.get_finished_spans()
+        root = next(s for s in spans if s.name == "eval_case")
+        for span in (s for s in spans if s.name != "unrelated"):
+            assert span.context.trace_id == root.context.trace_id
+            for key in ("id", "name", "item.id", "item.root_observation_id"):
+                attribute = f"langfuse.experiment.{key}"
+                assert span.attributes[attribute] == root.attributes[attribute]
+            if hosted:
+                assert span.attributes["langfuse.experiment.dataset.id"] == "dataset"
+        generations = [
+            s
+            for s in spans
+            if s.attributes.get("langfuse.observation.type") == "generation"
+        ]
+        assert {s.name for s in generations} == {"synthesis", "verification", "judge"}
+        assert sum(
+            json.loads(s.attributes["langfuse.observation.cost_details"])["total"]
+            for s in generations
+        ) == pytest.approx(0.419)
+        unrelated = next(s for s in spans if s.name == "unrelated")
+        assert "langfuse.experiment.id" not in unrelated.attributes
+    finally:
+        instance.shutdown()
 
 
 @pytest.mark.parametrize("enabled", ["false", "0", "no"])
@@ -353,7 +485,7 @@ async def test_chat_sessions_propagate_without_leaking(monkeypatch):
                 )
             )[0]
             activities = AnswerActivities(
-                Mock(aretrieve_passages=AsyncMock(return_value=[])),
+                Mock(asearch_evidences=AsyncMock(return_value=[])),
                 AnswerSynthesisService(ExtractiveSynthesis()),
             )
             await activities.aretrieve(request)
@@ -437,6 +569,7 @@ async def test_eval_tools_enrich_sdk_root_spans(monkeypatch):
             "tags": None,
             "timeout": 120,
             "experiment_name": None,
+            "hosted_dataset": None,
         }
         assert (
             json.loads(submission.attributes["langfuse.observation.output"]) == started

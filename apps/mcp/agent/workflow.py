@@ -10,9 +10,10 @@ with workflow.unsafe.imports_passed_through():
     from apps.mcp.agent.models import (
         AnswerRequest,
         AnswerResult,
+        ArticleCandidates,
+        ArticleEvidence,
         FinalAnswerInput,
         FinalAnswerOutput,
-        Passage,
         SynthesisInput,
         VerificationInput,
     )
@@ -24,10 +25,10 @@ class AnswerWorkflow:
     @workflow.run
     async def run(self, request: AnswerRequest) -> AnswerResult:
         request.validate()
-        passages = await workflow.execute_activity(
+        evidences = await workflow.execute_activity(
             "retrieve_answer_evidence",
             request,
-            result_type=list[Passage],
+            result_type=list[ArticleEvidence],
             start_to_close_timeout=timedelta(seconds=30),
             schedule_to_close_timeout=timedelta(minutes=2),
             retry_policy=RetryPolicy(maximum_attempts=3),
@@ -37,10 +38,13 @@ class AnswerWorkflow:
         )
         model_retry_policy = RetryPolicy(maximum_attempts=1 if budget_report else 3)
         answer = AnswerResult("", "No evidence was retrieved.", abstained=True)
-        if budget_report is not None and not passages:
-            return await self._finish(answer, budget_report, request, passages)
+        if budget_report is not None and not evidences:
+            return await self._finish(answer, budget_report, request, evidences)
         synthesis = SynthesisInput(
-            request.question, passages, request.trace_context, request.session_id
+            question=request.question,
+            trace_context=request.trace_context,
+            session_id=request.session_id,
+            evidences=evidences,
         )
         try:
             async with budget_stage(budget_report, "synthesis", synthesis) as stage:
@@ -54,7 +58,7 @@ class AnswerWorkflow:
                 )
                 stage.record_cost(answer.usage_cost_usd)
             if answer.abstained:
-                return await self._finish(answer, budget_report, request, passages)
+                return await self._finish(answer, budget_report, request, evidences)
 
             verification = VerificationInput(
                 request.question, answer, request.trace_context, request.session_id
@@ -75,16 +79,20 @@ class AnswerWorkflow:
                 )
         except BudgetStopped:
             pass
-        return await self._finish(answer, budget_report, request, passages)
+        return await self._finish(answer, budget_report, request, evidences)
 
     async def _finish(
         self,
         answer: AnswerResult,
         budget_report: BudgetReport | None,
         request: AnswerRequest,
-        passages: list[Passage],
+        evidences: list[ArticleEvidence],
     ) -> AnswerResult:
-        answer.retrieved_passages = passages
+        answer.article_candidates = ArticleCandidates(
+            [evidence.wikipedia_id for evidence in evidences],
+            request.limit,
+            evidences[0].corpus_version if evidences else "",
+        )
         if budget_report is not None and budget_report.stop_reason:
             answer.short_answer = ""
             answer.citations = []

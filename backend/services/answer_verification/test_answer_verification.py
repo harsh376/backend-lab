@@ -11,7 +11,7 @@ from apps.mcp.agent.activities import AnswerActivities
 from backend.config import Settings
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerResult,
-    Passage,
+    Paragraph,
     VerificationResult,
 )
 from backend.services.answer_verification.answer_verification import (
@@ -23,13 +23,13 @@ from backend.services.answer_verification.answer_verification import (
 
 @pytest.fixture
 def data():
-    passage = Passage("v:1:0", "v", "1", 0, "Magazine", "It began in 1844.")
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Magazine", "It began in 1844.")
     return VerificationInput(
         "When did it begin?",
         AnswerResult(
             "1844",
             "It began in 1844.",
-            [passage],
+            [paragraph],
             usage={"total_tokens": 120},
             usage_cost_usd=0.001,
         ),
@@ -48,7 +48,7 @@ def completion(monkeypatch):
                 "message": {
                     "role": "assistant",
                     "content": json.dumps(
-                        {"supported": True, "reason": "The cited passage gives 1844."}
+                        {"supported": True, "reason": "The cited paragraph gives 1844."}
                     ),
                 },
             }
@@ -89,7 +89,7 @@ async def test_supported_answer_and_independent_accounting(data, completion, mod
     assert request["num_retries"] == 0
     assert request["response_format"]["json_schema"]["name"] == "evidence_verification"
     payload = json.loads(request["messages"][1]["content"])
-    assert payload["cited_passages"][0]["text"] == "It began in 1844."
+    assert payload["cited_paragraphs"][0]["text"] == "It began in 1844."
     assert "usage" not in payload
     converter = DataConverter.default
     encoded = await converter.encode([result, data])

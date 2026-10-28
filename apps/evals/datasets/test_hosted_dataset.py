@@ -155,7 +155,10 @@ async def test_paginated_snapshot_skips_archived_items(monkeypatch):
         await HostedDatasetService().read("errors")
 
 
-async def test_worker_filters_hosted_cases_without_loading_local(monkeypatch, api):
+@pytest.mark.parametrize("eval_type", ["answer", "retrieval"])
+async def test_worker_filters_hosted_cases_without_loading_local(
+    monkeypatch, api, eval_type
+):
     cases = [
         await read_item(item(), api),
         await read_item(item("two", input=case_payload("two", tags=[])), api),
@@ -166,7 +169,9 @@ async def test_worker_filters_hosted_cases_without_loading_local(monkeypatch, ap
     local = Mock(side_effect=AssertionError("local dataset must not be loaded"))
     monkeypatch.setattr(activities, "load_cases", local)
     result = await activities.load_eval_cases(
-        EvalRunRequest(hosted_dataset="errors", limit=None, tags=["citation"])
+        EvalRunRequest(
+            hosted_dataset="errors", limit=None, tags=["citation"], eval_type=eval_type
+        )
     )
     assert result == [cases[0]]
     loader.assert_awaited_once_with("errors")
@@ -450,3 +455,55 @@ async def test_blank_eval_name_is_rejected_before_connect(monkeypatch):
     with pytest.raises(ValueError, match="blank"):
         await HostedDatasetService().resolve_eval_name("  ")
     connect.assert_not_awaited()
+
+
+async def test_read_eval_returns_separate_answer_and_retrieval_summaries(monkeypatch):
+    results = [
+        {
+            "output": {"status": "COMPLETED"},
+            "evaluators": {
+                "answer_correctness": {"correctness": 1},
+                "retrieval_recall_at_k": {"recall@5": 0.5},
+            },
+        }
+    ]
+    handle = Mock(
+        describe=AsyncMock(
+            return_value=Mock(status=module.WorkflowExecutionStatus.COMPLETED)
+        ),
+        result=AsyncMock(return_value=results),
+    )
+    client = Mock(get_workflow_handle=Mock(return_value=handle))
+    monkeypatch.setattr(module.Client, "connect", AsyncMock(return_value=client))
+    response = await HostedDatasetService().read_eval("kilt-eval-test")
+    assert response["summary"] == {"correctness": 1, "correctness_count": 1}
+    assert response["retrieval_summary"]["recall@5"] == 0.5
+    assert response["retrieval_summary"]["recall@5_count"] == 1
+    assert response["retrieval_summary"]["recall@50"] is None
+
+
+@pytest.mark.parametrize("failed", [False, True])
+async def test_read_retrieval_eval_has_recall_coverage_without_correctness(
+    monkeypatch, failed
+):
+    results = [
+        {
+            "output": {"status": "FAILED" if failed else "COMPLETED"},
+            "evaluators": {} if failed else {"retrieval_recall_at_k": {"recall@5": 0}},
+        }
+    ]
+    handle = Mock(
+        describe=AsyncMock(
+            return_value=Mock(status=module.WorkflowExecutionStatus.COMPLETED)
+        ),
+        result=AsyncMock(return_value=results),
+    )
+    client = Mock(get_workflow_handle=Mock(return_value=handle))
+    monkeypatch.setattr(module.Client, "connect", AsyncMock(return_value=client))
+    response = await HostedDatasetService().read_eval("kilt-eval-retrieval-test")
+    assert "summary" not in response
+    assert response["retrieval_summary"]["recall@5"] == (None if failed else 0)
+    assert response["coverage"]["recall@5_scored"] == (0 if failed else 1)
+    assert response["coverage"]["recall@5_skipped"] == (1 if failed else 0)
+    assert response["coverage"]["recall@100_scored"] == 0
+    assert "correctness_scored" not in response["coverage"]

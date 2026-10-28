@@ -2,17 +2,20 @@
 
 import asyncio
 import json
-import re
 from collections.abc import Iterable, Iterator
 from itertools import islice
 
-from backend.domains.kilt import SECTION_MARKER, KiltPassage
+from backend.domains.kilt import ArticleEvidence
 from backend.repositories.kilt import KiltRepository
 
 
 class KiltService:
     def __init__(self, repository: KiltRepository):
         self._repository = repository
+
+    @property
+    def corpus_version(self) -> str:
+        return self._repository.corpus_version
 
     def parse_json(self, file_path: str, limit: int | None = 10) -> Iterator[dict]:
         """Stream records from a JSON Lines file one at a time.
@@ -42,39 +45,30 @@ class KiltService:
         hits = await self._repository.asearch(query, limit)
         return [hit.model_dump(mode="json") for hit in hits]
 
-    async def aget_passage(self, article_id: str, paragraph_id: int) -> dict:
+    async def aget_paragraph(self, article_id: str, paragraph_id: int) -> dict:
         if paragraph_id < 0:
             raise ValueError("paragraph_id must be non-negative")
         article = await self._repository.aget_article(article_id)
-        return article.passage(
+        return article.paragraph(
             self._repository.corpus_version, paragraph_id
         ).model_dump()
 
-    async def aretrieve_passages(self, query: str, limit: int = 5) -> list[dict]:
-        """Rank original paragraphs, preserving corpus citation offsets."""
+    async def asearch_evidences(
+        self, query: str, limit: int = 100
+    ) -> list[ArticleEvidence]:
+        """Return one complete evidence per article in search rank order."""
         self._validate_search(query, limit)
-        terms = set(re.findall(r"\w+", query.lower()))
-        hits = await self._repository.asearch(query, limit)
-        articles = await asyncio.gather(
-            *(self._repository.aget_article(hit.id) for hit in hits)
-        )
-        passages: list[tuple[int, KiltPassage]] = []
-        for article in articles:
-            for paragraph_id, paragraph in enumerate(article.paragraphs):
-                if not paragraph.strip() or paragraph.startswith(SECTION_MARKER):
-                    continue
-                overlap = len(terms & set(re.findall(r"\w+", paragraph.lower())))
-                if overlap:
-                    passages.append(
-                        (
-                            overlap,
-                            article.passage(
-                                self._repository.corpus_version, paragraph_id
-                            ),
-                        )
-                    )
-        passages.sort(key=lambda item: item[0], reverse=True)
-        return [passage.model_dump() for _, passage in passages[:limit]]
+        articles = await self._repository.asearch(query, limit)
+        return [
+            ArticleEvidence(
+                article_id=article.id,
+                corpus_version=self._repository.corpus_version,
+                wikipedia_id=article.wikipedia_id,
+                title=article.title,
+                paragraphs=list(article.paragraphs),
+            )
+            for article in articles
+        ]
 
     @staticmethod
     def _validate_search(query: str, limit: int) -> None:

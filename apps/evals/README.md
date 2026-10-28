@@ -61,7 +61,9 @@ Poll `get_evals` with the returned ID:
 {"run_id": "kilt-eval-<returned-id>"}
 ```
 
-Defaults: `limit=3`, `tags=["page_verified"]`, `timeout=120`.
+The case limit defaults to `3` for both local and hosted datasets. Pass
+`limit=null` to run all eligible cases for either source. Local defaults:
+`tags=["page_verified"]`, `timeout=120`.
 Tags require all matches; pass `tags=[]` to disable tag filtering.
 
 ### Run a hosted Langfuse dataset
@@ -72,12 +74,14 @@ Create a dataset in the configured Langfuse project (for example,
 ```json
 {
   "hosted_dataset": "basline-v5-errors",
+  "limit": null,
   "experiment_name": "Error cases after retrieval changes"
 }
 ```
 
-With `hosted_dataset`, omitted `limit` runs **all active items**, and omitted `tags`
-applies no tag filter. `case_id` selects `input.case_id`; `tags` filters
+With `hosted_dataset`, omitted `limit` runs up to **three eligible items**, just
+as for a local dataset. Explicit `limit=null` runs all eligible items. Omitted
+`tags` applies no tag filter. `case_id` selects `input.case_id`; `tags` filters
 `input.tags`. Archived items and cases tagged `rejected` are excluded. Without
 `hosted_dataset`, the local defaults above still apply.
 
@@ -176,6 +180,9 @@ Answer execution continues within the experiment case trace, so Total Cost ($)
 includes answer synthesis, verification, and judge generations. Detailed costs are
 available on the individual generation observations in the trace. Costs are not
 emitted as evaluation scores, whose display rounds small USD values.
+Experiment and item baggage travels with the trace context in Temporal payloads
+and is restored before answer activity spans start. A shared trace ID alone does
+not attribute those generations to the experiment's cost totals.
 Costs use LiteLLM pricing estimates.
 These changes apply to new runs; historical experiments are not backfilled. No hosted Langfuse dataset is required. Local
 experiments omit `langfuse.experiment.dataset.id`: that field must refer to a real
@@ -236,3 +243,56 @@ run/filter export is rejected. Do not edit or archive exported items while retry
 Rerun the resulting cases with `run_evals(hosted_dataset="test-v5-correctness-errors")`.
 Restart the MCP server and eval worker after deploying these changes to expose the
 new tool and persist snapshots in new runs.
+
+## Standalone retrieval evaluations
+
+Use `run_retrieval_evals` to measure the production retriever without answer
+synthesis, verification, or a correctness judge. It reuses `load_eval_cases`,
+including local/hosted dataset selection, `case_id`, tags, rejected-case exclusion,
+and case limits. `run_evals` now scores answer correctness only.
+
+```json
+{
+  "experiment_name": "retrieval-baseline",
+  "limit": 5,
+  "retrieval_limit": 100
+}
+```
+
+For a hosted dataset, add `hosted_dataset`; use `limit=null` for all eligible cases.
+The default case limit is three for either source. Local cases default to
+`tags=["page_verified"]`; hosted cases have no default tag filter. Pass `tags=[]`
+to disable tag filtering. `timeout` bounds each retrieval query and defaults to
+120 seconds. `retrieval_limit` selects articles per query (1–100, default 100),
+independently of the number of eval cases.
+
+Poll **`get_evals`** with the returned `kilt-eval-retrieval-...` ID. Results contain
+ranked Wikipedia page IDs, the corpus version, requested article limit, retrieval
+latency (`elapsed_seconds`), and `evaluators.retrieval_recall_at_k`.
+`retrieval_summary` reports macro averages and scored-case counts; `coverage`
+includes scored/skipped counts for each cutoff. Retrieval runs omit the answer
+correctness `summary`. Scores are also reported to Langfuse experiments as
+numeric `recall@K` metrics. Failed retrieval activities remain unscored and do not
+stop subsequent cases. Existing dataset export also supports retrieval scores;
+use `name="retrieval_recall_at_k"` and, for example, `score_field="recall@50"`.
+
+Recall is the fraction of distinct reference Wikipedia pages retrieved, taking
+the **maximum across alternative evidence sets**. Repeated references to a page
+count once, and multi-page sets earn partial credit. Fixed cutoffs are **5, 10,
+50, and 100**, scored only at or below `retrieval_limit`. A completed query with
+no hits scores zero. Unanswerable cases or cases without reference evidence are
+unscored. Compare the same cases, corpus, cutoffs, and scored-case coverage.
+
+Retrieval and scoring execute inside one eval activity using the same
+`KiltService.asearch_evidences` path as the answer worker. Full article text never
+enters Temporal activity outputs or workflow results for retrieval evals. No
+answer worker or model credentials are needed. The eval worker needs Elasticsearch:
+configure `ELASTICSEARCH_URL` and `KILT_INDEX` (Compose defaults to
+`http://elasticsearch:9200` and `kilt`). Rebuild/restart the MCP server and eval
+worker to expose the tool. Historical runs are not backfilled.
+
+Answer results also omit full retrieved articles; compact candidate IDs and cited
+paragraphs remain available. Rebuild/restart the answer worker to apply that
+output change. Answer workflows still pass article evidence between
+retrieval and synthesis activities, so unusually large synthesis inputs can
+still require external payload storage or a different activity boundary.

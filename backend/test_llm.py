@@ -10,7 +10,7 @@ from backend.llm import LiteLLMStructuredModel, StructuredCompletion
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerResult,
     LiteLLMSynthesis,
-    Passage,
+    Paragraph,
     SynthesisInput,
 )
 from backend.services.answer_verification.answer_verification import (
@@ -21,14 +21,14 @@ from backend.services.answer_verification.answer_verification import (
 
 @pytest.mark.parametrize("verification", [False, True])
 async def test_injected_model(verification):
-    passage = Passage("v:1:0", "v", "1", 0, "Magazine", "It began in 1844.")
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Magazine", "It began in 1844.")
     content = (
-        {"supported": True, "reason": "The passage gives 1844."}
+        {"supported": True, "reason": "The paragraph gives 1844."}
         if verification
         else {
             "short_answer": "1844",
             "explanation": "It began in 1844.",
-            "citation_ids": [passage.passage_id],
+            "citation_ids": [paragraph.paragraph_ref],
             "abstained": False,
         }
     )
@@ -55,13 +55,13 @@ async def test_injected_model(verification):
         adapter = LiteLLMVerification(model=model)
         result = await adapter.verify(
             VerificationInput(
-                "When?", AnswerResult("1844", "It began in 1844.", [passage])
+                "When?", AnswerResult("1844", "It began in 1844.", [paragraph])
             )
         )
         assert result.supported
     else:
         adapter = LiteLLMSynthesis(model=model)
-        result = await adapter.synthesize(SynthesisInput("When?", [passage]))
+        result = await adapter.synthesize(SynthesisInput("When?", [paragraph]))
         assert result.short_answer == "1844"
     assert adapter.model is model
     assert not isinstance(adapter, LiteLLMStructuredModel)

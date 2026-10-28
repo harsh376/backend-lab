@@ -28,11 +28,13 @@ async def main() -> None:
     client = await Client.connect(settings.temporal_address)
     async with AsyncElasticsearch(settings.elasticsearch_url) as es:
         activities = AnswerActivities(
-            kilt=KiltService(ElasticsearchKiltRepository(es, settings.kilt_index)),
-            synthesis=AnswerSynthesisService(
+            kilt_service=KiltService(
+                ElasticsearchKiltRepository(es, settings.kilt_index)
+            ),
+            synthesis_service=AnswerSynthesisService(
                 LiteLLMSynthesis(settings, observation_factory=observation)
             ),
-            verification=AnswerVerificationService(
+            verification_service=AnswerVerificationService(
                 LiteLLMVerification(settings, observation_factory=observation)
             ),
         )

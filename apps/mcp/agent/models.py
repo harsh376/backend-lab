@@ -6,7 +6,9 @@ from backend.budget import BudgetEntry
 # Re-export shared payloads to preserve the existing MCP import surface.
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerResult,
-    Passage,
+    ArticleCandidates,
+    ArticleEvidence,
+    Paragraph,
     SynthesisInput,
     VerificationResult,
 )
@@ -15,9 +17,11 @@ from backend.services.answer_verification.answer_verification import Verificatio
 __all__ = [
     "AnswerRequest",
     "AnswerResult",
+    "ArticleCandidates",
+    "ArticleEvidence",
     "FinalAnswerInput",
     "FinalAnswerOutput",
-    "Passage",
+    "Paragraph",
     "SynthesisInput",
     "VerificationInput",
 ]
@@ -26,7 +30,7 @@ __all__ = [
 @dataclass
 class AnswerRequest:
     question: str
-    limit: int = 5
+    limit: int = 10
     trace_context: dict[str, str] | None = None
     session_id: str | None = None
 
@@ -39,8 +43,8 @@ class AnswerRequest:
             raise ValueError("budget_usd must be finite and positive")
         if not self.question.strip():
             raise ValueError("question must not be empty")
-        if not 1 <= self.limit <= 10:
-            raise ValueError("limit must be between 1 and 10")
+        if not 1 <= self.limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
 
 
 @dataclass
@@ -64,7 +68,7 @@ class FinalSynthesisOutput:
 class FinalAnswerOutput:
     short_answer: str
     explanation: str
-    citations: list[Passage] = field(default_factory=list)
+    citations: list[Paragraph] = field(default_factory=list)
     abstained: bool = False
     synthesis: FinalSynthesisOutput = field(default_factory=FinalSynthesisOutput)
     verification: VerificationResult | None = None

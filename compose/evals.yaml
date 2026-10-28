@@ -1,4 +1,4 @@
-# Start after Temporal and the answer worker:
+# Start after Temporal and Elasticsearch (plus the answer worker for E2E evals):
 # docker compose -f compose/evals.yaml up --build
 
 services:
@@ -11,6 +11,8 @@ services:
         GIT_COMMIT_SHA: ${GIT_COMMIT_SHA:-}
     environment:
       TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
+      ELASTICSEARCH_URL: ${ELASTICSEARCH_URL:-http://elasticsearch:9200}
+      KILT_INDEX: ${KILT_INDEX:-kilt}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}

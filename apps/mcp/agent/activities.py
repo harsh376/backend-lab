@@ -4,11 +4,11 @@ from temporalio.exceptions import ApplicationError
 from apps.mcp.agent.models import (
     AnswerRequest,
     AnswerResult,
+    ArticleEvidence,
     FinalAnswerInput,
     FinalAnswerOutput,
     FinalBudgetOutput,
     FinalSynthesisOutput,
-    Passage,
     SynthesisInput,
 )
 from apps.mcp.telemetry import observe
@@ -29,31 +29,32 @@ from backend.services.kilt.kilt import KiltService
 class AnswerActivities:
     def __init__(
         self,
-        kilt: KiltService,
-        synthesis: AnswerSynthesisService,
-        verification: AnswerVerificationService | None = None,
+        kilt_service: KiltService,
+        synthesis_service: AnswerSynthesisService,
+        verification_service: AnswerVerificationService | None = None,
     ):
-        self.kilt = kilt
-        self.synthesis = synthesis
-        self.verification = verification
+        self.kilt_service = kilt_service
+        self.synthesis_service = synthesis_service
+        self.verification_service = verification_service
 
     @activity.defn(name="retrieve_answer_evidence")
     @observe(as_type="retriever")
-    async def aretrieve(self, request: AnswerRequest) -> list[Passage]:
+    async def aretrieve(self, request: AnswerRequest) -> list[ArticleEvidence]:
         request.validate()
-        passages = await self.kilt.aretrieve_passages(request.question, request.limit)
-        return [Passage(**item) for item in passages]
+        return await self.kilt_service.asearch_evidences(
+            request.question, request.limit
+        )
 
     @activity.defn(name="quote_synthesis")
     @observe()
     async def aquote_synthesis(self, data: SynthesisInput) -> Reservation:
-        adapter = self.synthesis.adapter
+        adapter = self.synthesis_service.adapter
         return adapter.model.quote(adapter._build_messages(data), SynthesisResponse)
 
     @activity.defn(name="quote_verification")
     @observe()
     async def aquote_verification(self, data: VerificationInput) -> Reservation:
-        adapter = self.verification.adapter
+        adapter = self.verification_service.adapter
         return adapter.model.quote(adapter._build_messages(data), VerificationResponse)
 
     @activity.defn(name="synthesize_answer")
@@ -61,7 +62,7 @@ class AnswerActivities:
     async def agenerate(self, data: SynthesisInput) -> AnswerResult:
         token = current_reservation.set(data.reservation)
         try:
-            return await self.synthesis.synthesize(data)
+            return await self.synthesis_service.synthesize(data)
         except ModelProviderError as error:
             raise ApplicationError(
                 str(error), type=error.error_type, non_retryable=True
@@ -72,11 +73,11 @@ class AnswerActivities:
     @activity.defn(name="verify_answer")
     @observe()
     async def averify(self, data: VerificationInput) -> AnswerResult:
-        if self.verification is None:
+        if self.verification_service is None:
             raise ApplicationError("Verifier is not configured.", non_retryable=True)
         token = current_reservation.set(data.reservation)
         try:
-            return await self.verification.verify(data)
+            return await self.verification_service.verify(data)
         except ModelProviderError as error:
             raise ApplicationError(
                 str(error), type=error.error_type, non_retryable=True

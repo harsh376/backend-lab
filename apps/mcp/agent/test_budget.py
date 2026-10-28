@@ -6,13 +6,13 @@ from temporalio.converter import DataConverter
 from temporalio.exceptions import ActivityError
 
 from apps.mcp.agent import workflow as module
-from apps.mcp.agent.models import AnswerRequest
+from apps.mcp.agent.models import AnswerRequest, ArticleEvidence
 from backend.budget import BudgetReport, Reservation, current_reservation
 from backend.config import Settings
 from backend.llm import LiteLLMStructuredModel, ModelProviderError
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerResult,
-    Passage,
+    Paragraph,
     SynthesisResponse,
     VerificationResult,
 )
@@ -49,15 +49,15 @@ def test_reservation_releases_unused_funds_and_reports_overrun():
 async def test_workflow_budget(
     monkeypatch, limit, synthesis_cost, failure, expected, dispatched
 ):
-    passage = Passage("v:1:0", "v", "1", 0, "Title", "Evidence")
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Evidence")
     candidate = AnswerResult(
-        "answer", "explanation", [passage], usage_cost_usd=synthesis_cost
+        "answer", "explanation", [paragraph], usage_cost_usd=synthesis_cost
     )
     calls = []
 
     async def execute(name, data, **kwargs):
         if name == "retrieve_answer_evidence":
-            return [passage]
+            return [ArticleEvidence("1", "v", "1", "Title", [paragraph.text])]
         if name == "record_answer_result":
             assert data.answer.budget is not None
             assert data.answer.budget.stop_reason == expected
@@ -106,7 +106,7 @@ async def test_workflow_budget(
 
 
 async def test_quote_failure_abstains_before_dispatch(monkeypatch):
-    passage = Passage("v:1:0", "v", "1", 0, "Title", "Evidence")
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Evidence")
     error = ActivityError(
         "unknown price",
         scheduled_event_id=1,
@@ -116,7 +116,13 @@ async def test_quote_failure_abstains_before_dispatch(monkeypatch):
         activity_id="quote",
         retry_state=None,
     )
-    execute = AsyncMock(side_effect=[[passage], error, None])
+    execute = AsyncMock(
+        side_effect=[
+            [ArticleEvidence("1", "v", "1", "Title", [paragraph.text])],
+            error,
+            None,
+        ]
+    )
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
     result = await module.AnswerWorkflow().run(AnswerRequest("q", budget_usd=1))
     assert result.abstained
@@ -275,12 +281,12 @@ async def test_unlimited_scope_skips_quotes_and_preserves_activity_failure(monke
 
 
 async def test_final_verification_overrun_preserves_verified_answer(monkeypatch):
-    passage = Passage("v:1:0", "v", "1", 0, "Title", "Evidence")
-    candidate = AnswerResult("answer", "explanation", [passage], usage_cost_usd=0.02)
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Evidence")
+    candidate = AnswerResult("answer", "explanation", [paragraph], usage_cost_usd=0.02)
     verified = AnswerResult(
         "answer",
         "explanation",
-        [passage],
+        [paragraph],
         usage_cost_usd=0.02,
         verification=VerificationResult(
             True, "supported", "provider", "model", usage_cost_usd=0.09
@@ -288,7 +294,7 @@ async def test_final_verification_overrun_preserves_verified_answer(monkeypatch)
     )
     execute = AsyncMock(
         side_effect=[
-            [passage],
+            [ArticleEvidence("1", "v", "1", "Title", [paragraph.text])],
             Reservation("model", 10, 0.04),
             candidate,
             Reservation("model", 10, 0.04),
@@ -300,7 +306,7 @@ async def test_final_verification_overrun_preserves_verified_answer(monkeypatch)
     result = await module.AnswerWorkflow().run(AnswerRequest("q", budget_usd=0.1))
     assert not result.abstained
     assert result.short_answer == "answer"
-    assert result.citations == [passage]
+    assert result.citations == [paragraph]
     assert result.verification.supported
     assert result.budget.stop_reason is None
     assert result.budget.overrun_usd == pytest.approx(0.01)
