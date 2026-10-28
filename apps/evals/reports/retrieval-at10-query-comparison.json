@@ -1,0 +1,1154 @@
+{
+  "dataset_sha256": "f37abbe8dfd9962907b5848a28b6b025567a7169c17d029cdbcd47db3690f89e",
+  "case_count": 45,
+  "variants": {
+    "baseline": {
+      "summary": {
+        "recall@5": 0.5111111111111111,
+        "recall@10": 0.5555555555555556,
+        "recall@50": 0.6111111111111112,
+        "recall@100": 0.6333333333333333
+      },
+      "cases": [
+        {
+          "case_id": "nq-dev-737118727843422688",
+          "question": "what year did bennie and the jets come out",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-343968022755473370",
+          "question": "kings and queens of england in the 1900s",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-3311962143974666464",
+          "question": "how much venom can a king cobra produce",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--7779084475859441741",
+          "question": "where did the northernmost land action of the american civil war occur",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-5150934530929664244",
+          "question": "who led the conquest of the incas in south america",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-7311273005529291652",
+          "question": "which layer of the osi model handles physical addressing",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-1096973491164113721",
+          "question": "what type of legal system is used in the uk",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev--9141276525854297532",
+          "question": "when did the three little pigs come out",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-8239463385147663167",
+          "question": "is jaffa cakes a biscuit or a cake",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--3431328641910966671",
+          "question": "who has the most followers on the instagram",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-8888584875401414044",
+          "question": "when does kubo and the two strings release",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--4909301147922823976",
+          "question": "who did puerto rico belong to before the u.s",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--2796541333611735730",
+          "question": "when's the last time army won the army navy game",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--6171145136739461013",
+          "question": "who sings the rap in baby by justin bieber",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--5579812134939807145",
+          "question": "who has the most rings in the nba right now 2017",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-9188394543955260450",
+          "question": "who sings it's my party and i cry if i want to",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--4392475526001139368",
+          "question": "who was first governor general of british india",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--1413547797481632580",
+          "question": "when was the r10+20 summit in rio de janeiro held",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-5098377822521811712",
+          "question": "when is season 2 of jessica jones being released",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-1864282688423355455",
+          "question": "when did the astros change from the national league to the american league",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-2098168902147822379",
+          "question": "where will the next summer and winter olympics be held",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-6229275979490979874",
+          "question": "is there a name for the at symbol",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-2545607965679456162",
+          "question": "whens the last time the patriots played the eagles",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev--8834996069938989383",
+          "question": "when did clifford the big red dog first air on tv",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-7210975046317501288",
+          "question": "what breed of cat has spots and stripes",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--5864856625806411702",
+          "question": "chief ministers of tamil nadu mentioned on wikipedia",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--6145868466021183224",
+          "question": "who played solomon in little house on the prairie",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--8491993331568056625",
+          "question": "when did world war 2 end in the pacific",
+          "recall@5": 0,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--7052052953885262396",
+          "question": "who are the permanent member of un security council",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--8947071197382617621",
+          "question": "when did dragon ball z air in australia",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae0345855429924de1b705f",
+          "question": "Which company owns the hotel on whose premises the Cotal Arena is located ?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "hotpotqa-dev-5a73b2cb55429908901be31a",
+          "question": "The members of the von Trapp musical group are related to which woman who wrote \"The Story of the Trapp Family Singers\"?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0.5,
+          "recall@100": 0.5
+        },
+        {
+          "case_id": "hotpotqa-dev-5a8b50475542997f31a41cd4",
+          "question": "Wing Chun starred Michelle Yeoh and a Hong Kong actor, martial artist, and film director who won what tournament multiple times?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae2c509554299492dc91c68",
+          "question": "What reward did the founder of Chick-Fil-A receive?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "hotpotqa-dev-5ade51515542992fa25da745",
+          "question": "Why did Rudolf Hess stop serving Hitler in 1941?",
+          "recall@5": 0.5,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a80a7f6554299485f598680",
+          "question": "Abraham Lincoln Neiman and his wife Carrie Marcus Neiman cofounded Neiman Marcus with Carrie's brother Herbert in which American city in 1907?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a85ecf25542991dd0999ec6",
+          "question": "Who plays opposite the double Olivier Award-winning English actress in the 2000 TV film following the relationship between \"Carry On\" film actors Sid James and Barbara Windsor?",
+          "recall@5": 0,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 0.5
+        },
+        {
+          "case_id": "hotpotqa-dev-5a8887a055429938390d3f72",
+          "question": "Which reservation is located in Hill and Chouteau and named after the principal leader of the Montana Chippewa-Cree?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ab499a55542996a3a969f9f",
+          "question": "Were Shadows Over Camelot and Battle Sheep released by the same publisher?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a8ba3ff55429971feec4744",
+          "question": "Stokely Webster has paintings can be found at the official residence of whom?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 0.5
+        },
+        {
+          "case_id": "hotpotqa-dev-5abfaa445542990832d3a18c",
+          "question": "When they were formed, did The Fatima Mansions or Nude have more members?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 0.5
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae17f1e5542990adbacf7a6",
+          "question": "In what region of Argentina is the city of Gualeguaychu located? ",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "hotpotqa-dev-5a78b209554299148911f93e",
+          "question": "Which playwright lived a longer life, Edward Albee or J. M. Barrie?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae50c345542993aec5ec11f",
+          "question": "What did Felix Salten originally title his most famous work?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 0.5
+        },
+        {
+          "case_id": "hotpotqa-dev-5a7a03225542996c55b2dcd5",
+          "question": "What railroad in which Challengers were most common was completed in 1915?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        }
+      ],
+      "query": {
+        "multi_match": {
+          "query": "<case.question>",
+          "fields": [
+            "wikipedia_title^3",
+            "text"
+          ]
+        }
+      }
+    },
+    "shared-stop-analyzer": {
+      "summary": {
+        "recall@5": 0.5,
+        "recall@10": 0.5222222222222223,
+        "recall@50": 0.6444444444444445,
+        "recall@100": 0.6666666666666666
+      },
+      "cases": [
+        {
+          "case_id": "nq-dev-737118727843422688",
+          "question": "what year did bennie and the jets come out",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-343968022755473370",
+          "question": "kings and queens of england in the 1900s",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-3311962143974666464",
+          "question": "how much venom can a king cobra produce",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--7779084475859441741",
+          "question": "where did the northernmost land action of the american civil war occur",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-5150934530929664244",
+          "question": "who led the conquest of the incas in south america",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-7311273005529291652",
+          "question": "which layer of the osi model handles physical addressing",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-1096973491164113721",
+          "question": "what type of legal system is used in the uk",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev--9141276525854297532",
+          "question": "when did the three little pigs come out",
+          "recall@5": 0,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-8239463385147663167",
+          "question": "is jaffa cakes a biscuit or a cake",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--3431328641910966671",
+          "question": "who has the most followers on the instagram",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-8888584875401414044",
+          "question": "when does kubo and the two strings release",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--4909301147922823976",
+          "question": "who did puerto rico belong to before the u.s",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--2796541333611735730",
+          "question": "when's the last time army won the army navy game",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--6171145136739461013",
+          "question": "who sings the rap in baby by justin bieber",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--5579812134939807145",
+          "question": "who has the most rings in the nba right now 2017",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-9188394543955260450",
+          "question": "who sings it's my party and i cry if i want to",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--4392475526001139368",
+          "question": "who was first governor general of british india",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--1413547797481632580",
+          "question": "when was the r10+20 summit in rio de janeiro held",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-5098377822521811712",
+          "question": "when is season 2 of jessica jones being released",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-1864282688423355455",
+          "question": "when did the astros change from the national league to the american league",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-2098168902147822379",
+          "question": "where will the next summer and winter olympics be held",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-6229275979490979874",
+          "question": "is there a name for the at symbol",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-2545607965679456162",
+          "question": "whens the last time the patriots played the eagles",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev--8834996069938989383",
+          "question": "when did clifford the big red dog first air on tv",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-7210975046317501288",
+          "question": "what breed of cat has spots and stripes",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--5864856625806411702",
+          "question": "chief ministers of tamil nadu mentioned on wikipedia",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--6145868466021183224",
+          "question": "who played solomon in little house on the prairie",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--8491993331568056625",
+          "question": "when did world war 2 end in the pacific",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--7052052953885262396",
+          "question": "who are the permanent member of un security council",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--8947071197382617621",
+          "question": "when did dragon ball z air in australia",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae0345855429924de1b705f",
+          "question": "Which company owns the hotel on whose premises the Cotal Arena is located ?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "hotpotqa-dev-5a73b2cb55429908901be31a",
+          "question": "The members of the von Trapp musical group are related to which woman who wrote \"The Story of the Trapp Family Singers\"?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0.5,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a8b50475542997f31a41cd4",
+          "question": "Wing Chun starred Michelle Yeoh and a Hong Kong actor, martial artist, and film director who won what tournament multiple times?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae2c509554299492dc91c68",
+          "question": "What reward did the founder of Chick-Fil-A receive?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "hotpotqa-dev-5ade51515542992fa25da745",
+          "question": "Why did Rudolf Hess stop serving Hitler in 1941?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a80a7f6554299485f598680",
+          "question": "Abraham Lincoln Neiman and his wife Carrie Marcus Neiman cofounded Neiman Marcus with Carrie's brother Herbert in which American city in 1907?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a85ecf25542991dd0999ec6",
+          "question": "Who plays opposite the double Olivier Award-winning English actress in the 2000 TV film following the relationship between \"Carry On\" film actors Sid James and Barbara Windsor?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a8887a055429938390d3f72",
+          "question": "Which reservation is located in Hill and Chouteau and named after the principal leader of the Montana Chippewa-Cree?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ab499a55542996a3a969f9f",
+          "question": "Were Shadows Over Camelot and Battle Sheep released by the same publisher?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a8ba3ff55429971feec4744",
+          "question": "Stokely Webster has paintings can be found at the official residence of whom?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 0.5
+        },
+        {
+          "case_id": "hotpotqa-dev-5abfaa445542990832d3a18c",
+          "question": "When they were formed, did The Fatima Mansions or Nude have more members?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae17f1e5542990adbacf7a6",
+          "question": "In what region of Argentina is the city of Gualeguaychu located? ",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "hotpotqa-dev-5a78b209554299148911f93e",
+          "question": "Which playwright lived a longer life, Edward Albee or J. M. Barrie?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae50c345542993aec5ec11f",
+          "question": "What did Felix Salten originally title his most famous work?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 0.5
+        },
+        {
+          "case_id": "hotpotqa-dev-5a7a03225542996c55b2dcd5",
+          "question": "What railroad in which Challengers were most common was completed in 1915?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        }
+      ],
+      "query": {
+        "multi_match": {
+          "query": "<case.question>",
+          "fields": [
+            "wikipedia_title^3",
+            "text"
+          ],
+          "analyzer": "stop"
+        }
+      }
+    },
+    "term-centric-stop": {
+      "summary": {
+        "recall@5": 0.6,
+        "recall@10": 0.6777777777777778,
+        "recall@50": 0.7888888888888889,
+        "recall@100": 0.8
+      },
+      "cases": [
+        {
+          "case_id": "nq-dev-737118727843422688",
+          "question": "what year did bennie and the jets come out",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-343968022755473370",
+          "question": "kings and queens of england in the 1900s",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-3311962143974666464",
+          "question": "how much venom can a king cobra produce",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--7779084475859441741",
+          "question": "where did the northernmost land action of the american civil war occur",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-5150934530929664244",
+          "question": "who led the conquest of the incas in south america",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-7311273005529291652",
+          "question": "which layer of the osi model handles physical addressing",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-1096973491164113721",
+          "question": "what type of legal system is used in the uk",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev--9141276525854297532",
+          "question": "when did the three little pigs come out",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-8239463385147663167",
+          "question": "is jaffa cakes a biscuit or a cake",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--3431328641910966671",
+          "question": "who has the most followers on the instagram",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-8888584875401414044",
+          "question": "when does kubo and the two strings release",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--4909301147922823976",
+          "question": "who did puerto rico belong to before the u.s",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--2796541333611735730",
+          "question": "when's the last time army won the army navy game",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--6171145136739461013",
+          "question": "who sings the rap in baby by justin bieber",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--5579812134939807145",
+          "question": "who has the most rings in the nba right now 2017",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-9188394543955260450",
+          "question": "who sings it's my party and i cry if i want to",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--4392475526001139368",
+          "question": "who was first governor general of british india",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--1413547797481632580",
+          "question": "when was the r10+20 summit in rio de janeiro held",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-5098377822521811712",
+          "question": "when is season 2 of jessica jones being released",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-1864282688423355455",
+          "question": "when did the astros change from the national league to the american league",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-2098168902147822379",
+          "question": "where will the next summer and winter olympics be held",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-6229275979490979874",
+          "question": "is there a name for the at symbol",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev-2545607965679456162",
+          "question": "whens the last time the patriots played the eagles",
+          "recall@5": 0,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--8834996069938989383",
+          "question": "when did clifford the big red dog first air on tv",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev-7210975046317501288",
+          "question": "what breed of cat has spots and stripes",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--5864856625806411702",
+          "question": "chief ministers of tamil nadu mentioned on wikipedia",
+          "recall@5": 0,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--6145868466021183224",
+          "question": "who played solomon in little house on the prairie",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--8491993331568056625",
+          "question": "when did world war 2 end in the pacific",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "nq-dev--7052052953885262396",
+          "question": "who are the permanent member of un security council",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "nq-dev--8947071197382617621",
+          "question": "when did dragon ball z air in australia",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae0345855429924de1b705f",
+          "question": "Which company owns the hotel on whose premises the Cotal Arena is located ?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "hotpotqa-dev-5a73b2cb55429908901be31a",
+          "question": "The members of the von Trapp musical group are related to which woman who wrote \"The Story of the Trapp Family Singers\"?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a8b50475542997f31a41cd4",
+          "question": "Wing Chun starred Michelle Yeoh and a Hong Kong actor, martial artist, and film director who won what tournament multiple times?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae2c509554299492dc91c68",
+          "question": "What reward did the founder of Chick-Fil-A receive?",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0.5,
+          "recall@100": 0.5
+        },
+        {
+          "case_id": "hotpotqa-dev-5ade51515542992fa25da745",
+          "question": "Why did Rudolf Hess stop serving Hitler in 1941?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a80a7f6554299485f598680",
+          "question": "Abraham Lincoln Neiman and his wife Carrie Marcus Neiman cofounded Neiman Marcus with Carrie's brother Herbert in which American city in 1907?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a85ecf25542991dd0999ec6",
+          "question": "Who plays opposite the double Olivier Award-winning English actress in the 2000 TV film following the relationship between \"Carry On\" film actors Sid James and Barbara Windsor?",
+          "recall@5": 0.5,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a8887a055429938390d3f72",
+          "question": "Which reservation is located in Hill and Chouteau and named after the principal leader of the Montana Chippewa-Cree?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ab499a55542996a3a969f9f",
+          "question": "Were Shadows Over Camelot and Battle Sheep released by the same publisher?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a8ba3ff55429971feec4744",
+          "question": "Stokely Webster has paintings can be found at the official residence of whom?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 0.5
+        },
+        {
+          "case_id": "hotpotqa-dev-5abfaa445542990832d3a18c",
+          "question": "When they were formed, did The Fatima Mansions or Nude have more members?",
+          "recall@5": 0.5,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae17f1e5542990adbacf7a6",
+          "question": "In what region of Argentina is the city of Gualeguaychu located? ",
+          "recall@5": 0,
+          "recall@10": 0,
+          "recall@50": 0,
+          "recall@100": 0
+        },
+        {
+          "case_id": "hotpotqa-dev-5a78b209554299148911f93e",
+          "question": "Which playwright lived a longer life, Edward Albee or J. M. Barrie?",
+          "recall@5": 1,
+          "recall@10": 1,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5ae50c345542993aec5ec11f",
+          "question": "What did Felix Salten originally title his most famous work?",
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@50": 1,
+          "recall@100": 1
+        },
+        {
+          "case_id": "hotpotqa-dev-5a7a03225542996c55b2dcd5",
+          "question": "What railroad in which Challengers were most common was completed in 1915?",
+          "recall@5": 0,
+          "recall@10": 0.5,
+          "recall@50": 0.5,
+          "recall@100": 1
+        }
+      ],
+      "query": {
+        "multi_match": {
+          "query": "<case.question>",
+          "fields": [
+            "wikipedia_title^3",
+            "text"
+          ],
+          "analyzer": "stop",
+          "type": "cross_fields"
+        }
+      }
+    }
+  },
+  "selection": {
+    "limit": null,
+    "tags": [
+      "page_verified"
+    ],
+    "retrieval_limit": 100,
+    "corpus_version": "kilt"
+  }
+}

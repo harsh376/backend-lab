@@ -112,24 +112,37 @@ class ElasticsearchKiltRepository:
         return indexed, skipped, failed
 
     async def asearch(self, query: str, limit: int = 10) -> list[KiltSearchHit]:
-        response = await self._client.search(
-            index=self._index_name,
-            query={
-                "multi_match": {
-                    "query": query,
-                    # A title match counts for more than a match in the body.
-                    "fields": ["wikipedia_title^3", "text"],
-                }
-            },
-            highlight={
+        search_options = {
+            "index": self._index_name,
+            "highlight": {
                 "fields": {"text": {"number_of_fragments": 3, "fragment_size": 200}},
                 # Elasticsearch refuses to highlight text longer than 1,000,000
                 # characters, so truncate very long articles instead of failing.
                 "max_analyzed_offset": 999_999,
             },
-            source=["wikipedia_title", "wikipedia_id", "text"],
-            size=limit,
+            "source": ["wikipedia_title", "wikipedia_id", "text"],
+            "size": limit,
+        }
+        match = {"query": query, "fields": ["wikipedia_title^3", "text"]}
+        response = await self._client.search(
+            query={
+                "multi_match": {
+                    **match,
+                    # Blend term statistics across title and body. Their index
+                    # analyzers differ, so an explicit shared analyzer is needed.
+                    # Drop common words without stemming the indexed terms.
+                    "type": "cross_fields",
+                    "analyzer": "stop",
+                }
+            },
+            **search_options,
         )
+        if not response["hits"]["hits"]:
+            # "To Be or Not to Be" contains only stop words. Retry with the
+            # original field analyzers rather than returning no candidates.
+            response = await self._client.search(
+                query={"multi_match": match}, **search_options
+            )
         return [
             KiltSearchHit(
                 id=hit["_id"],

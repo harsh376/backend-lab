@@ -79,3 +79,38 @@ async def test_search_returns_complete_ranked_articles_without_gets():
         "text",
     ]
     client.get.assert_not_awaited()
+
+
+async def test_search_preserves_stopword_only_titles_with_fallback():
+    client = AsyncMock()
+    client.search.side_effect = [
+        {"hits": {"hits": []}},
+        {
+            "hits": {
+                "hits": [
+                    {
+                        "_id": "42",
+                        "_score": 1.0,
+                        "_source": {
+                            "wikipedia_title": "To Be or Not to Be",
+                            "text": ["A comedy film."],
+                        },
+                    }
+                ]
+            }
+        },
+    ]
+    hits = await ElasticsearchKiltRepository(client).asearch("to be or not to be", 5)
+    assert [hit.title for hit in hits] == ["To Be or Not to Be"]
+    assert hits[0].paragraphs == ("A comedy film.",)
+    assert client.search.await_count == 2
+    fallback = client.search.call_args.kwargs
+    assert "analyzer" not in fallback["query"]["multi_match"]
+    assert fallback["size"] == 5
+
+
+async def test_search_returns_empty_when_fallback_also_has_no_matches():
+    client = AsyncMock()
+    client.search.return_value = {"hits": {"hits": []}}
+    assert await ElasticsearchKiltRepository(client).asearch("absent") == []
+    assert client.search.await_count == 2
