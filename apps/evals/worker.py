@@ -16,6 +16,9 @@ from apps.evals.workflow import TASK_QUEUE, EvalWorkflow
 from apps.mcp.telemetry import client as telemetry_client
 from backend.config import Settings
 from backend.repositories.kilt import ElasticsearchKiltRepository
+from backend.services.answer_synthesis.answer_synthesis import (
+    create_synthesis_service,
+)
 from backend.services.kilt.kilt import KiltService
 
 
@@ -25,8 +28,11 @@ async def main() -> None:
         settings.temporal_address, data_converter=pydantic_data_converter
     )
     async with AsyncElasticsearch(settings.elasticsearch_url) as es:
+        # Passage recall scores the input the answer worker's synthesis receives,
+        # so context settings must match the answer worker's.
         retrieval = RetrievalEvalActivities(
-            KiltService(ElasticsearchKiltRepository(es, settings.kilt_index))
+            KiltService(ElasticsearchKiltRepository(es, settings.kilt_index)),
+            create_synthesis_service(settings),
         )
         worker = Worker(
             client,

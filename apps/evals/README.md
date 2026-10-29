@@ -370,23 +370,32 @@ no hits scores zero. Unanswerable cases or cases without reference evidence are
 unscored. Compare the same cases, corpus, cutoffs, and scored-case coverage.
 
 `passage_recall@K` measures the fraction of distinct reference paragraphs present
-in the top K retrieved articles, taking the maximum across alternative evidence
-sets. Accepted passages come from the inclusive paragraph ranges in
-`evidence_sets`; overlapping ranges and repeated paragraphs count once. The cutoff
-K still counts articles, since retrieval returns complete articles. A retrieved
-page earns passage credit only for paragraph offsets actually present in that
-article. This measures passage availability before synthesis context selection.
-Passage scores require `passage_verified`; page-only verified cases remain scored
-for page recall and are skipped for passage recall. The same cutoffs, macro
-averages, scored/skipped coverage, Langfuse reporting, and export filters apply
-(use `score_field="passage_recall@50"`). Results retain paragraph counts aligned
-with ranked page IDs, without article text. Older results without these counts
-remain unscored for passage recall.
+in the **synthesis input**: the eval passes the top K retrieved articles through
+the configured synthesis service's `prepare_input` (the same selection the answer
+worker applies before quoting and generation) and scores the paragraphs it keeps,
+taking the maximum across alternative evidence sets. Each cutoff simulates a
+retrieval limit of K, so compact mode packs each cutoff independently. Accepted
+passages come from the inclusive paragraph ranges in `evidence_sets`; overlapping
+ranges and repeated paragraphs count once. In `full` mode every retrieved
+paragraph is kept; in `compact` mode a reference paragraph in a retrieved article
+earns no credit unless it survives ranking and the
+`MCP_ANSWER_CONTEXT_MAX_TOKENS`/`MCP_ANSWER_CONTEXT_MAX_PARAGRAPHS` budget, so
+configure the eval worker's context settings to match the answer worker. Results
+record `synthesis_service` and per-cutoff `synthesis_paragraph_counts`, without
+article text. Passage scores require `passage_verified`; page-only verified cases
+remain scored for page recall and are skipped for passage recall. The same
+cutoffs, macro averages, scored/skipped coverage, Langfuse reporting, and export
+filters apply (use `score_field="passage_recall@50"`). Scores from
+`article-passage-recall-v3` measured availability in whole retrieved articles and
+are not comparable.
 
 Retrieval and scoring execute inside one eval activity using the same
 `KiltService.asearch_evidences` path as the answer worker. Full article text never
 enters Temporal activity outputs or workflow results for retrieval evals. No
-answer worker or model credentials are needed. The eval worker needs Elasticsearch:
+answer worker is needed and no model is called; synthesis preparation only counts
+tokens for `MCP_ANSWER_MODEL`, but the worker builds that model's client at
+startup, so OpenAI/Anthropic models still require their API key to be set. The
+eval worker needs Elasticsearch:
 configure `ELASTICSEARCH_URL` and `KILT_INDEX` (Compose defaults to
 `http://elasticsearch:9200` and `kilt`). Rebuild/restart the MCP server and eval
 worker to expose the tool. Historical runs are not backfilled.

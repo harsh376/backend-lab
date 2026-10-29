@@ -9,13 +9,17 @@ from apps.evals.activities import RetrievalEvalActivities
 from apps.evals.datasets.dataset import load_cases
 from apps.evals.evaluators.retrieval import (
     evaluate_retrieval,
-    passage_recall_at_k,
+    passage_recall,
     recall_at_k,
     summarize_retrieval,
 )
 from apps.evals.models import Evidence
 from apps.evals.workflow import EvalCaseRequest
 from backend.domains.kilt import KiltSearchHit
+from backend.services.answer_synthesis.answer_synthesis import (
+    ExtractiveSynthesisService,
+    SynthesisInput,
+)
 from backend.services.kilt.kilt import KiltService
 
 
@@ -30,7 +34,10 @@ def retrieval_activity(monkeypatch):
         lambda: Mock(workflow_id="retrieval-run", workflow_run_id="execution"),
     )
     repository = Mock(corpus_version="test-index", asearch=AsyncMock(return_value=[]))
-    return RetrievalEvalActivities(KiltService(repository)), repository
+    return (
+        RetrievalEvalActivities(KiltService(repository), ExtractiveSynthesisService()),
+        repository,
+    )
 
 
 @pytest.fixture
@@ -174,9 +181,9 @@ async def test_retrieval_activity_uses_production_retriever_and_bounds_output(
         "status": "COMPLETED",
         "result": {
             "ranked_page_ids": ["c"],
-            "ranked_paragraph_counts": [1],
             "limit": 50,
             "corpus_version": "test-index",
+            "synthesis_service": "ExtractiveSynthesisService",
         },
     }
     scores = result["evaluators"]["retrieval_recall_at_k"]
@@ -184,6 +191,7 @@ async def test_retrieval_activity_uses_production_retriever_and_bounds_output(
     assert scores["recall@100"] is None
     assert scores["passage_recall@50"] == 0.5
     assert scores["passage_recall@100"] is None
+    assert scores["synthesis_paragraph_counts"] == {"5": 1, "10": 1, "50": 1}
     assert result["elapsed_seconds"] >= 0
     encoded = await pydantic_data_converter.encode([result])
     assert len(encoded[0].data) < 10_000
@@ -278,16 +286,14 @@ def test_passage_recall_counts_inclusive_ranges_overlaps_and_alternatives(case):
             ]
         }
     )
-    articles = [("a", 4), ("b", 3), ("c", 1)]
-    assert passage_recall_at_k(case, articles, 1) == 0.8
-    assert passage_recall_at_k(case, articles, 2) == 1
-    assert passage_recall_at_k(case, [("a", 2)], 5) == 0.4
-    assert passage_recall_at_k(case, [("c", 1)], 5) == 1
-    assert passage_recall_at_k(case, [("a", 2), ("a", 2)], 5) == 0.4
-    assert passage_recall_at_k(case, [("x", 10)], 5) == 0
-    assert passage_recall_at_k(case, [], 5) == 0
-    with pytest.raises(ValueError, match="positive"):
-        passage_recall_at_k(case, articles, 0)
+    a = {("a", i) for i in range(4)}
+    assert passage_recall(case, a) == 0.8
+    assert passage_recall(case, a | {("b", 2)}) == 1
+    assert passage_recall(case, {("a", 0), ("a", 1)}) == 0.4
+    assert passage_recall(case, {("c", 0)}) == 1
+    assert passage_recall(case, {("b", 0), ("b", 1)}) == 0
+    assert passage_recall(case, {("x", 0)}) == 0
+    assert passage_recall(case, set()) == 0
 
 
 @pytest.mark.parametrize(
@@ -299,31 +305,67 @@ def test_passage_recall_counts_inclusive_ranges_overlaps_and_alternatives(case):
     ],
 )
 def test_passage_recall_requires_verified_applicable_evidence(case, update):
-    assert passage_recall_at_k(case.model_copy(update=update), [("c", 2)], 5) is None
+    assert passage_recall(case.model_copy(update=update), {("c", 0)}) is None
 
 
-def test_passage_scoring_cutoffs_and_missing_metadata(case):
+def test_passage_scoring_cutoffs_and_missing_synthesis_input(case):
     candidates = {
         "ranked_page_ids": ["c"],
-        "ranked_paragraph_counts": [1],
         "limit": 5,
         "corpus_version": "test-index",
     }
-    scores = evaluate_retrieval(case, candidates)
+    passages = {5: {("c", 0)}}
+    scores = evaluate_retrieval(case, candidates, passages)
     assert scores["recall@5"] == 1
     assert scores["passage_recall@5"] == 0.5
     assert scores["passage_recall@10"] is None
     assert scores["passage_recall_reason"] is None
+    assert scores["synthesis_paragraph_counts"] == {"5": 1}
     assert evaluate_retrieval(case, None)["passage_recall@5"] is None
-    unverified = evaluate_retrieval(case.model_copy(update={"tags": []}), candidates)
+    unverified = evaluate_retrieval(
+        case.model_copy(update={"tags": []}), candidates, passages
+    )
     assert unverified["recall@5"] == 1
     assert unverified["passage_recall@5"] is None
     assert "passage-verified" in unverified["passage_recall_reason"]
-    del candidates["ranked_paragraph_counts"]
     historical = evaluate_retrieval(case, candidates)
     assert historical["recall@5"] == 1
     assert historical["passage_recall@5"] is None
-    assert "paragraph counts" in historical["passage_recall_reason"]
+    assert "synthesis input" in historical["passage_recall_reason"]
+
+
+async def test_passage_recall_scores_prepared_synthesis_input_per_cutoff(
+    case, retrieval_activity
+):
+    """A retrieved reference paragraph dropped by preparation earns no credit."""
+    _, repository = retrieval_activity
+    repository.asearch.return_value = [
+        KiltSearchHit(
+            id=page,
+            wikipedia_id=page,
+            title=page,
+            paragraphs=("first", "second"),
+            score=1,
+        )
+        for page in ["x"] * 5 + ["c"]
+    ]
+    prepared = []
+
+    class FirstParagraphOnly(ExtractiveSynthesisService):
+        def prepare_input(self, data):
+            prepared.append(len(data.evidences))
+            paragraphs = [e.citation_paragraphs()[0] for e in data.evidences]
+            return SynthesisInput(data.question, paragraphs)
+
+    activity = RetrievalEvalActivities(KiltService(repository), FirstParagraphOnly())
+    request = EvalCaseRequest(case, eval_type="retrieval", retrieval_limit=10)
+    scores = (await activity.evaluate(request))["evaluators"]["retrieval_recall_at_k"]
+    assert prepared == [5, 6]
+    assert scores["recall@5"] == 0
+    assert scores["recall@10"] == 1
+    assert scores["passage_recall@5"] == 0
+    assert scores["passage_recall@10"] == 0.5
+    assert scores["synthesis_paragraph_counts"] == {"5": 1, "10": 2}
 
 
 def test_passage_summary_retains_zero_and_excludes_unscored():

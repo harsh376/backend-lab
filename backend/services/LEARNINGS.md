@@ -96,9 +96,9 @@ class Title:
 @dataclass(frozen=True)
 class Reservation:
     id_: ReservationID
-    title_id: TitleID          # link lives on the child
+    title_id: TitleID  # link lives on the child
     patron_id: PatronID
-    status: Status             # WAITING | RESERVED | COLLECTED | CANCELED
+    status: Status  # WAITING | RESERVED | COLLECTED | CANCELED
 
 
 class WaitlistService:
@@ -111,7 +111,8 @@ class WaitlistService:
 
     def _for_title(self, title_id: TitleID, *statuses: Status) -> list[Reservation]:
         return [
-            r for r in self._reservations.values()
+            r
+            for r in self._reservations.values()
             if r.title_id == title_id and r.status in statuses
         ]
 ```
@@ -204,7 +205,7 @@ try:
     result = await self._repository.op(...)
 except KnownError:
     self._record("op", "not_found", id_, request_id)
-    raise                      # bare raise keeps the traceback
+    raise  # bare raise keeps the traceback
 self._record("op", "success", id_, request_id)
 return result
 ```
@@ -257,10 +258,18 @@ type Status = Literal["ACTIVE", "DONE", "CANCELLED"]
 
 # --- errors: one base, specific subclasses (optionally also ValueError) ---
 class ServiceError(Exception): ...
+
+
 class ValidationError(ServiceError, ValueError): ...
+
+
 class NotFoundError(ServiceError): ...
+
+
 class AlreadyExistsError(ServiceError): ...
-class ConflictError(ServiceError): ...          # bad transition / idempotency
+
+
+class ConflictError(ServiceError): ...  # bad transition / idempotency
 
 
 # --- immutable records: safe to return and to cache ---
@@ -291,7 +300,7 @@ class ItemService:
     def cancel(self, item_id: ItemID) -> Item:
         item = self._get(item_id)
         if item.status == "CANCELLED":
-            return item                               # idempotent terminal no-op
+            return item  # idempotent terminal no-op
         if item.status != "ACTIVE":
             raise ConflictError(f"cannot cancel {item.status}")
         item = self._items[item_id] = replace(item, status="CANCELLED")
@@ -306,12 +315,12 @@ class ItemService:
 
 
 def _require_str(value, name: str) -> None:
-    if not isinstance(value, str) or not value:        # add .strip() if blank is invalid
+    if not isinstance(value, str) or not value:  # add .strip() if blank is invalid
         raise ValidationError(f"{name} must be a nonempty string")
 
 
 def _require_int(value, name: str, *, minimum: int) -> None:
-    if type(value) is not int or value < minimum:       # rejects bool
+    if type(value) is not int or value < minimum:  # rejects bool
         raise ValidationError(f"{name} must be an integer >= {minimum}")
 
 
@@ -328,8 +337,10 @@ class Page[T]:
     items: tuple[T, ...]
     total: int
 
-def search(self, query="", category=None, sort_by="name", order="asc",
-           offset=0, limit=20) -> Page[Item]:
+
+def search(
+    self, query="", category=None, sort_by="name", order="asc", offset=0, limit=20
+) -> Page[Item]:
     _require_choice(sort_by, "sort_by", ("name", "price"))
     _require_choice(order, "order", ("asc", "desc"))
     _require_int(offset, "offset", minimum=0)
@@ -337,14 +348,14 @@ def search(self, query="", category=None, sort_by="name", order="asc",
 
     q = query.casefold()
     matches = [
-        p for p in self._items.values()
-        if q in p.name.casefold()
-        and (category is None or p.category == category)
+        p
+        for p in self._items.values()
+        if q in p.name.casefold() and (category is None or p.category == category)
     ]
-    matches.sort(key=lambda p: p.id_)                             # tie-break (always asc)
+    matches.sort(key=lambda p: p.id_)  # tie-break (always asc)
     key = (lambda p: p.name.casefold()) if sort_by == "name" else (lambda p: p.price)
-    matches.sort(key=key, reverse=order == "desc")                # stable
-    return Page(tuple(matches[offset:offset + limit]), total=len(matches))
+    matches.sort(key=key, reverse=order == "desc")  # stable
+    return Page(tuple(matches[offset : offset + limit]), total=len(matches))
 ```
 
 ### 5.3 Idempotent mutation
@@ -356,6 +367,7 @@ class RequestRecord:
     payload: Hashable
     response: object
 
+
 def _replay(self, request_id, op, payload):
     rec = self._requests.get(request_id)
     if rec is None:
@@ -364,13 +376,14 @@ def _replay(self, request_id, op, payload):
         raise ConflictError("request_id reused with different operation/payload")
     return rec.response
 
+
 def reserve(self, items: dict[str, int], request_id: str) -> Reservation:
     _require_str(request_id, "request_id")
     payload = frozenset(items.items())
     if (cached := self._replay(request_id, "reserve", payload)) is not None:
         return cached
-    plan = self._validate_items(items)            # raises -> nothing recorded
-    result = self._apply_reserve(plan)            # cannot fail
+    plan = self._validate_items(items)  # raises -> nothing recorded
+    result = self._apply_reserve(plan)  # cannot fail
     self._requests[request_id] = RequestRecord("reserve", payload, result)
     return result
 ```
@@ -383,8 +396,10 @@ def import_rows(self, rows, *, atomic=False, dry_run=False) -> ImportResult:
     valid, errors = {}, {}
     for n, row in enumerate(rows, start=1):
         product, errs = self._validate(row)
-        if errs: errors[n] = errs
-        else:    valid[n] = product
+        if errs:
+            errors[n] = errs
+        else:
+            valid[n] = product
     # cross-row rules (duplicates) -> move rows from valid to errors
     to_create = [p for p in valid.values() if p.id_ not in self._items]
     to_update = [p for p in valid.values() if p.id_ in self._items]
@@ -392,8 +407,11 @@ def import_rows(self, rows, *, atomic=False, dry_run=False) -> ImportResult:
     if apply:
         for p in to_create + to_update:
             self._items[p.id_] = p
-    return ImportResult(errors=..., planned=(len(to_create), len(to_update)),
-                        applied=(len(to_create), len(to_update)) if apply else (0, 0))
+    return ImportResult(
+        errors=...,
+        planned=(len(to_create), len(to_update)),
+        applied=(len(to_create), len(to_update)) if apply else (0, 0),
+    )
 ```
 
 ### 5.5 Time-driven processor
@@ -408,13 +426,13 @@ def run_due(self, now: int) -> list[JobID]:
     due = sorted(
         (j for j in self._jobs.values() if j.status == "pending" and j.run_at <= now),
         key=lambda j: (j.run_at, j.id_),
-    )                                         # snapshot first, then mutate
+    )  # snapshot first, then mutate
     ran = []
     for job in due:
         try:
             self._executor(deepcopy(job.payload))
         except Exception as e:
-            job = self._on_failure(job, now, e)   # retry at now + delay, or terminal
+            job = self._on_failure(job, now, e)  # retry at now + delay, or terminal
         else:
             job = replace(job, status="succeeded", attempts=job.attempts + 1)
         self._jobs[job.id_] = job
@@ -427,18 +445,22 @@ def run_due(self, now: int) -> list[JobID]:
 ```python
 class LRUCache:
     def __init__(self, capacity: int):
-        if capacity <= 0: raise ValueError("capacity must be positive")
+        if capacity <= 0:
+            raise ValueError("capacity must be positive")
         self._cap, self._d = capacity, OrderedDict()
 
     def get(self, key):
-        if key not in self._d: raise KeyError(key)
+        if key not in self._d:
+            raise KeyError(key)
         self._d.move_to_end(key)
         return self._d[key]
 
     def set(self, key, value):
-        if key in self._d: self._d.move_to_end(key)
+        if key in self._d:
+            self._d.move_to_end(key)
         self._d[key] = value
-        if len(self._d) > self._cap: self._d.popitem(last=False)
+        if len(self._d) > self._cap:
+            self._d.popitem(last=False)
 ```
 
 ### 5.7 DFS with memo and cycle detection (iterative)
@@ -449,12 +471,14 @@ def evaluate(self, root_id):
     stack = [(root_id, False)]
     while stack:
         node, expanded = stack.pop()
-        if node in cache: continue
+        if node in cache:
+            continue
         if expanded:
             cache[node] = combine(cache[d] for d in deps(node))
             visiting.discard(node)
             continue
-        if node in visiting: raise CycleError(node)
+        if node in visiting:
+            raise CycleError(node)
         visiting.add(node)
         stack.append((node, True))
         stack.extend((d, False) for d in deps(node) if d not in cache)
@@ -483,14 +507,18 @@ def evaluate(self, root_id):
 ```python
 @pytest.fixture
 def service():
-    s = InventoryService(); s.receive_stock("apple", 5); return s
+    s = InventoryService()
+    s.receive_stock("apple", 5)
+    return s
+
 
 @pytest.mark.parametrize("bad", [0, -1, True, 1.5, "3"])
 def test_rejects_bad_quantity(service, bad):
     before = service.get_stock("apple")
     with pytest.raises(ValidationError, match="quantity"):
         service.receive_stock("apple", bad)
-    assert service.get_stock("apple") == before          # state preserved
+    assert service.get_stock("apple") == before  # state preserved
+
 
 def test_returned_record_is_immutable(service):
     with pytest.raises(FrozenInstanceError):

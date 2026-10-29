@@ -13,7 +13,11 @@ from temporalio.exceptions import ApplicationError
 from apps.evals.datasets.dataset import load_cases, select_cases
 from apps.evals.datasets.hosted_dataset import HostedDatasetService
 from apps.evals.evaluators.answers import evaluate_correctness
-from apps.evals.evaluators.retrieval import RETRIEVAL_METRICS, evaluate_retrieval
+from apps.evals.evaluators.retrieval import (
+    RECALL_KS,
+    RETRIEVAL_METRICS,
+    evaluate_retrieval,
+)
 from apps.evals.experiments import (
     case_trace_context,
     experiment_item,
@@ -25,6 +29,10 @@ from apps.mcp.agent.models import AnswerRequest
 from apps.mcp.agent.workflow import AnswerWorkflow
 from apps.mcp.telemetry import current_context, observation, observe
 from backend.config import Settings
+from backend.services.answer_synthesis.answer_synthesis import (
+    AnswerSynthesisService,
+    SynthesisInput,
+)
 from backend.services.kilt.kilt import KiltService
 
 
@@ -233,8 +241,25 @@ async def _generate_answer(
 
 
 class RetrievalEvalActivities:
-    def __init__(self, kilt_service: KiltService):
+    def __init__(
+        self, kilt_service: KiltService, synthesis_service: AnswerSynthesisService
+    ):
         self.kilt_service = kilt_service
+        self.synthesis_service = synthesis_service
+
+    def _synthesis_passages(self, question, evidences, limit):
+        """Prepare synthesis input as if retrieval had returned only the top k."""
+        passages = {}
+        for k in RECALL_KS:
+            if k > limit:
+                break
+            prepared = self.synthesis_service.prepare_input(
+                SynthesisInput(question, evidences=evidences[:k])
+            )
+            passages[k] = {
+                (p.wikipedia_id, p.paragraph_id) for p in prepared.citation_paragraphs()
+            }
+        return passages
 
     @activity.defn(name="evaluate_retrieval_case")
     @observe(
@@ -259,17 +284,25 @@ class RetrievalEvalActivities:
                     case.question, request.retrieval_limit
                 )
             elapsed = asyncio.get_running_loop().time() - started
+            synthesis_passages = await asyncio.to_thread(
+                self._synthesis_passages,
+                case.question,
+                evidences,
+                request.retrieval_limit,
+            )
             candidates = {
                 "ranked_page_ids": [e.wikipedia_id for e in evidences],
-                "ranked_paragraph_counts": [len(e.paragraphs) for e in evidences],
                 "limit": request.retrieval_limit,
                 "corpus_version": self.kilt_service.corpus_version,
+                "synthesis_service": type(self.synthesis_service).__name__,
             }
             result = {
                 "case_id": case.case_id,
                 "output": {"status": "COMPLETED", "result": candidates},
                 "evaluators": {
-                    "retrieval_recall_at_k": evaluate_retrieval(case, candidates)
+                    "retrieval_recall_at_k": evaluate_retrieval(
+                        case, candidates, synthesis_passages
+                    )
                 },
                 "elapsed_seconds": elapsed,
                 **report,

@@ -475,7 +475,7 @@ def test_compact_selects_deep_evidence_from_tenth_article_and_preserves_offsets(
     )
     data = SynthesisInput("When did the magazine begin?", evidences=articles)
     adapter = compact_adapter()
-    prepared = adapter._prepare_input(data)
+    prepared = adapter.prepare_input(data)
     assert any(p.paragraph_ref == "v:9:32" for p in prepared.paragraphs)
     assert len(prepared.paragraphs) <= 5
     assert len({p.text for p in prepared.paragraphs}) == len(prepared.paragraphs)
@@ -496,7 +496,7 @@ def test_compact_budget_skips_oversized_paragraph_without_truncating_citations()
     ]
     adapter = compact_adapter(mcp_answer_context_max_tokens=700)
     data = SynthesisInput("When did the magazine begin?", paragraphs)
-    prepared = adapter._prepare_input(data)
+    prepared = adapter.prepare_input(data)
     assert prepared.paragraphs == [paragraphs[1]]
     assert prepared.paragraphs[0] is paragraphs[1]
     assert adapter._context_tokens(prepared) <= 700
@@ -510,14 +510,10 @@ def test_compact_keeps_multiple_articles_and_original_paragraph_order():
         Paragraph("v:2:4", "v", "2", 4, "Two", "Beta publisher is Acme."),
     ]
     adapter = compact_adapter(mcp_answer_context_max_paragraphs=2)
-    prepared = adapter._prepare_input(
-        SynthesisInput("Alpha Beta publisher", paragraphs)
-    )
+    prepared = adapter.prepare_input(SynthesisInput("Alpha Beta publisher", paragraphs))
     assert {p.wikipedia_id for p in prepared.paragraphs} == {"1", "2"}
     adapter.context_max_paragraphs = 5
-    prepared = adapter._prepare_input(
-        SynthesisInput("Alpha Beta publisher", paragraphs)
-    )
+    prepared = adapter.prepare_input(SynthesisInput("Alpha Beta publisher", paragraphs))
     assert [p.paragraph_id for p in prepared.paragraphs if p.wikipedia_id == "1"] == [
         2,
         8,
@@ -537,7 +533,7 @@ async def test_compact_rejects_citation_to_retrieved_but_omitted_paragraph(
     )
     adapter = compact_adapter(mcp_answer_context_max_paragraphs=1)
     data = SynthesisInput("When did magazine magazine begin?", [evidence, other])
-    selected = adapter._prepare_input(data).paragraphs
+    selected = adapter.prepare_input(data).paragraphs
     omitted = next(p for p in [evidence, other] if p not in selected)
     content = json.loads(completion.return_value.choices[0].message.content)
     content["citation_ids"] = [omitted.paragraph_ref]
@@ -567,7 +563,7 @@ def test_full_mode_bypasses_compact_limits(evidence):
     adapter = FullArticleSynthesisService(config)
     paragraphs = [evidence, replace(evidence, paragraph_ref="v:1:1", paragraph_id=1)]
     data = SynthesisInput("When?", paragraphs)
-    assert adapter._prepare_input(data) is data
+    assert adapter.prepare_input(data) is data
     payload = json.loads(adapter._build_messages(data)[1]["content"])
     assert len(payload["articles"][0]["paragraphs"]) == 2
 
@@ -600,4 +596,4 @@ async def test_ollama_quote_and_generation_use_identical_article_context(
         adapter.model.quote.call_args.args[0] == completion.call_args.kwargs["messages"]
     )
     if isinstance(adapter, CompactArticleSynthesisService):
-        assert adapter._context_tokens(adapter._prepare_input(data)) <= 2000
+        assert adapter._context_tokens(adapter.prepare_input(data)) <= 2000

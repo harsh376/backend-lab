@@ -91,6 +91,10 @@ class AnswerSynthesisService(ABC):
             )
         return result
 
+    def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
+        """Select the exact evidence a synthesis call receives after retrieval."""
+        return data
+
     @abstractmethod
     async def _synthesize(self, data: SynthesisInput) -> AnswerResult: ...
 
@@ -167,7 +171,7 @@ class ModelAnswerSynthesisService(AnswerSynthesisService):
         self.model = model
 
     async def _synthesize(self, data: SynthesisInput) -> AnswerResult:
-        data = await asyncio.to_thread(self._prepare_input, data)
+        data = await asyncio.to_thread(self.prepare_input, data)
         if not data.citation_paragraphs():
             return AnswerResult(
                 "",
@@ -194,10 +198,10 @@ class ModelAnswerSynthesisService(AnswerSynthesisService):
 
     def _build_messages(self, data: SynthesisInput) -> list[dict[str, str]]:
         # Quotes and generation use identical deterministic selection and packing.
-        return self._serialize_messages(self._prepare_input(data))
+        return self._serialize_messages(self.prepare_input(data))
 
     @abstractmethod
-    def _prepare_input(self, data: SynthesisInput) -> SynthesisInput:
+    def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
         """Select the exact evidence used for quoting and generation."""
         ...
 
@@ -306,7 +310,7 @@ class FullArticleSynthesisService(ModelAnswerSynthesisService):
     system_prompt = FULL_SYSTEM_PROMPT
     prompt_version = PROMPT_VERSION
 
-    def _prepare_input(self, data: SynthesisInput) -> SynthesisInput:
+    def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
         return data
 
 
@@ -328,7 +332,7 @@ class CompactArticleSynthesisService(ModelAnswerSynthesisService):
         self.context_max_tokens = context_settings.mcp_answer_context_max_tokens
         self.context_max_paragraphs = context_settings.mcp_answer_context_max_paragraphs
 
-    def _prepare_input(self, data: SynthesisInput) -> SynthesisInput:
+    def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
         paragraphs = [
             p
             for p in data.citation_paragraphs()
