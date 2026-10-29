@@ -175,6 +175,7 @@ async def run_evals(
     timeout: float | None = None,
     experiment_name: str | None = None,
     hosted_dataset: str | None = None,
+    verification_enabled: bool = True,
 ) -> dict:
     """Start dataset evals through AnswerWorkflow directly. Poll get_evals.
 
@@ -184,6 +185,7 @@ async def run_evals(
     Use case_id to select an item, or tags to filter metadata.
     Pass tags=[] to disable tag filtering. Hosted datasets default to no tag filter.
     Each case has independent, linked eval and answer traces.
+    Set verification_enabled=false to evaluate synthesis without verification.
     timeout bounds each answer workflow. Its default is read from Settings
     at submission time.
     Set experiment_name for a readable Langfuse label; omitted uses Temporal IDs.
@@ -191,6 +193,7 @@ async def run_evals(
     settings = Settings()
     request = EvalRunRequest(
         case_id=case_id,
+        verification_enabled=verification_enabled,
         limit=limit,
         tags=(["page_verified"] if hosted_dataset is None else [])
         if tags is None

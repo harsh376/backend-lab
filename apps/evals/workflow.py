@@ -27,6 +27,7 @@ class EvalRunRequest:
     eval_type: Literal["answer", "retrieval"] = "answer"
     retrieval_limit: int = 100
     timeout_settings: dict[str, float | int] | None = None
+    verification_enabled: bool = True
 
     def __post_init__(self) -> None:
         settings = Settings.from_timeout_snapshot(self.timeout_settings)
@@ -65,6 +66,7 @@ class EvalCaseRequest:
     eval_type: Literal["answer", "retrieval"] = "answer"
     retrieval_limit: int = 100
     timeout_settings: dict[str, float | int] | None = None
+    verification_enabled: bool = True
 
     def __post_init__(self) -> None:
         settings = Settings.from_timeout_snapshot(self.timeout_settings)
@@ -107,6 +109,7 @@ class EvalWorkflow:
                     else "evaluate_mcp_case",
                     EvalCaseRequest(
                         case=case,
+                        verification_enabled=request.verification_enabled,
                         timeout=request.timeout,
                         trace_context=request.trace_context,
                         experiment_name=request.experiment_name,

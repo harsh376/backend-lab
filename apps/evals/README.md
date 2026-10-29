@@ -49,6 +49,11 @@ Use answers.run_evals with limit 5, tags ["page_verified"], timeout 600. Poll an
 }
 ```
 
+To establish a synthesis-only correctness baseline, pass
+`verification_enabled=false` to `run_evals`. Verification defaults to enabled.
+The flag is stored in workflow inputs and experiment metadata; disabling it skips
+both the verifier model call and its budget quote.
+
 For one case:
 
 ```json

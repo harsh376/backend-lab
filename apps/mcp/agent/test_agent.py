@@ -88,9 +88,10 @@ def test_request_validation(question, limit):
         AnswerRequest(question, limit).validate()
 
 
+@pytest.mark.parametrize("verification_enabled", [False, True])
 @pytest.mark.parametrize("ceiling,overhead", [(180, 30), (240, 45)])
 async def test_workflow_retrieves_synthesizes_then_verifies(
-    monkeypatch, ceiling, overhead
+    monkeypatch, ceiling, overhead, verification_enabled
 ):
     from apps.mcp.agent import workflow as module
 
@@ -124,6 +125,7 @@ async def test_workflow_retrieves_synthesizes_then_verifies(
         AnswerRequest(
             "question",
             session_id="codex:chat-a",
+            verification_enabled=verification_enabled,
             timeout_settings=Settings(
                 timeout_model_request_max_seconds=ceiling,
                 timeout_activity_overhead_seconds=overhead,
@@ -133,7 +135,7 @@ async def test_workflow_retrieves_synthesizes_then_verifies(
     assert calls == [
         "retrieve_answer_evidence",
         "synthesize_answer",
-        "verify_answer",
+        *(["verify_answer"] if verification_enabled else []),
         "record_answer_result",
     ]
     assert result.citations == [p]

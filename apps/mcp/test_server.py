@@ -189,7 +189,8 @@ async def test_unkeyed_submissions_remain_independent(monkeypatch):
     assert first["run_id"] != second["run_id"]
 
 
-async def test_evals_tools_start_and_read(monkeypatch):
+@pytest.mark.parametrize("verification_enabled", [False, True])
+async def test_evals_tools_start_and_read(monkeypatch, verification_enabled):
     client = Mock(start_workflow=AsyncMock())
     handle = Mock(
         describe=AsyncMock(return_value=Mock(status=WorkflowExecutionStatus.COMPLETED)),
@@ -199,11 +200,15 @@ async def test_evals_tools_start_and_read(monkeypatch):
     connect = AsyncMock(return_value=client)
     monkeypatch.setattr(server.Client, "connect", connect)
     started = await server.run_evals(
-        limit=2, timeout=30, experiment_name="BM25 baseline"
+        limit=2,
+        timeout=30,
+        experiment_name="BM25 baseline",
+        verification_enabled=verification_enabled,
     )
     invocation = client.start_workflow.call_args
     assert invocation.args[0] == server.EvalWorkflow.run
     assert invocation.args[1].experiment_name == "BM25 baseline"
+    assert invocation.args[1].verification_enabled is verification_enabled
     assert invocation.args[1].limit == 2
     assert invocation.args[1].timeout == 30
     assert invocation.kwargs["task_queue"] == "kilt-evals"

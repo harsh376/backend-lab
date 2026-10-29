@@ -71,7 +71,7 @@ class AnswerWorkflow:
                     retry_policy=model_retry_policy,
                 )
                 stage.record_cost(answer.usage_cost_usd)
-            if answer.abstained:
+            if answer.abstained or not request.verification_enabled:
                 return await self._finish(answer, budget_report, request, evidences)
 
             verification = VerificationInput(

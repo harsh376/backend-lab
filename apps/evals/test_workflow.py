@@ -29,10 +29,11 @@ async def test_eval_payload_round_trip():
     ) == [case_request]
 
 
+@pytest.mark.parametrize("verification_enabled", [False, True])
 @pytest.mark.parametrize("eval_type", ["answer", "retrieval"])
 @pytest.mark.parametrize("timeout", [None, 10])
 async def test_eval_workflow_continues_after_activity_failure(
-    monkeypatch, eval_type, timeout
+    monkeypatch, eval_type, timeout, verification_enabled
 ):
     from apps.evals import workflow as module
 
@@ -61,6 +62,7 @@ async def test_eval_workflow_continues_after_activity_failure(
     result = await EvalWorkflow().run(
         EvalRunRequest(
             limit=2,
+            verification_enabled=verification_enabled,
             **({"timeout": timeout} if timeout is not None else {}),
             trace_context=context,
             experiment_name="BM25 baseline",
@@ -81,6 +83,7 @@ async def test_eval_workflow_continues_after_activity_failure(
             else "evaluate_mcp_case"
         )
         assert invocation.args[1].retrieval_limit == 50
+        assert invocation.args[1].verification_enabled is verification_enabled
         assert invocation.args[1].eval_type == eval_type
         assert invocation.args[1].trace_context == context
         assert invocation.args[1].experiment_name == "BM25 baseline"

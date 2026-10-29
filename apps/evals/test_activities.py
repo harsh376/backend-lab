@@ -87,7 +87,11 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
     assert observed["trace_context"] != parent_context
     assert "parent_span_id" not in observed["trace_context"]
     evaluate.assert_awaited_once_with(
-        case, 600, {"trace_id": "eval-trace"} if enabled else None, None
+        case,
+        600,
+        {"trace_id": "eval-trace"} if enabled else None,
+        None,
+        verification_enabled=True,
     )
     assert [name for name, _ in children] == [entry[0] for entry in evaluators]
     judge.assert_awaited_once_with(case, result["output"])
@@ -131,7 +135,10 @@ async def test_eval_trace(monkeypatch, status, score, enabled, evaluator_count):
         span.update.assert_not_called()
 
 
-async def test_direct_answer_continues_experiment_trace(monkeypatch):
+@pytest.mark.parametrize("verification_enabled", [False, True])
+async def test_direct_answer_continues_experiment_trace(
+    monkeypatch, verification_enabled
+):
     from apps.mcp.agent.models import AnswerResult
 
     case = load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")[0]
@@ -163,12 +170,15 @@ async def test_direct_answer_continues_experiment_trace(monkeypatch):
         )
     )
     monkeypatch.setattr(activities.Client, "connect", AsyncMock(return_value=client))
-    result = await activities._generate_answer(case, 10, {"trace_id": "eval-trace"})
+    result = await activities._generate_answer(
+        case, 10, {"trace_id": "eval-trace"}, verification_enabled=verification_enabled
+    )
     invocation = client.start_workflow.call_args
     assert invocation.args[0] == activities.AnswerWorkflow.run
     request = invocation.args[1]
     assert request.question == case.question
     assert request.limit == 10
+    assert request.verification_enabled is verification_enabled
     assert request.trace_context["trace_id"] == "answer-trace"
     assert invocation.kwargs["task_queue"] == "kilt-answers"
     assert observed["name"] == "answer"

@@ -570,6 +570,7 @@ async def test_eval_tools_enrich_sdk_root_spans(monkeypatch):
             "timeout": None,
             "experiment_name": None,
             "hosted_dataset": None,
+            "verification_enabled": True,
         }
         assert (
             json.loads(submission.attributes["langfuse.observation.output"]) == started

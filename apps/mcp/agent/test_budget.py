@@ -465,3 +465,36 @@ async def test_final_result_unknown_verification_cost_retains_commitment():
     )
     assert result.total_cost_usd == pytest.approx(0.02)
     assert result.budget.committed_usd == pytest.approx(0.05)
+
+
+async def test_disabled_verification_skips_quote_and_budget_charge(monkeypatch):
+    paragraph = Paragraph("v:1:0", "v", "1", 0, "Title", "Evidence")
+    candidate = AnswerResult("answer", "explanation", [paragraph], usage_cost_usd=0.02)
+    calls = []
+
+    async def execute(name, data, **kwargs):
+        calls.append(name)
+        if name == "retrieve_answer_evidence":
+            return [ArticleEvidence("1", "v", "1", "Title", [paragraph.text])]
+        if name == "quote_synthesis":
+            return Reservation("model", 10, 0.04)
+        if name == "synthesize_answer":
+            return candidate
+        if name == "record_answer_result":
+            return None
+        raise AssertionError(f"Unexpected activity: {name}")
+
+    monkeypatch.setattr(module.workflow, "execute_activity", execute)
+    result = await module.AnswerWorkflow().run(
+        AnswerRequest("question", budget_usd=0.1, verification_enabled=False)
+    )
+    assert calls == [
+        "retrieve_answer_evidence",
+        "quote_synthesis",
+        "synthesize_answer",
+        "record_answer_result",
+    ]
+    assert result.verification is None
+    assert not result.abstained
+    assert result.budget.committed_usd == 0.02
+    assert [entry.stage for entry in result.budget.entries] == ["synthesis"]

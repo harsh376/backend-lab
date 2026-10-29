@@ -59,6 +59,7 @@ def experiment_item(request):
         metadata.update(
             answer_model=settings.mcp_answer_model,
             judge_model=settings.eval_judge_model,
+            verification_enabled=str(request.verification_enabled).lower(),
         )
     source = request.case.source
     if source.kind == "local":
