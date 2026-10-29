@@ -495,7 +495,9 @@ async def test_read_retrieval_eval_has_recall_coverage_without_correctness(
     results = [
         {
             "output": {"status": "FAILED" if failed else "COMPLETED"},
-            "evaluators": {} if failed else {"retrieval_recall_at_k": {"recall@5": 0}},
+            "evaluators": {}
+            if failed
+            else {"retrieval_recall_at_k": {"recall@5": 0, "passage_recall@5": 0.5}},
         }
     ]
     handle = Mock(
@@ -512,4 +514,10 @@ async def test_read_retrieval_eval_has_recall_coverage_without_correctness(
     assert response["coverage"]["recall@5_scored"] == (0 if failed else 1)
     assert response["coverage"]["recall@5_skipped"] == (1 if failed else 0)
     assert response["coverage"]["recall@100_scored"] == 0
+    assert response["retrieval_summary"]["passage_recall@5"] == (
+        None if failed else 0.5
+    )
+    assert response["coverage"]["passage_recall@5_scored"] == (0 if failed else 1)
+    assert response["coverage"]["passage_recall@5_skipped"] == (1 if failed else 0)
+    assert response["coverage"]["passage_recall@100_scored"] == 0
     assert "correctness_scored" not in response["coverage"]

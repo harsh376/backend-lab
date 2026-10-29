@@ -88,10 +88,64 @@ Workflows reconstruct `Settings` from that snapshot, so environment changes
 cannot alter replay. No credentials or other application settings are recorded.
 Older workflows without a snapshot use the declared Settings defaults.
 
-Answer evals explicitly pass the top **10 articles** to answer generation. The
+Answer evals explicitly retrieve the top **10 articles** for answer generation. The
 `run_evals.limit` argument selects dataset cases, not articles. Retrieval uses a
 larger internal candidate pool for ranking before returning those 10 articles.
 Standalone retrieval evals configure their output size with `retrieval_limit`.
+
+### Compact synthesis context
+
+Synthesis defaults to **Compact**: rank original paragraphs across all retrieved
+articles with the existing candidate-local BM25 window scorer, then select at
+most five paragraphs within an estimated 2,000-token input budget. Titles are
+included in scoring. After selecting a paragraph, other paragraphs from the same
+article receive a diminishing score (`score / (1 + selected_count)`) to encourage
+multi-article evidence. Ties follow retrieval and original paragraph order.
+Empty paragraphs, section markers, and duplicate normalized text are excluded.
+Selected paragraphs are grouped by article and retain their original offsets,
+text, and citation identifiers. A model citation to a retrieved but omitted
+paragraph is rejected.
+
+Configure the answer worker through environment variables (also forwarded by
+`compose/mcp.yaml`):
+
+```dotenv
+MCP_ANSWER_CONTEXT_MODE=compact
+MCP_ANSWER_CONTEXT_MAX_TOKENS=2000
+MCP_ANSWER_CONTEXT_MAX_PARAGRAPHS=5
+```
+
+The token budget includes the serialized system/user messages, question,
+citation metadata, response schema, and a small framing allowance. It excludes
+output tokens, which remain controlled by `MCP_ANSWER_MAX_TOKENS`. LiteLLM uses a
+generic tokenizer for unknown models, so this is an estimate; actual provider
+counts may differ, particularly for local Ollama models. It is an initial budget,
+not a measured match to `basline-v5`, whose prompt token counts are not stored here.
+Whole paragraphs that do not fit are skipped rather than truncated. If no
+paragraph fits, synthesis abstains without a model call. This can lose evidence
+in unusually large paragraphs and must be checked in the next correctness eval.
+No automatic full-article retry is made, keeping the context bound predictable.
+Selection runs outside the worker event loop, uses no model calls, and is shared
+by budget quoting and generation. Retrieval and citation-only verification remain
+unchanged; retrieval-to-synthesis Temporal payloads still carry complete articles.
+
+Set `MCP_ANSWER_CONTEXT_MODE=full` for the full-article control. Full mode ignores
+both Compact limits and retains the previous `article-synthesis-v3` prompt.
+Compact generations use `compact-synthesis-v1`; inspect generation inputs and
+reported prompt tokens alongside that version. Rebuild/restart the answer worker
+when changing code or configuration:
+
+```sh
+docker compose -f compose/mcp.yaml up -d --build agent-worker
+```
+
+Then use the same cases, retrieval, synthesis/verifier/judge models, and corpus
+as `answer-top10-003`, with a unique experiment name such as `answer-compact-001`.
+Compare correctness, scored coverage, prompt tokens, synthesis/verification
+latencies, and total answer latency. The per-case `elapsed_seconds` measures
+answer execution before the correctness judge; whole eval-case tracing also
+includes judging. Latency and correctness improvements have not yet been measured
+for Compact.
 
 ### Run a hosted Langfuse dataset
 
@@ -299,7 +353,7 @@ latency (`elapsed_seconds`), and `evaluators.retrieval_recall_at_k`.
 `retrieval_summary` reports macro averages and scored-case counts; `coverage`
 includes scored/skipped counts for each cutoff. Retrieval runs omit the answer
 correctness `summary`. Scores are also reported to Langfuse experiments as
-numeric `recall@K` metrics. Failed retrieval activities remain unscored and do not
+numeric `recall@K` and `passage_recall@K` metrics. Failed retrieval activities remain unscored and do not
 stop subsequent cases. Existing dataset export also supports retrieval scores;
 use `name="retrieval_recall_at_k"` and, for example, `score_field="recall@50"`.
 
@@ -309,6 +363,20 @@ count once, and multi-page sets earn partial credit. Fixed cutoffs are **5, 10,
 50, and 100**, scored only at or below `retrieval_limit`. A completed query with
 no hits scores zero. Unanswerable cases or cases without reference evidence are
 unscored. Compare the same cases, corpus, cutoffs, and scored-case coverage.
+
+`passage_recall@K` measures the fraction of distinct reference paragraphs present
+in the top K retrieved articles, taking the maximum across alternative evidence
+sets. Accepted passages come from the inclusive paragraph ranges in
+`evidence_sets`; overlapping ranges and repeated paragraphs count once. The cutoff
+K still counts articles, since retrieval returns complete articles. A retrieved
+page earns passage credit only for paragraph offsets actually present in that
+article. This measures passage availability before synthesis context selection.
+Passage scores require `passage_verified`; page-only verified cases remain scored
+for page recall and are skipped for passage recall. The same cutoffs, macro
+averages, scored/skipped coverage, Langfuse reporting, and export filters apply
+(use `score_field="passage_recall@50"`). Results retain paragraph counts aligned
+with ranked page IDs, without article text. Older results without these counts
+remain unscored for passage recall.
 
 Retrieval and scoring execute inside one eval activity using the same
 `KiltService.asearch_evidences` path as the answer worker. Full article text never

@@ -47,8 +47,8 @@ async def answer(
 ) -> dict:
     """Start an answer run, optionally limiting model spend with budget_usd.
 
-    limit selects complete articles for synthesis (1–100, default 5).
-    Every retrieved article is sent in full, preserving its original paragraphs.
+    limit selects candidate articles (1–100, default 5). Synthesis uses
+    selected passages within the configured context budget.
     Poll get_answer for its result and per-call budget reservations.
     Retry with the same idempotency_key and arguments to reuse a run. Keys are
     shared within the Temporal namespace and expire with workflow retention.

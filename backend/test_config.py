@@ -121,3 +121,28 @@ def test_reads_environment_variables(monkeypatch) -> None:
     assert settings.otlp_enabled is True
     assert settings.otel_exporter_otlp_endpoint == "http://collector:4317"
     assert settings.otel_metric_export_interval == 20_000
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("MCP_ANSWER_CONTEXT_MODE", "unknown"),
+        ("MCP_ANSWER_CONTEXT_MAX_TOKENS", "0"),
+        ("MCP_ANSWER_CONTEXT_MAX_PARAGRAPHS", "-1"),
+    ],
+)
+def test_invalid_synthesis_context_settings(monkeypatch, field, value):
+    monkeypatch.setenv(field, value)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)
+
+
+def test_synthesis_context_environment(monkeypatch):
+    monkeypatch.setenv("MCP_ANSWER_CONTEXT_MODE", "full")
+    monkeypatch.setenv("MCP_ANSWER_CONTEXT_MAX_TOKENS", "4000")
+    monkeypatch.setenv("MCP_ANSWER_CONTEXT_MAX_PARAGRAPHS", "8")
+    config = Settings(_env_file=None)
+    assert config.mcp_answer_context_mode == "full"
+    assert config.mcp_answer_context_max_tokens == 4000
+    assert config.mcp_answer_context_max_paragraphs == 8
+    assert "mcp_answer_context_mode" not in config.timeout_snapshot()

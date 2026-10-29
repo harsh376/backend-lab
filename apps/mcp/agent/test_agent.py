@@ -16,7 +16,7 @@ from backend.config import Settings
 from backend.repositories.kilt import ElasticsearchKiltRepository
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerSynthesisService,
-    ExtractiveSynthesis,
+    ExtractiveSynthesisService,
 )
 from backend.services.kilt.kilt import KiltService
 
@@ -55,20 +55,20 @@ async def test_original_paragraph_identity():
 
 async def test_abstention_and_forged_citations():
     assert (
-        await ExtractiveSynthesis().synthesize(SynthesisInput("question", []))
+        await ExtractiveSynthesisService().synthesize(SynthesisInput("question", []))
     ).abstained
     p = Paragraph("v:1:0", "v", "1", 0, "Title", "Original text")
     forged = Paragraph("v:1:0", "v", "1", 0, "Title", "Fabricated text")
-    activities = AnswerActivities(
-        Mock(),
-        AnswerSynthesisService(
-            Mock(
-                synthesize=AsyncMock(return_value=AnswerResult("answer", "", [forged]))
-            )
-        ),
-    )
+
+    class ForgedSynthesisService(AnswerSynthesisService):
+        async def _synthesize(self, data):
+            return AnswerResult("answer", "", [forged])
+
+    activities = AnswerActivities(Mock(), ForgedSynthesisService())
     assert (await activities.agenerate(SynthesisInput("question", [p]))).abstained
-    result = await ExtractiveSynthesis().synthesize(SynthesisInput("question", [p]))
+    result = await ExtractiveSynthesisService().synthesize(
+        SynthesisInput("question", [p])
+    )
     assert result.short_answer == p.text
     assert result.citations == [p]
 
@@ -117,7 +117,7 @@ async def test_workflow_retrieves_synthesizes_then_verifies(
             return argument.answer
         assert argument.citation_paragraphs() == [p]
         assert argument.session_id == "codex:chat-a"
-        return await ExtractiveSynthesis().synthesize(argument)
+        return await ExtractiveSynthesisService().synthesize(argument)
 
     monkeypatch.setattr(module.workflow, "execute_activity", execute)
     result = await module.AnswerWorkflow().run(

@@ -13,8 +13,7 @@ from apps.mcp.agent.activities import AnswerActivities
 from apps.mcp.agent.models import Paragraph, SynthesisInput
 from backend.config import Settings
 from backend.services.answer_synthesis.answer_synthesis import (
-    AnswerSynthesisService,
-    LiteLLMSynthesis,
+    create_synthesis_service,
 )
 
 
@@ -74,8 +73,8 @@ async def test_generation_joins_activity_trace(completion, evidence, monkeypatch
     try:
         await AnswerActivities(
             Mock(),
-            AnswerSynthesisService(
-                LiteLLMSynthesis(settings(), observation_factory=telemetry.observation)
+            create_synthesis_service(
+                settings(), observation_factory=telemetry.observation
             ),
         ).agenerate(SynthesisInput("question", [evidence], context, "codex:chat-a"))
         instance.flush()
@@ -103,9 +102,7 @@ async def test_provider_rejection_becomes_non_retryable_temporal_error(
     completion.side_effect = litellm.AuthenticationError(
         message="sensitive provider message", llm_provider="openai", model="model"
     )
-    activities = AnswerActivities(
-        Mock(), AnswerSynthesisService(LiteLLMSynthesis(settings()))
-    )
+    activities = AnswerActivities(Mock(), create_synthesis_service(settings()))
     with pytest.raises(ApplicationError) as caught:
         await activities.agenerate(SynthesisInput("question", [evidence]))
     assert caught.value.non_retryable

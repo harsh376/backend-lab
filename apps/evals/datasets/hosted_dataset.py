@@ -17,7 +17,7 @@ from temporalio.client import Client, WorkflowExecutionStatus
 from temporalio.contrib.pydantic import pydantic_data_converter
 
 from apps.evals.evaluators.answers import summarize_answers
-from apps.evals.evaluators.retrieval import RECALL_KS, summarize_retrieval
+from apps.evals.evaluators.retrieval import RETRIEVAL_METRICS, summarize_retrieval
 from apps.evals.models import EvalCase, EvalRunResponse, EvalSource
 from apps.evals.workflow import EvalRunRequest
 from backend.config import Settings
@@ -334,10 +334,10 @@ class HostedDatasetService:
                 ),
             }
             if retrieval_run:
-                for k in RECALL_KS:
-                    count = result["retrieval_summary"][f"recall@{k}_count"]
-                    result["coverage"][f"recall@{k}_scored"] = count
-                    result["coverage"][f"recall@{k}_skipped"] = (
+                for metric in RETRIEVAL_METRICS:
+                    count = result["retrieval_summary"][f"{metric}_count"]
+                    result["coverage"][f"{metric}_scored"] = count
+                    result["coverage"][f"{metric}_skipped"] = (
                         len(result["results"]) - count
                     )
             else:

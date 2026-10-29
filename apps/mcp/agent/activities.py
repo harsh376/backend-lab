@@ -16,7 +16,6 @@ from backend.budget import Reservation, current_reservation
 from backend.llm import ModelProviderError
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerSynthesisService,
-    SynthesisResponse,
 )
 from backend.services.answer_verification.answer_verification import (
     AnswerVerificationService,
@@ -48,8 +47,7 @@ class AnswerActivities:
     @activity.defn(name="quote_synthesis")
     @observe()
     async def aquote_synthesis(self, data: SynthesisInput) -> Reservation:
-        adapter = self.synthesis_service.adapter
-        return adapter.model.quote(adapter._build_messages(data), SynthesisResponse)
+        return await self.synthesis_service.quote(data)
 
     @activity.defn(name="quote_verification")
     @observe()

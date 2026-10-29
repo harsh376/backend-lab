@@ -122,19 +122,40 @@ def rank_passages(query: str, hits: list[dict]) -> list[str]:
     Statistics come from candidate passages, never evaluation references. Titles
     provide context to every passage. Original article paragraphs remain intact.
     """
+    documents = [
+        (hit["_source"]["wikipedia_title"], paragraph)
+        for hit in hits
+        for paragraph in hit["_source"].get("text", [])
+    ]
+    paragraph_scores = iter(score_paragraphs(query, documents))
+    scores = [
+        max(
+            (next(paragraph_scores) for _ in hit["_source"].get("text", [])),
+            default=0.0,
+        )
+        for hit in hits
+    ]
+    return [
+        page_id(hits[rank])
+        for rank in sorted(
+            range(len(hits)), key=lambda rank: scores[rank], reverse=True
+        )
+    ]
+
+
+def score_paragraphs(query: str, documents: list[tuple[str, str]]) -> list[float]:
+    """Score original paragraphs by their best window, with candidate-local BM25."""
     terms = set(words(query))
     passages = []
     frequencies: Counter[str] = Counter()
-    for rank, hit in enumerate(hits):
-        source = hit["_source"]
-        title = words(source["wikipedia_title"]) * 3
-        for paragraph in source.get("text", []):
-            tokens = words(paragraph)
-            for start in range(0, len(tokens), PASSAGE_STRIDE):
-                window = tokens[start : start + PASSAGE_SIZE] + title
-                counts = Counter(word for word in window if word in terms)
-                passages.append((rank, counts, len(window)))
-                frequencies.update(counts.keys())
+    for rank, (title, paragraph) in enumerate(documents):
+        title_tokens = words(title) * 3
+        tokens = words(paragraph)
+        for start in range(0, len(tokens), PASSAGE_STRIDE):
+            window = tokens[start : start + PASSAGE_SIZE] + title_tokens
+            counts = Counter(word for word in window if word in terms)
+            passages.append((rank, counts, len(window)))
+            frequencies.update(counts.keys())
     count = len(passages)
     average_length = sum(length for _, _, length in passages) / max(count, 1)
     idf = {
@@ -143,7 +164,7 @@ def rank_passages(query: str, hits: list[dict]) -> list[str]:
         )
         for term in terms
     }
-    scores = dict.fromkeys(range(len(hits)), 0.0)
+    scores = [0.0] * len(documents)
     for rank, counts, length in passages:
         score = sum(
             idf[term]
@@ -153,9 +174,7 @@ def rank_passages(query: str, hits: list[dict]) -> list[str]:
             for term, frequency in counts.items()
         )
         scores[rank] = max(scores[rank], score)
-    return [
-        page_id(hits[rank]) for rank in sorted(scores, key=scores.get, reverse=True)
-    ]
+    return scores
 
 
 def fuse_rankings(rankings: list[list[str]]) -> list[tuple[str, float]]:

@@ -11,8 +11,7 @@ from apps.mcp.telemetry import observation
 from backend.config import Settings
 from backend.repositories.kilt import ElasticsearchKiltRepository
 from backend.services.answer_synthesis.answer_synthesis import (
-    AnswerSynthesisService,
-    LiteLLMSynthesis,
+    create_synthesis_service,
 )
 from backend.services.answer_verification.answer_verification import (
     AnswerVerificationService,
@@ -31,8 +30,8 @@ async def main() -> None:
             kilt_service=KiltService(
                 ElasticsearchKiltRepository(es, settings.kilt_index)
             ),
-            synthesis_service=AnswerSynthesisService(
-                LiteLLMSynthesis(settings, observation_factory=observation)
+            synthesis_service=create_synthesis_service(
+                settings, observation_factory=observation
             ),
             verification_service=AnswerVerificationService(
                 LiteLLMVerification(settings, observation_factory=observation)

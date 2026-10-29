@@ -12,8 +12,7 @@ from apps.mcp import server, telemetry
 from apps.mcp.agent.activities import AnswerActivities
 from apps.mcp.agent.models import AnswerRequest, Paragraph, SynthesisInput
 from backend.services.answer_synthesis.answer_synthesis import (
-    AnswerSynthesisService,
-    ExtractiveSynthesis,
+    ExtractiveSynthesisService,
 )
 
 
@@ -76,7 +75,7 @@ async def test_cross_process_context_and_errors(monkeypatch):
                     ]
                 )
             ),
-            AnswerSynthesisService(ExtractiveSynthesis()),
+            ExtractiveSynthesisService(),
         )
         assert (await activities.aretrieve(request))[0].citation_paragraphs() == [
             paragraph
@@ -486,7 +485,7 @@ async def test_chat_sessions_propagate_without_leaking(monkeypatch):
             )[0]
             activities = AnswerActivities(
                 Mock(asearch_evidences=AsyncMock(return_value=[])),
-                AnswerSynthesisService(ExtractiveSynthesis()),
+                ExtractiveSynthesisService(),
             )
             await activities.aretrieve(request)
             await activities.agenerate(

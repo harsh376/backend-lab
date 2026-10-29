@@ -9,6 +9,7 @@ from apps.evals.activities import RetrievalEvalActivities
 from apps.evals.datasets.dataset import load_cases
 from apps.evals.evaluators.retrieval import (
     evaluate_retrieval,
+    passage_recall_at_k,
     recall_at_k,
     summarize_retrieval,
 )
@@ -41,10 +42,11 @@ def case():
 
     return case.model_copy(
         update={
+            "tags": ["page_verified", "passage_verified"],
             "evidence_sets": [
                 [evidence("a"), evidence("a"), evidence("b")],
                 [evidence("c")],
-            ]
+            ],
         }
     )
 
@@ -172,6 +174,7 @@ async def test_retrieval_activity_uses_production_retriever_and_bounds_output(
         "status": "COMPLETED",
         "result": {
             "ranked_page_ids": ["c"],
+            "ranked_paragraph_counts": [1],
             "limit": 50,
             "corpus_version": "test-index",
         },
@@ -179,6 +182,8 @@ async def test_retrieval_activity_uses_production_retriever_and_bounds_output(
     scores = result["evaluators"]["retrieval_recall_at_k"]
     assert scores["recall@50"] == 1
     assert scores["recall@100"] is None
+    assert scores["passage_recall@50"] == 0.5
+    assert scores["passage_recall@100"] is None
     assert result["elapsed_seconds"] >= 0
     encoded = await pydantic_data_converter.encode([result])
     assert len(encoded[0].data) < 10_000
@@ -230,7 +235,11 @@ async def test_retrieval_reports_recall_and_reference_pages_to_experiment(
         call.kwargs["name"]: call.kwargs["value"]
         for call in instance.score_current_span.call_args_list
     }
-    assert scores == {"recall@5": 0, "recall@10": 0, "recall@50": 0, "recall@100": 0}
+    assert scores == {
+        f"{prefix}@{k}": 0
+        for prefix in ("recall", "passage_recall")
+        for k in (5, 10, 50, 100)
+    }
     attributes = dict(call.args for call in root.set_attribute.call_args_list)
     assert attributes["langfuse.experiment.metadata.eval_type"] == "retrieval"
     assert attributes["langfuse.experiment.metadata.retrieval_limit"] == "100"
@@ -253,3 +262,77 @@ async def test_retrieval_failures_reach_workflow_without_a_zero_score(
     repository.asearch.side_effect = error
     with pytest.raises(error):
         await activity.evaluate(EvalCaseRequest(case, eval_type="retrieval"))
+
+
+def test_passage_recall_counts_inclusive_ranges_overlaps_and_alternatives(case):
+    def evidence(page, start, end):
+        return Evidence(
+            wikipedia_id=page, start_paragraph_id=start, end_paragraph_id=end
+        )
+
+    case = case.model_copy(
+        update={
+            "evidence_sets": [
+                [evidence("a", 0, 2), evidence("a", 1, 3), evidence("b", 2, 2)],
+                [evidence("c", 0, 0)],
+            ]
+        }
+    )
+    articles = [("a", 4), ("b", 3), ("c", 1)]
+    assert passage_recall_at_k(case, articles, 1) == 0.8
+    assert passage_recall_at_k(case, articles, 2) == 1
+    assert passage_recall_at_k(case, [("a", 2)], 5) == 0.4
+    assert passage_recall_at_k(case, [("c", 1)], 5) == 1
+    assert passage_recall_at_k(case, [("a", 2), ("a", 2)], 5) == 0.4
+    assert passage_recall_at_k(case, [("x", 10)], 5) == 0
+    assert passage_recall_at_k(case, [], 5) == 0
+    with pytest.raises(ValueError, match="positive"):
+        passage_recall_at_k(case, articles, 0)
+
+
+@pytest.mark.parametrize(
+    "update",
+    [
+        {"answerable": False},
+        {"evidence_sets": []},
+        {"tags": ["page_verified"]},
+    ],
+)
+def test_passage_recall_requires_verified_applicable_evidence(case, update):
+    assert passage_recall_at_k(case.model_copy(update=update), [("c", 2)], 5) is None
+
+
+def test_passage_scoring_cutoffs_and_missing_metadata(case):
+    candidates = {
+        "ranked_page_ids": ["c"],
+        "ranked_paragraph_counts": [1],
+        "limit": 5,
+        "corpus_version": "test-index",
+    }
+    scores = evaluate_retrieval(case, candidates)
+    assert scores["recall@5"] == 1
+    assert scores["passage_recall@5"] == 0.5
+    assert scores["passage_recall@10"] is None
+    assert scores["passage_recall_reason"] is None
+    assert evaluate_retrieval(case, None)["passage_recall@5"] is None
+    unverified = evaluate_retrieval(case.model_copy(update={"tags": []}), candidates)
+    assert unverified["recall@5"] == 1
+    assert unverified["passage_recall@5"] is None
+    assert "passage-verified" in unverified["passage_recall_reason"]
+    del candidates["ranked_paragraph_counts"]
+    historical = evaluate_retrieval(case, candidates)
+    assert historical["recall@5"] == 1
+    assert historical["passage_recall@5"] is None
+    assert "paragraph counts" in historical["passage_recall_reason"]
+
+
+def test_passage_summary_retains_zero_and_excludes_unscored():
+    results = [
+        {"evaluators": {"retrieval_recall_at_k": {"passage_recall@5": value}}}
+        for value in (0, 0.5, 1, None)
+    ]
+    summary = summarize_retrieval(results)
+    assert summary["passage_recall@5"] == 0.5
+    assert summary["passage_recall@5_count"] == 3
+    assert summary["passage_recall@10"] is None
+    assert summary["passage_recall@10_count"] == 0

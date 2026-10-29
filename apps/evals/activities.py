@@ -13,7 +13,7 @@ from temporalio.exceptions import ApplicationError
 from apps.evals.datasets.dataset import load_cases, select_cases
 from apps.evals.datasets.hosted_dataset import HostedDatasetService
 from apps.evals.evaluators.answers import evaluate_correctness
-from apps.evals.evaluators.retrieval import RECALL_KS, evaluate_retrieval
+from apps.evals.evaluators.retrieval import RETRIEVAL_METRICS, evaluate_retrieval
 from apps.evals.experiments import (
     case_trace_context,
     experiment_item,
@@ -151,9 +151,9 @@ def _record_evaluation(result):
     )
     for name, judgment in result["evaluators"].items():
         for metric, value in judgment.items():
-            if (
-                metric == "correctness" or metric in {f"recall@{k}" for k in RECALL_KS}
-            ) and isinstance(value, (int, float)):
+            if (metric == "correctness" or metric in RETRIEVAL_METRICS) and isinstance(
+                value, (int, float)
+            ):
                 instance.score_current_span(
                     name=metric,
                     value=value,
@@ -254,6 +254,7 @@ class RetrievalEvalActivities:
             elapsed = asyncio.get_running_loop().time() - started
             candidates = {
                 "ranked_page_ids": [e.wikipedia_id for e in evidences],
+                "ranked_paragraph_counts": [len(e.paragraphs) for e in evidences],
                 "limit": request.retrieval_limit,
                 "corpus_version": self.kilt_service.corpus_version,
             }

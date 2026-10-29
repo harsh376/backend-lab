@@ -9,7 +9,7 @@ import pytest
 from backend.llm import LiteLLMStructuredModel, StructuredCompletion
 from backend.services.answer_synthesis.answer_synthesis import (
     AnswerResult,
-    LiteLLMSynthesis,
+    FullArticleSynthesisService,
     Paragraph,
     SynthesisInput,
 )
@@ -60,7 +60,7 @@ async def test_injected_model(verification):
         )
         assert result.supported
     else:
-        adapter = LiteLLMSynthesis(model=model)
+        adapter = FullArticleSynthesisService(model=model)
         result = await adapter.synthesize(SynthesisInput("When?", [paragraph]))
         assert result.short_answer == "1844"
     assert adapter.model is model
