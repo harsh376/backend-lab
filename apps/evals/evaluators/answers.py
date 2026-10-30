@@ -49,7 +49,9 @@ async def evaluate_correctness(
                 model=settings.eval_judge_model,
                 model_setting="EVAL_JUDGE_MODEL",
                 observation_factory=observation,
+                temperature=settings.eval_judge_temperature,
             )
+            result["temperature"] = settings.eval_judge_temperature
         result["model"] = model.model
         completion = await model.complete(
             [

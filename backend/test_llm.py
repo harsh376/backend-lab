@@ -126,3 +126,41 @@ async def test_ollama_translation_without_cloud_credentials(monkeypatch):
     )
     assert json.loads(result.response.choices[0].message.content) == {"answer": "1844"}
     assert result.usage["total_tokens"] == 15
+
+
+@pytest.mark.parametrize("temperature", [None, 0.0])
+async def test_temperature_is_sent_only_when_configured(monkeypatch, temperature):
+    from pydantic import BaseModel
+
+    from backend.config import Settings
+
+    class Answer(BaseModel):
+        answer: str
+
+    response = litellm.ModelResponse(
+        choices=[
+            {
+                "finish_reason": "stop",
+                "message": {"role": "assistant", "content": '{"answer":"1844"}'},
+            }
+        ],
+        usage={"prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5},
+    )
+    acompletion = AsyncMock(return_value=response)
+    monkeypatch.setattr(litellm, "acompletion", acompletion)
+    model = LiteLLMStructuredModel(
+        Settings(_env_file=None, mcp_answer_model="ollama_chat/qwen3.8"),
+        temperature=temperature,
+    )
+    await model.complete(
+        [{"role": "user", "content": "When?"}],
+        response_schema=Answer,
+        schema_name="answer",
+        prompt_version="test",
+        observation_name="test",
+    )
+    kwargs = acompletion.call_args.kwargs
+    if temperature is None:
+        assert "temperature" not in kwargs
+    else:
+        assert kwargs["temperature"] == temperature

@@ -251,6 +251,17 @@ Invalid arguments, missing cases, or invalid datasets fail the workflow.
 Completed results include final-answer correctness and a mean correctness summary
 with a count of scored cases. Intermediate operations are not evaluated.
 
+The correctness judge (`EVAL_JUDGE_MODEL`, defaulting to `MCP_ANSWER_MODEL`) runs
+at `EVAL_JUDGE_TEMPERATURE`, default `0`, and each judgment records the
+temperature it used. At the model's default sampling, an offline re-judge of 66
+saved answers (2026-10-29) flipped verdicts on 4 answers across 3 samples and
+disagreed with hand labels on 5 of 198 judgments; at temperature 0 it was
+deterministic and matched every label. Set `EVAL_JUDGE_TEMPERATURE=` (empty) to
+use the provider default for models that reject temperature overrides, such as
+some OpenAI reasoning models. Synthesis and verification keep their provider
+defaults. Correctness from runs before this change was judged at the model
+default and is not directly comparable.
+
 ## Worker commands
 
 ```sh

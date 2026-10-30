@@ -105,3 +105,38 @@ def test_summary_excludes_unscored_answers(values, expected, count):
         "correctness": expected,
         "correctness_count": count,
     }
+
+
+async def test_default_judge_uses_configured_temperature(monkeypatch):
+    from apps.evals.evaluators import answers
+
+    monkeypatch.setenv("MCP_ANSWER_MODEL", "ollama_chat/qwen3.8")
+    monkeypatch.setenv("EVAL_JUDGE_TEMPERATURE", "0")
+    response = litellm.ModelResponse(
+        choices=[
+            {
+                "finish_reason": "stop",
+                "message": {
+                    "role": "assistant",
+                    "content": json.dumps({"correct": True, "reason": "Match."}),
+                },
+            }
+        ]
+    )
+    constructed = {}
+
+    def judge(settings, **kwargs):
+        constructed.update(kwargs)
+        return Mock(
+            model="ollama_chat/qwen3.8",
+            complete=AsyncMock(
+                return_value=StructuredCompletion(response, {"total_tokens": 1}, None)
+            ),
+        )
+
+    monkeypatch.setattr(answers, "LiteLLMStructuredModel", judge)
+    result = await evaluate_correctness(load_cases(DATASET)[0], "answer")
+    assert constructed["temperature"] == 0
+    assert constructed["model"] == "ollama_chat/qwen3.8"
+    assert result["temperature"] == 0
+    assert result["correctness"] == 1

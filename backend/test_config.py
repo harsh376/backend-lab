@@ -146,3 +146,15 @@ def test_synthesis_context_environment(monkeypatch):
     assert config.mcp_answer_context_max_tokens == 4000
     assert config.mcp_answer_context_max_paragraphs == 8
     assert "mcp_answer_context_mode" not in config.timeout_snapshot()
+
+
+def test_judge_temperature_defaults_to_deterministic(monkeypatch):
+    monkeypatch.delenv("EVAL_JUDGE_TEMPERATURE", raising=False)
+    assert Settings(_env_file=None).eval_judge_temperature == 0
+    monkeypatch.setenv("EVAL_JUDGE_TEMPERATURE", "")
+    assert Settings(_env_file=None).eval_judge_temperature is None
+    monkeypatch.setenv("EVAL_JUDGE_TEMPERATURE", "0.7")
+    assert Settings(_env_file=None).eval_judge_temperature == 0.7
+    monkeypatch.setenv("EVAL_JUDGE_TEMPERATURE", "-1")
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)

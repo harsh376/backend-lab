@@ -3,6 +3,7 @@
 from typing import Literal
 
 from pydantic import (
+    NonNegativeFloat,
     PositiveFloat,
     PositiveInt,
     SecretStr,
@@ -114,6 +115,9 @@ class Settings(DatabaseSettings):
     mcp_answer_passage_ranker: Literal["bm25"] = "bm25"
     mcp_verifier_model: str = ""
     eval_judge_model: str = ""
+    # Deterministic judging; empty uses the provider default for models that
+    # reject temperature overrides.
+    eval_judge_temperature: NonNegativeFloat | None = 0
     ollama_api_base: str = "http://localhost:11434"
     openai_api_key: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
@@ -130,6 +134,11 @@ class Settings(DatabaseSettings):
     langfuse_tracing_environment: str = "local"
     langfuse_tracing_enabled: bool = True
     git_commit_sha: str | None = None
+
+    @field_validator("eval_judge_temperature", mode="before")
+    @classmethod
+    def empty_temperature_uses_provider_default(cls, value):
+        return None if value == "" else value
 
     @field_validator("eval_judge_model", "mcp_verifier_model", mode="before")
     @classmethod

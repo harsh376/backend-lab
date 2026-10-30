@@ -56,8 +56,11 @@ class LiteLLMStructuredModel:
         model: str | None = None,
         model_setting: str = "MCP_ANSWER_MODEL",
         observation_factory: Callable[..., AbstractContextManager] = no_observation,
+        temperature: float | None = None,
     ):
         self._observation = observation_factory
+        # None keeps the provider's default sampling.
+        self.temperature = temperature
         self.model = model or settings.mcp_answer_model
         self.provider, separator, model_name = self.model.partition("/")
         if (
@@ -86,6 +89,12 @@ class LiteLLMStructuredModel:
             self._provider_options = {"api_key": key.get_secret_value()}
         self.max_tokens = settings.mcp_answer_max_tokens
         self.timeout = settings.timeout_model_request_seconds
+
+    @property
+    def _sampling_options(self) -> dict[str, float]:
+        if self.temperature is None:
+            return {}
+        return {"temperature": self.temperature}
 
     def quote(self, messages, response_schema) -> Reservation:
         # UTF-8 bytes plus schema and framing allowance deliberately overestimate
@@ -116,6 +125,7 @@ class LiteLLMStructuredModel:
                     "max_tokens": self.max_tokens,
                     "timeout": self.timeout,
                     "num_retries": 0,
+                    **self._sampling_options,
                 },
             )
 
@@ -172,6 +182,7 @@ class LiteLLMStructuredModel:
                     },
                 },
                 max_tokens=self.max_tokens,
+                **self._sampling_options,
                 timeout=self.timeout,
                 num_retries=0,
                 caching=False,
