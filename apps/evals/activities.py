@@ -247,13 +247,13 @@ class RetrievalEvalActivities:
         self.kilt_service = kilt_service
         self.synthesis_service = synthesis_service
 
-    def _synthesis_passages(self, question, evidences, limit):
+    async def _synthesis_passages(self, question, evidences, limit):
         """Prepare synthesis input as if retrieval had returned only the top k."""
         passages = {}
         for k in RECALL_KS:
             if k > limit:
                 break
-            prepared = self.synthesis_service.prepare_input(
+            prepared = await self.synthesis_service.prepare_input(
                 SynthesisInput(question, evidences=evidences[:k])
             )
             passages[k] = {
@@ -284,17 +284,23 @@ class RetrievalEvalActivities:
                     case.question, request.retrieval_limit
                 )
             elapsed = asyncio.get_running_loop().time() - started
-            synthesis_passages = await asyncio.to_thread(
-                self._synthesis_passages,
-                case.question,
-                evidences,
-                request.retrieval_limit,
+            synthesis_passages = await self._synthesis_passages(
+                case.question, evidences, request.retrieval_limit
             )
             candidates = {
                 "ranked_page_ids": [e.wikipedia_id for e in evidences],
                 "limit": request.retrieval_limit,
                 "corpus_version": self.kilt_service.corpus_version,
                 "synthesis_service": type(self.synthesis_service).__name__,
+                "passage_ranker": (
+                    ranker.name
+                    if (
+                        ranker := getattr(
+                            self.synthesis_service, "passage_ranker", None
+                        )
+                    )
+                    else None
+                ),
             }
             result = {
                 "case_id": case.case_id,

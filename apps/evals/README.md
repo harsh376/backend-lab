@@ -118,7 +118,15 @@ Configure the answer worker through environment variables (also forwarded by
 MCP_ANSWER_CONTEXT_MODE=compact
 MCP_ANSWER_CONTEXT_MAX_TOKENS=5000
 MCP_ANSWER_CONTEXT_MAX_PARAGRAPHS=12
+MCP_ANSWER_PASSAGE_RANKER=bm25
 ```
+
+Paragraph scoring is delegated to a `PassageRanker`
+(`backend/services/passage_ranking`), selected by `MCP_ANSWER_PASSAGE_RANKER`.
+Rankers receive each candidate paragraph with its article's zero-based retrieval
+rank and return one score per candidate; diversity, deduplication, and the
+token/paragraph budget remain in compact synthesis. `bm25` is the window scorer
+described above. Retrieval eval results record the active `passage_ranker`.
 
 The token budget includes the serialized system/user messages, question,
 citation metadata, response schema, and a small framing allowance. It excludes

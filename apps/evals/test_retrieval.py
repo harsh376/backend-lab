@@ -184,6 +184,7 @@ async def test_retrieval_activity_uses_production_retriever_and_bounds_output(
             "limit": 50,
             "corpus_version": "test-index",
             "synthesis_service": "ExtractiveSynthesisService",
+            "passage_ranker": None,
         },
     }
     scores = result["evaluators"]["retrieval_recall_at_k"]
@@ -352,7 +353,7 @@ async def test_passage_recall_scores_prepared_synthesis_input_per_cutoff(
     prepared = []
 
     class FirstParagraphOnly(ExtractiveSynthesisService):
-        def prepare_input(self, data):
+        async def prepare_input(self, data):
             prepared.append(len(data.evidences))
             paragraphs = [e.citation_paragraphs()[0] for e in data.evidences]
             return SynthesisInput(data.question, paragraphs)

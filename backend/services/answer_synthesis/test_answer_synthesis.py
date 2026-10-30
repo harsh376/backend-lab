@@ -395,14 +395,14 @@ async def test_shared_validation_preserves_accounting(variation):
     assert checked is not result
 
 
-def test_prompt_groups_complete_articles_without_filtering():
+async def test_prompt_groups_complete_articles_without_filtering():
     paragraphs = [
         Paragraph("v:1:0", "v", "1", 0, "One", "Section::::History."),
         Paragraph("v:1:1", "v", "1", 1, "One", ""),
         Paragraph("v:1:2", "v", "1", 2, "One", "Unrelated words still included."),
         Paragraph("v:2:0", "v", "2", 0, "Two", "Second article."),
     ]
-    messages = FullArticleSynthesisService(settings())._build_messages(
+    messages = await FullArticleSynthesisService(settings())._build_messages(
         SynthesisInput("question", paragraphs)
     )
     payload = json.loads(messages[1]["content"])
@@ -417,7 +417,7 @@ def test_prompt_groups_complete_articles_without_filtering():
     ] == [p.paragraph_ref for p in paragraphs]
 
 
-def test_article_evidences_remain_separate_and_citations_keep_article_identity():
+async def test_article_evidences_remain_separate_and_citations_keep_article_identity():
     from backend.services.answer_synthesis.answer_synthesis import ArticleEvidence
 
     evidences = [
@@ -425,9 +425,8 @@ def test_article_evidences_remain_separate_and_citations_keep_article_identity()
         ArticleEvidence("20", "v", "456", "Second", ["Other body"]),
     ]
     data = SynthesisInput(question="question", evidences=evidences)
-    payload = json.loads(
-        FullArticleSynthesisService(settings())._build_messages(data)[1]["content"]
-    )
+    messages = await FullArticleSynthesisService(settings())._build_messages(data)
+    payload = json.loads(messages[1]["content"])
     assert [a["article_id"] for a in payload["articles"]] == ["10", "20"]
     assert [p["text"] for p in payload["articles"][0]["paragraphs"]] == [
         "Heading",
@@ -452,7 +451,7 @@ def compact_adapter(**overrides):
     return CompactArticleSynthesisService(config)
 
 
-def test_compact_selects_deep_evidence_from_tenth_article_and_preserves_offsets():
+async def test_compact_selects_deep_evidence_from_tenth_article_and_preserves_offsets():
     from backend.domains.kilt import ArticleEvidence
 
     articles = [
@@ -475,7 +474,7 @@ def test_compact_selects_deep_evidence_from_tenth_article_and_preserves_offsets(
     )
     data = SynthesisInput("When did the magazine begin?", evidences=articles)
     adapter = compact_adapter()
-    prepared = adapter.prepare_input(data)
+    prepared = await adapter.prepare_input(data)
     assert any(p.paragraph_ref == "v:9:32" for p in prepared.paragraphs)
     assert len(prepared.paragraphs) <= 5
     assert len({p.text for p in prepared.paragraphs}) == len(prepared.paragraphs)
@@ -489,31 +488,35 @@ def test_compact_selects_deep_evidence_from_tenth_article_and_preserves_offsets(
     assert adapter._context_tokens(prepared) <= 2000
 
 
-def test_compact_budget_skips_oversized_paragraph_without_truncating_citations():
+async def test_compact_budget_skips_oversized_paragraph_without_truncating_citations():
     paragraphs = [
         Paragraph("v:1:0", "v", "1", 0, "Magazine", "magazine began " * 5000),
         Paragraph("v:2:7", "v", "2", 7, "Magazine", "The magazine began in 1844."),
     ]
     adapter = compact_adapter(mcp_answer_context_max_tokens=700)
     data = SynthesisInput("When did the magazine begin?", paragraphs)
-    prepared = adapter.prepare_input(data)
+    prepared = await adapter.prepare_input(data)
     assert prepared.paragraphs == [paragraphs[1]]
     assert prepared.paragraphs[0] is paragraphs[1]
     assert adapter._context_tokens(prepared) <= 700
-    assert adapter._build_messages(data) == adapter._serialize_messages(prepared)
+    assert await adapter._build_messages(data) == adapter._serialize_messages(prepared)
 
 
-def test_compact_keeps_multiple_articles_and_original_paragraph_order():
+async def test_compact_keeps_multiple_articles_and_original_paragraph_order():
     paragraphs = [
         Paragraph("v:1:8", "v", "1", 8, "One", "Alpha publisher is Acme."),
         Paragraph("v:1:2", "v", "1", 2, "One", "Alpha publisher was founded earlier."),
         Paragraph("v:2:4", "v", "2", 4, "Two", "Beta publisher is Acme."),
     ]
     adapter = compact_adapter(mcp_answer_context_max_paragraphs=2)
-    prepared = adapter.prepare_input(SynthesisInput("Alpha Beta publisher", paragraphs))
+    prepared = await adapter.prepare_input(
+        SynthesisInput("Alpha Beta publisher", paragraphs)
+    )
     assert {p.wikipedia_id for p in prepared.paragraphs} == {"1", "2"}
     adapter.context_max_paragraphs = 5
-    prepared = adapter.prepare_input(SynthesisInput("Alpha Beta publisher", paragraphs))
+    prepared = await adapter.prepare_input(
+        SynthesisInput("Alpha Beta publisher", paragraphs)
+    )
     assert [p.paragraph_id for p in prepared.paragraphs if p.wikipedia_id == "1"] == [
         2,
         8,
@@ -533,7 +536,7 @@ async def test_compact_rejects_citation_to_retrieved_but_omitted_paragraph(
     )
     adapter = compact_adapter(mcp_answer_context_max_paragraphs=1)
     data = SynthesisInput("When did magazine magazine begin?", [evidence, other])
-    selected = adapter.prepare_input(data).paragraphs
+    selected = (await adapter.prepare_input(data)).paragraphs
     omitted = next(p for p in [evidence, other] if p not in selected)
     content = json.loads(completion.return_value.choices[0].message.content)
     content["citation_ids"] = [omitted.paragraph_ref]
@@ -542,7 +545,9 @@ async def test_compact_rejects_citation_to_retrieved_but_omitted_paragraph(
     assert result.abstained
     assert result.citations == []
     assert result.usage["total_tokens"] == 120
-    assert completion.call_args.kwargs["messages"] == adapter._build_messages(data)
+    assert completion.call_args.kwargs["messages"] == await adapter._build_messages(
+        data
+    )
 
 
 async def test_compact_no_fitting_context_skips_model(completion, evidence):
@@ -552,7 +557,7 @@ async def test_compact_no_fitting_context_skips_model(completion, evidence):
     completion.assert_not_awaited()
 
 
-def test_full_mode_bypasses_compact_limits(evidence):
+async def test_full_mode_bypasses_compact_limits(evidence):
     config = settings().model_copy(
         update={
             "mcp_answer_context_mode": "full",
@@ -563,8 +568,8 @@ def test_full_mode_bypasses_compact_limits(evidence):
     adapter = FullArticleSynthesisService(config)
     paragraphs = [evidence, replace(evidence, paragraph_ref="v:1:1", paragraph_id=1)]
     data = SynthesisInput("When?", paragraphs)
-    assert adapter.prepare_input(data) is data
-    payload = json.loads(adapter._build_messages(data)[1]["content"])
+    assert (await adapter.prepare_input(data)) is data
+    payload = json.loads((await adapter._build_messages(data))[1]["content"])
     assert len(payload["articles"][0]["paragraphs"]) == 2
 
 
@@ -596,4 +601,4 @@ async def test_ollama_quote_and_generation_use_identical_article_context(
         adapter.model.quote.call_args.args[0] == completion.call_args.kwargs["messages"]
     )
     if isinstance(adapter, CompactArticleSynthesisService):
-        assert adapter._context_tokens(adapter.prepare_input(data)) <= 2000
+        assert adapter._context_tokens(await adapter.prepare_input(data)) <= 2000

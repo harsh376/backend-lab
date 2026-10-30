@@ -15,7 +15,11 @@ from backend.budget import BudgetReport, Reservation
 from backend.config import Settings
 from backend.domains.kilt import ArticleEvidence, Paragraph
 from backend.llm import LiteLLMStructuredModel, StructuredModel, no_observation
-from backend.repositories.kilt_ranking import score_paragraphs
+from backend.services.passage_ranking.passage_ranking import (
+    PassageRanker,
+    RankedCandidate,
+    create_passage_ranker,
+)
 
 
 @dataclass
@@ -91,7 +95,7 @@ class AnswerSynthesisService(ABC):
             )
         return result
 
-    def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
+    async def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
         """Select the exact evidence a synthesis call receives after retrieval."""
         return data
 
@@ -171,7 +175,7 @@ class ModelAnswerSynthesisService(AnswerSynthesisService):
         self.model = model
 
     async def _synthesize(self, data: SynthesisInput) -> AnswerResult:
-        data = await asyncio.to_thread(self.prepare_input, data)
+        data = await self.prepare_input(data)
         if not data.citation_paragraphs():
             return AnswerResult(
                 "",
@@ -193,15 +197,16 @@ class ModelAnswerSynthesisService(AnswerSynthesisService):
         )
 
     async def quote(self, data: SynthesisInput) -> Reservation:
-        messages = await asyncio.to_thread(self._build_messages, data)
+        messages = await self._build_messages(data)
         return self.model.quote(messages, SynthesisResponse)
 
-    def _build_messages(self, data: SynthesisInput) -> list[dict[str, str]]:
+    async def _build_messages(self, data: SynthesisInput) -> list[dict[str, str]]:
         # Quotes and generation use identical deterministic selection and packing.
-        return self._serialize_messages(self.prepare_input(data))
+        prepared = await self.prepare_input(data)
+        return await asyncio.to_thread(self._serialize_messages, prepared)
 
     @abstractmethod
-    def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
+    async def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
         """Select the exact evidence used for quoting and generation."""
         ...
 
@@ -310,7 +315,7 @@ class FullArticleSynthesisService(ModelAnswerSynthesisService):
     system_prompt = FULL_SYSTEM_PROMPT
     prompt_version = PROMPT_VERSION
 
-    def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
+    async def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
         return data
 
 
@@ -326,21 +331,39 @@ class CompactArticleSynthesisService(ModelAnswerSynthesisService):
         *,
         model: StructuredModel | None = None,
         observation_factory: Callable[..., AbstractContextManager] = no_observation,
+        passage_ranker: PassageRanker | None = None,
     ):
         super().__init__(settings, model=model, observation_factory=observation_factory)
         context_settings = settings or Settings()
         self.context_max_tokens = context_settings.mcp_answer_context_max_tokens
         self.context_max_paragraphs = context_settings.mcp_answer_context_max_paragraphs
+        self.passage_ranker = passage_ranker or create_passage_ranker(context_settings)
 
-    def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
+    async def prepare_input(self, data: SynthesisInput) -> SynthesisInput:
+        # Article rank is first-appearance order, which is evidence order.
+        article_ranks: dict[tuple[str, str], int] = {}
+        for p in data.citation_paragraphs():
+            article_ranks.setdefault(
+                (p.corpus_version, p.wikipedia_id), len(article_ranks)
+            )
         paragraphs = [
             p
             for p in data.citation_paragraphs()
             if p.text.strip() and not p.text.startswith("Section::::")
         ]
-        scores = score_paragraphs(
-            data.question, [(p.title, p.text) for p in paragraphs]
+        scores = await self.passage_ranker.score(
+            data.question,
+            [
+                RankedCandidate(p, article_ranks[(p.corpus_version, p.wikipedia_id)])
+                for p in paragraphs
+            ],
         )
+        return await asyncio.to_thread(self._pack, data, paragraphs, scores)
+
+    def _pack(
+        self, data: SynthesisInput, paragraphs: list[Paragraph], scores: list[float]
+    ) -> SynthesisInput:
+        """Greedily select ranked paragraphs within the context budget."""
         remaining = list(range(len(paragraphs)))
         selected: list[Paragraph] = []
         article_counts: Counter[tuple[str, str]] = Counter()
