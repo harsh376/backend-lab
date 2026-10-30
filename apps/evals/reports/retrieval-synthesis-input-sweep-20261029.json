@@ -1,0 +1,1916 @@
+{
+  "description": "Compact synthesis context sweep scored by passage recall on prepared synthesis input; retrieval unchanged across runs.",
+  "configuration": {
+    "tags": [
+      "passage_verified"
+    ],
+    "retrieval_limit": 10,
+    "passage_ranker": "bm25 (score_paragraphs, pre-PassageRanker)",
+    "scoring_version": "synthesis-input-passage-recall-v4",
+    "code": "8f8bf7a",
+    "corpus_version": "kilt",
+    "dataset_sha256": "f37abbe8dfd9962907b5848a28b6b025567a7169c17d029cdbcd47db3690f89e"
+  },
+  "runs": [
+    {
+      "name": "p5-t2000",
+      "experiment_name": "retrieval-synthesis-input-baseline-20261029",
+      "run_id": "kilt-eval-retrieval-f616e3a3-de4d-4f16-b7c0-4afa9553741e",
+      "experiment_url": "https://us.cloud.langfuse.com/project/cmv8er3760322ad0gyvm1n67l/experiments/results?baseline=850770235b0458de82f30242279d9fee",
+      "context_mode": "compact",
+      "max_paragraphs": 5,
+      "max_tokens": 2000,
+      "coverage": {
+        "total": 33,
+        "completed": 33,
+        "failed": 0,
+        "recall@5_scored": 33,
+        "recall@5_skipped": 0,
+        "recall@10_scored": 33,
+        "recall@10_skipped": 0,
+        "recall@50_scored": 0,
+        "recall@50_skipped": 33,
+        "recall@100_scored": 0,
+        "recall@100_skipped": 33,
+        "passage_recall@5_scored": 33,
+        "passage_recall@5_skipped": 0,
+        "passage_recall@10_scored": 33,
+        "passage_recall@10_skipped": 0,
+        "passage_recall@50_scored": 0,
+        "passage_recall@50_skipped": 33,
+        "passage_recall@100_scored": 0,
+        "passage_recall@100_skipped": 33
+      },
+      "retrieval_summary": {
+        "recall@5": 0.7272727272727273,
+        "recall@5_count": 33,
+        "recall@10": 0.7878787878787878,
+        "recall@10_count": 33,
+        "recall@50": null,
+        "recall@50_count": 0,
+        "recall@100": null,
+        "recall@100_count": 0,
+        "passage_recall@5": 0.3333333333333333,
+        "passage_recall@5_count": 33,
+        "passage_recall@10": 0.30303030303030304,
+        "passage_recall@10_count": 33,
+        "passage_recall@50": null,
+        "passage_recall@50_count": 0,
+        "passage_recall@100": null,
+        "passage_recall@100_count": 0
+      },
+      "per_case": {
+        "nq-dev-737118727843422688": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev-3311962143974666464": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--7779084475859441741": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev-5150934530929664244": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--9141276525854297532": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--3431328641910966671": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--4909301147922823976": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--2796541333611735730": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--6171145136739461013": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--4392475526001139368": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev-5098377822521811712": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev-1864282688423355455": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev-2098168902147822379": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev-6229275979490979874": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--8834996069938989383": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--6145868466021183224": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--8491993331568056625": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "nq-dev--7052052953885262396": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5ae0345855429924de1b705f": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5a73b2cb55429908901be31a": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5a8b50475542997f31a41cd4": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5ae2c509554299492dc91c68": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5ade51515542992fa25da745": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5a80a7f6554299485f598680": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5a85ecf25542991dd0999ec6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5a8887a055429938390d3f72": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5ab499a55542996a3a969f9f": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5a8ba3ff55429971feec4744": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5abfaa445542990832d3a18c": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5ae17f1e5542990adbacf7a6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5a78b209554299148911f93e": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5ae50c345542993aec5ec11f": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        },
+        "hotpotqa-dev-5a7a03225542996c55b2dcd5": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 5,
+            "10": 5
+          }
+        }
+      }
+    },
+    {
+      "name": "p8-t3500",
+      "experiment_name": "retrieval-synthesis-input-p8-t3500-20261029",
+      "run_id": "kilt-eval-retrieval-021d6341-2be8-4261-949c-0de4e5ba1a3f",
+      "experiment_url": "https://us.cloud.langfuse.com/project/cmv8er3760322ad0gyvm1n67l/experiments/results?baseline=1254cd6386685c3e89266d93079e7bd1",
+      "context_mode": "compact",
+      "max_paragraphs": 8,
+      "max_tokens": 3500,
+      "coverage": {
+        "total": 33,
+        "completed": 33,
+        "failed": 0,
+        "recall@5_scored": 33,
+        "recall@5_skipped": 0,
+        "recall@10_scored": 33,
+        "recall@10_skipped": 0,
+        "recall@50_scored": 0,
+        "recall@50_skipped": 33,
+        "recall@100_scored": 0,
+        "recall@100_skipped": 33,
+        "passage_recall@5_scored": 33,
+        "passage_recall@5_skipped": 0,
+        "passage_recall@10_scored": 33,
+        "passage_recall@10_skipped": 0,
+        "passage_recall@50_scored": 0,
+        "passage_recall@50_skipped": 33,
+        "passage_recall@100_scored": 0,
+        "passage_recall@100_skipped": 33
+      },
+      "retrieval_summary": {
+        "recall@5": 0.7272727272727273,
+        "recall@5_count": 33,
+        "recall@10": 0.7878787878787878,
+        "recall@10_count": 33,
+        "recall@50": null,
+        "recall@50_count": 0,
+        "recall@100": null,
+        "recall@100_count": 0,
+        "passage_recall@5": 0.4191919191919192,
+        "passage_recall@5_count": 33,
+        "passage_recall@10": 0.3787878787878788,
+        "passage_recall@10_count": 33,
+        "passage_recall@50": null,
+        "passage_recall@50_count": 0,
+        "passage_recall@100": null,
+        "passage_recall@100_count": 0
+      },
+      "per_case": {
+        "nq-dev-737118727843422688": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev-3311962143974666464": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--7779084475859441741": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev-5150934530929664244": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--9141276525854297532": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--3431328641910966671": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--4909301147922823976": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--2796541333611735730": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--6171145136739461013": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--4392475526001139368": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev-5098377822521811712": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev-1864282688423355455": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev-2098168902147822379": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev-6229275979490979874": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--8834996069938989383": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--6145868466021183224": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--8491993331568056625": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "nq-dev--7052052953885262396": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5ae0345855429924de1b705f": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5a73b2cb55429908901be31a": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5a8b50475542997f31a41cd4": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5ae2c509554299492dc91c68": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5ade51515542992fa25da745": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5a80a7f6554299485f598680": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5a85ecf25542991dd0999ec6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5a8887a055429938390d3f72": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.3333333333333333,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5ab499a55542996a3a969f9f": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5a8ba3ff55429971feec4744": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5abfaa445542990832d3a18c": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5ae17f1e5542990adbacf7a6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5a78b209554299148911f93e": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5ae50c345542993aec5ec11f": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        },
+        "hotpotqa-dev-5a7a03225542996c55b2dcd5": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 8,
+            "10": 8
+          }
+        }
+      }
+    },
+    {
+      "name": "p12-t5000",
+      "experiment_name": "retrieval-synthesis-input-p12-t5000-20261029",
+      "run_id": "kilt-eval-retrieval-4fca0582-c912-4bbe-9571-ee4447682225",
+      "experiment_url": "https://us.cloud.langfuse.com/project/cmv8er3760322ad0gyvm1n67l/experiments/results?baseline=76f6f70157ed5d84bb44362ee0420e54",
+      "context_mode": "compact",
+      "max_paragraphs": 12,
+      "max_tokens": 5000,
+      "coverage": {
+        "total": 33,
+        "completed": 33,
+        "failed": 0,
+        "recall@5_scored": 33,
+        "recall@5_skipped": 0,
+        "recall@10_scored": 33,
+        "recall@10_skipped": 0,
+        "recall@50_scored": 0,
+        "recall@50_skipped": 33,
+        "recall@100_scored": 0,
+        "recall@100_skipped": 33,
+        "passage_recall@5_scored": 33,
+        "passage_recall@5_skipped": 0,
+        "passage_recall@10_scored": 33,
+        "passage_recall@10_skipped": 0,
+        "passage_recall@50_scored": 0,
+        "passage_recall@50_skipped": 33,
+        "passage_recall@100_scored": 0,
+        "passage_recall@100_skipped": 33
+      },
+      "retrieval_summary": {
+        "recall@5": 0.7272727272727273,
+        "recall@5_count": 33,
+        "recall@10": 0.7878787878787878,
+        "recall@10_count": 33,
+        "recall@50": null,
+        "recall@50_count": 0,
+        "recall@100": null,
+        "recall@100_count": 0,
+        "passage_recall@5": 0.5252525252525252,
+        "passage_recall@5_count": 33,
+        "passage_recall@10": 0.4494949494949495,
+        "passage_recall@10_count": 33,
+        "passage_recall@50": null,
+        "passage_recall@50_count": 0,
+        "passage_recall@100": null,
+        "passage_recall@100_count": 0
+      },
+      "per_case": {
+        "nq-dev-737118727843422688": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev-3311962143974666464": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--7779084475859441741": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev-5150934530929664244": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--9141276525854297532": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--3431328641910966671": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--4909301147922823976": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--2796541333611735730": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--6171145136739461013": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--4392475526001139368": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev-5098377822521811712": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev-1864282688423355455": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev-2098168902147822379": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev-6229275979490979874": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--8834996069938989383": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--6145868466021183224": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--8491993331568056625": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "nq-dev--7052052953885262396": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5ae0345855429924de1b705f": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5a73b2cb55429908901be31a": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5a8b50475542997f31a41cd4": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5ae2c509554299492dc91c68": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5ade51515542992fa25da745": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5a80a7f6554299485f598680": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5a85ecf25542991dd0999ec6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5a8887a055429938390d3f72": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.3333333333333333,
+          "passage_recall@10": 0.3333333333333333,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5ab499a55542996a3a969f9f": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5a8ba3ff55429971feec4744": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5abfaa445542990832d3a18c": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5ae17f1e5542990adbacf7a6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5a78b209554299148911f93e": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5ae50c345542993aec5ec11f": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        },
+        "hotpotqa-dev-5a7a03225542996c55b2dcd5": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 12,
+            "10": 12
+          }
+        }
+      }
+    },
+    {
+      "name": "p20-t8000",
+      "experiment_name": "retrieval-synthesis-input-p20-t8000-20261029",
+      "run_id": "kilt-eval-retrieval-d496556c-53bf-4f76-aef1-24ec01415d36",
+      "experiment_url": "https://us.cloud.langfuse.com/project/cmv8er3760322ad0gyvm1n67l/experiments/results?baseline=8fc02c9fdc1250ccbf7a234bd1834f8a",
+      "context_mode": "compact",
+      "max_paragraphs": 20,
+      "max_tokens": 8000,
+      "coverage": {
+        "total": 33,
+        "completed": 33,
+        "failed": 0,
+        "recall@5_scored": 33,
+        "recall@5_skipped": 0,
+        "recall@10_scored": 33,
+        "recall@10_skipped": 0,
+        "recall@50_scored": 0,
+        "recall@50_skipped": 33,
+        "recall@100_scored": 0,
+        "recall@100_skipped": 33,
+        "passage_recall@5_scored": 33,
+        "passage_recall@5_skipped": 0,
+        "passage_recall@10_scored": 33,
+        "passage_recall@10_skipped": 0,
+        "passage_recall@50_scored": 0,
+        "passage_recall@50_skipped": 33,
+        "passage_recall@100_scored": 0,
+        "passage_recall@100_skipped": 33
+      },
+      "retrieval_summary": {
+        "recall@5": 0.7272727272727273,
+        "recall@5_count": 33,
+        "recall@10": 0.7878787878787878,
+        "recall@10_count": 33,
+        "recall@50": null,
+        "recall@50_count": 0,
+        "recall@100": null,
+        "recall@100_count": 0,
+        "passage_recall@5": 0.5656565656565657,
+        "passage_recall@5_count": 33,
+        "passage_recall@10": 0.5202020202020202,
+        "passage_recall@10_count": 33,
+        "passage_recall@50": null,
+        "passage_recall@50_count": 0,
+        "passage_recall@100": null,
+        "passage_recall@100_count": 0
+      },
+      "per_case": {
+        "nq-dev-737118727843422688": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev-3311962143974666464": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--7779084475859441741": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev-5150934530929664244": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--9141276525854297532": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--3431328641910966671": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--4909301147922823976": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--2796541333611735730": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--6171145136739461013": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--4392475526001139368": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev-5098377822521811712": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev-1864282688423355455": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev-2098168902147822379": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev-6229275979490979874": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--8834996069938989383": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--6145868466021183224": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--8491993331568056625": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "nq-dev--7052052953885262396": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5ae0345855429924de1b705f": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5a73b2cb55429908901be31a": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5a8b50475542997f31a41cd4": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5ae2c509554299492dc91c68": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5ade51515542992fa25da745": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5a80a7f6554299485f598680": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5a85ecf25542991dd0999ec6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5a8887a055429938390d3f72": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.6666666666666666,
+          "passage_recall@10": 0.6666666666666666,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5ab499a55542996a3a969f9f": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5a8ba3ff55429971feec4744": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5abfaa445542990832d3a18c": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5ae17f1e5542990adbacf7a6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5a78b209554299148911f93e": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5ae50c345542993aec5ec11f": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        },
+        "hotpotqa-dev-5a7a03225542996c55b2dcd5": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 20,
+            "10": 20
+          }
+        }
+      }
+    },
+    {
+      "name": "full",
+      "experiment_name": "retrieval-synthesis-input-full-20261029",
+      "run_id": "kilt-eval-retrieval-9b3c8304-8e40-4ca2-90d2-762413e8d5fe",
+      "experiment_url": "https://us.cloud.langfuse.com/project/cmv8er3760322ad0gyvm1n67l/experiments/results?baseline=b9ceece024d65a91a94efe0c1edcb122",
+      "context_mode": "full",
+      "max_paragraphs": null,
+      "max_tokens": null,
+      "coverage": {
+        "total": 33,
+        "completed": 33,
+        "failed": 0,
+        "recall@5_scored": 33,
+        "recall@5_skipped": 0,
+        "recall@10_scored": 33,
+        "recall@10_skipped": 0,
+        "recall@50_scored": 0,
+        "recall@50_skipped": 33,
+        "recall@100_scored": 0,
+        "recall@100_skipped": 33,
+        "passage_recall@5_scored": 33,
+        "passage_recall@5_skipped": 0,
+        "passage_recall@10_scored": 33,
+        "passage_recall@10_skipped": 0,
+        "passage_recall@50_scored": 0,
+        "passage_recall@50_skipped": 33,
+        "passage_recall@100_scored": 0,
+        "passage_recall@100_skipped": 33
+      },
+      "retrieval_summary": {
+        "recall@5": 0.7272727272727273,
+        "recall@5_count": 33,
+        "recall@10": 0.7878787878787878,
+        "recall@10_count": 33,
+        "recall@50": null,
+        "recall@50_count": 0,
+        "recall@100": null,
+        "recall@100_count": 0,
+        "passage_recall@5": 0.7323232323232324,
+        "passage_recall@5_count": 33,
+        "passage_recall@10": 0.7878787878787878,
+        "passage_recall@10_count": 33,
+        "passage_recall@50": null,
+        "passage_recall@50_count": 0,
+        "passage_recall@100": null,
+        "passage_recall@100_count": 0
+      },
+      "per_case": {
+        "nq-dev-737118727843422688": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 161,
+            "10": 1112
+          }
+        },
+        "nq-dev-3311962143974666464": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 160,
+            "10": 335
+          }
+        },
+        "nq-dev--7779084475859441741": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 470,
+            "10": 651
+          }
+        },
+        "nq-dev-5150934530929664244": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 385,
+            "10": 927
+          }
+        },
+        "nq-dev--9141276525854297532": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 163,
+            "10": 215
+          }
+        },
+        "nq-dev--3431328641910966671": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 204,
+            "10": 523
+          }
+        },
+        "nq-dev--4909301147922823976": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 869,
+            "10": 1271
+          }
+        },
+        "nq-dev--2796541333611735730": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 244,
+            "10": 404
+          }
+        },
+        "nq-dev--6171145136739461013": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 375,
+            "10": 421
+          }
+        },
+        "nq-dev--4392475526001139368": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 285,
+            "10": 627
+          }
+        },
+        "nq-dev-5098377822521811712": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 298,
+            "10": 835
+          }
+        },
+        "nq-dev-1864282688423355455": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 445,
+            "10": 621
+          }
+        },
+        "nq-dev-2098168902147822379": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 370,
+            "10": 742
+          }
+        },
+        "nq-dev-6229275979490979874": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 267,
+            "10": 428
+          }
+        },
+        "nq-dev--8834996069938989383": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 230,
+            "10": 402
+          }
+        },
+        "nq-dev--6145868466021183224": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 723,
+            "10": 797
+          }
+        },
+        "nq-dev--8491993331568056625": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 709,
+            "10": 1387
+          }
+        },
+        "nq-dev--7052052953885262396": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 470,
+            "10": 629
+          }
+        },
+        "hotpotqa-dev-5ae0345855429924de1b705f": {
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "passage_recall@5": 0.0,
+          "passage_recall@10": 0.0,
+          "synthesis_paragraph_counts": {
+            "5": 92,
+            "10": 184
+          }
+        },
+        "hotpotqa-dev-5a73b2cb55429908901be31a": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 168,
+            "10": 340
+          }
+        },
+        "hotpotqa-dev-5a8b50475542997f31a41cd4": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 201,
+            "10": 642
+          }
+        },
+        "hotpotqa-dev-5ae2c509554299492dc91c68": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 218,
+            "10": 398
+          }
+        },
+        "hotpotqa-dev-5ade51515542992fa25da745": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 300,
+            "10": 603
+          }
+        },
+        "hotpotqa-dev-5a80a7f6554299485f598680": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 72,
+            "10": 228
+          }
+        },
+        "hotpotqa-dev-5a85ecf25542991dd0999ec6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 259,
+            "10": 577
+          }
+        },
+        "hotpotqa-dev-5a8887a055429938390d3f72": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.6666666666666666,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 596,
+            "10": 760
+          }
+        },
+        "hotpotqa-dev-5ab499a55542996a3a969f9f": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 253,
+            "10": 438
+          }
+        },
+        "hotpotqa-dev-5a8ba3ff55429971feec4744": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 310,
+            "10": 371
+          }
+        },
+        "hotpotqa-dev-5abfaa445542990832d3a18c": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 126,
+            "10": 333
+          }
+        },
+        "hotpotqa-dev-5ae17f1e5542990adbacf7a6": {
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 360,
+            "10": 617
+          }
+        },
+        "hotpotqa-dev-5a78b209554299148911f93e": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 215,
+            "10": 301
+          }
+        },
+        "hotpotqa-dev-5ae50c345542993aec5ec11f": {
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "passage_recall@5": 1.0,
+          "passage_recall@10": 1.0,
+          "synthesis_paragraph_counts": {
+            "5": 136,
+            "10": 356
+          }
+        },
+        "hotpotqa-dev-5a7a03225542996c55b2dcd5": {
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "passage_recall@5": 0.5,
+          "passage_recall@10": 0.5,
+          "synthesis_paragraph_counts": {
+            "5": 151,
+            "10": 283
+          }
+        }
+      }
+    }
+  ]
+}

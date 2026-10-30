@@ -154,3 +154,71 @@ stable fusion and deduplication, fallback queries, citation preservation, and
 consistent candidate pools across output limits. Both local workers were rebuilt
 and restarted. To repeat, call `answers.run_retrieval_evals` with `limit=null`,
 `retrieval_limit=100`, and a unique experiment name, then poll `answers.get_evals`.
+
+## Synthesis context, passage ranking, and judge baselines (2026-10-29)
+
+All runs use the 33 local `passage_verified` cases, corpus `kilt`, retrieval
+limit 10 (the answer workflow's limit), and `ollama_chat/qwen3.8` for synthesis,
+verification, and judging. Dataset SHA-256 remains
+`f37abbe8dfd9962907b5848a28b6b025567a7169c17d029cdbcd47db3690f89e`.
+
+### Passage recall on synthesis input
+
+`passage_recall@K` now scores the paragraphs compact synthesis actually receives
+(`prepare_input` over the top K articles), not whole retrieved articles.
+`retrieval-synthesis-input-sweep-20261029.json` records five runs (summaries and
+per-case scores). Retrieval was identical in every run (recall@5 0.727,
+recall@10 0.788).
+
+| Paragraphs / tokens | passage_recall@5 | passage_recall@10 | Paragraphs selected @10 |
+| --- | ---: | ---: | ---: |
+| 5 / 2000 | 0.333 | 0.303 | 5 |
+| 8 / 3500 | 0.419 | 0.379 | 8 |
+| 12 / 5000 | 0.525 | 0.449 | 12 |
+| 20 / 8000 | 0.566 | 0.520 | 20 |
+| full | 0.732 | 0.788 | ~568 (median 523) |
+
+The paragraph cap bound every compact case. At 5/2000, 15 of the 28 cases whose
+reference page was retrieved lost every reference paragraph during selection.
+12/5000 became the default.
+
+`retrieval-passage-ranker-bm25-20261029.json` is the retrieval baseline after
+passage scoring moved behind `PassageRanker` (`bm25`). It reproduced the
+12/5000 sweep run exactly for all 33 cases.
+
+### Judge temperature
+
+`judge-rejudge-20261029.json` re-judged 66 saved answers three times under each
+condition and compared verdicts with hand labels (strict specificity: a year does
+not match a full-date reference).
+
+| Judge | Agreement with labels | False correct / false incorrect | Answers with disagreeing samples |
+| --- | ---: | ---: | ---: |
+| v1, model default sampling (temperature 1) | 193 / 198 | 3 / 2 | 4 / 66 |
+| v1, temperature 0 | 198 / 198 | 0 / 0 | 0 / 66 |
+| candidate v2 prompt, temperature 0 | 198 / 198 | 0 / 0 | 0 / 66 |
+
+Temperature alone removed the judge noise, so the judge now runs at
+`EVAL_JUDGE_TEMPERATURE=0` with the unchanged `answer-correctness-v1` prompt.
+Labels are one reviewer's; three ambiguous labels are listed in the file.
+
+### Answer baselines
+
+Both runs used commit `bca5553` (clean tree), verification enabled, and the
+temperature-0 judge. Each file includes `baseline_configuration`.
+
+| Context | Correctness | Answered | Correct / answered | Median case time |
+| --- | ---: | ---: | ---: | ---: |
+| 12 / 5000 (`answer-passage-verified-p12-t5000-judge-t0-20261029.json`) | **0.485** (16/33) | 21 | 76% | 10.5 s |
+| 5 / 2000 (`answer-passage-verified-p5-t2000-judge-t0-20261029.json`) | 0.364 (12/33) | 15 | 80% | 6.4 s |
+
+12/5000 answered four cases correctly that 5/2000 did not, and none the other way.
+Synthesis and verification still sample at the model default: against same-day
+runs with the earlier judge, outcomes changed on 7 (12/5000) and 4 (5/2000) of
+33 cases, so expect about ±2–3 cases between runs. Correctness from earlier
+reports was judged at the model default and is not directly comparable.
+
+Of the five answered-but-incorrect cases at 12/5000, two have gold answers that
+disagree with the corpus snapshot (Army–Navy 2018 vs 2017; first
+Governor-General), one is a year for a full-date reference (Clifford), and two
+need a second-hop article that was not retrieved (Stokely Webster, Gualeguaychú).
