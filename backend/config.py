@@ -109,8 +109,8 @@ class Settings(DatabaseSettings):
     mcp_answer_model: str = "openai/gpt-5.6-terra"
     mcp_answer_max_tokens: PositiveInt = 1024
     mcp_answer_context_mode: Literal["compact", "full"] = "compact"
-    mcp_answer_context_max_tokens: PositiveInt = 2000
-    mcp_answer_context_max_paragraphs: PositiveInt = 5
+    mcp_answer_context_max_tokens: PositiveInt = 5000
+    mcp_answer_context_max_paragraphs: PositiveInt = 12
     mcp_verifier_model: str = ""
     eval_judge_model: str = ""
     ollama_api_base: str = "http://localhost:11434"

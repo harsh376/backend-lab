@@ -102,7 +102,7 @@ Standalone retrieval evals configure their output size with `retrieval_limit`.
 
 Synthesis defaults to **Compact**: rank original paragraphs across all retrieved
 articles with the existing candidate-local BM25 window scorer, then select at
-most five paragraphs within an estimated 2,000-token input budget. Titles are
+most 12 paragraphs within an estimated 5,000-token input budget. Titles are
 included in scoring. After selecting a paragraph, other paragraphs from the same
 article receive a diminishing score (`score / (1 + selected_count)`) to encourage
 multi-article evidence. Ties follow retrieval and original paragraph order.
@@ -116,16 +116,31 @@ Configure the answer worker through environment variables (also forwarded by
 
 ```dotenv
 MCP_ANSWER_CONTEXT_MODE=compact
-MCP_ANSWER_CONTEXT_MAX_TOKENS=2000
-MCP_ANSWER_CONTEXT_MAX_PARAGRAPHS=5
+MCP_ANSWER_CONTEXT_MAX_TOKENS=5000
+MCP_ANSWER_CONTEXT_MAX_PARAGRAPHS=12
 ```
 
 The token budget includes the serialized system/user messages, question,
 citation metadata, response schema, and a small framing allowance. It excludes
 output tokens, which remain controlled by `MCP_ANSWER_MAX_TOKENS`. LiteLLM uses a
 generic tokenizer for unknown models, so this is an estimate; actual provider
-counts may differ, particularly for local Ollama models. It is an initial budget,
-not a measured match to `basline-v5`, whose prompt token counts are not stored here.
+counts may differ, particularly for local Ollama models.
+
+The 12/5000 default comes from a 2026-10-29 sweep over the 33 `passage_verified`
+cases at `retrieval_limit=10` (recall@10 0.788 in every run). The paragraph cap
+was always the binding limit:
+
+| Paragraphs / tokens | `passage_recall@10` |
+|---|---|
+| 5 / 2000 | 0.303 |
+| 8 / 3500 | 0.379 |
+| 12 / 5000 | 0.449 |
+| 20 / 8000 | 0.520 |
+| full | 0.788 |
+
+On `ollama_chat/qwen3.8`, prefill runs at roughly 480 tokens/s, so 12/5000 adds
+about 6 seconds of synthesis latency over 5/2000; larger settings trade
+diminishing recall for more latency.
 Whole paragraphs that do not fit are skipped rather than truncated. If no
 paragraph fits, synthesis abstains without a model call. This can lose evidence
 in unusually large paragraphs and must be checked in the next correctness eval.
