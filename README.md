@@ -2,6 +2,7 @@
 
 ## Posts
 
+- November 5, 2026: [Optimizing a RAG agent with evals](posts/2026-11-05-rag-eval-optimizations.md)
 - October 19, 2026: [MCP tool over a durable agent](posts/2026-10-19-mcp-tool-durable-agent.md)
 
 ## Monorepo structure:
