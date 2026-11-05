@@ -222,3 +222,69 @@ Of the five answered-but-incorrect cases at 12/5000, two have gold answers that
 disagree with the corpus snapshot (Army–Navy 2018 vs 2017; first
 Governor-General), one is a year for a full-date reference (Clifford), and two
 need a second-hop article that was not retrieved (Stokely Webster, Gualeguaychú).
+
+## Dataset review baselines (2026-11-04)
+
+The KILT dev set now has the [review](../datasets/kilt-v1/README.md#review)
+applied: 32 keep, 9 amend, 4 reject. All 33 `passage_verified` cases remain
+eligible, but 8 of them have amended gold answers or evidence, so scores from
+before this section are not directly comparable. These runs applied the review
+from a separate overlay file (recorded `dataset_version`
+`c5c0bdb5b415d68be364d537a597cd61f60e8da05ec5798d203e751fe8ff08c0`). The review
+was then merged into `dev.json` with identical cases; its SHA-256 is now
+`bdc9400de1c74937a3a32500466e0e61b0d2767d7c8430ad52a15fd49e6bebaa`.
+
+Both runs used the 33 `passage_verified` cases, retrieval limit 10, and the
+2026-10-29 settings (compact 12/5000, `bm25` passage ranker, verification
+enabled, temperature-0 judge), on commit `4875e53` plus the uncommitted review
+changes. Each file includes `baseline_configuration`.
+
+| Run | Before review (10-29) | After review |
+| --- | ---: | ---: |
+| `passage_recall@5` (`retrieval-passage-verified-reviewed-20261104.json`) | 0.525 | 0.556 |
+| `passage_recall@10` | 0.449 | 0.480 |
+| recall@10 | 0.788 | 0.788 |
+| Correctness (`answer-passage-verified-p12-t5000-reviewed-20261104.json`) | 0.485 (16/33) | 0.485 (16/33) |
+| Answered / correct of answered | 21 / 76% | 20 / 80% |
+| Median case time | 10.5 s | 10.5 s |
+
+The whole passage-recall gain is Army–Navy, whose gold evidence now points at the
+paragraph containing the answer. Retrieval itself did not change.
+
+In the answer run the Challengers case hit the activity StartToClose timeout; it
+was re-run alone and merged (`reruns` in the configuration). It abstained.
+
+The unchanged correctness hides opposite moves. Army–Navy became correct purely
+from the gold fix (the same answer, "December 8, 2018", was wrong on 10-29). The
+other changes are synthesis variance on cases whose gold did not change: Astros and
+end of World War II in the Pacific abstained after being correct, Shadows over
+Camelot became correct, and the first Governor-General abstained after answering
+"Lord William Bentinck", which the reviewed gold now accepts. Synthesis variance
+is now the main source of noise between runs.
+
+Of the four answered-but-incorrect cases, Clifford gives a year for a full-date
+reference, Olympics returned an unflagged "excerpts do not contain" answer, and
+Stokely Webster and Gualeguaychú need a second-hop article that was not retrieved.
+
+### Full reviewed set
+
+`answer-all-p12-t5000-reviewed-20261105.json` runs every eligible case (41: all
+cases except the 4 rejected) with the same settings and dataset version as the
+33-case run above. No case timed out.
+
+| Cases | Correctness | Answered | Median case time |
+| --- | ---: | ---: | ---: |
+| All 41 | **0.463** (19/41) | 23 | 11.2 s |
+| 33 `passage_verified` | 0.515 (17/33) | 20 | |
+| 8 without `passage_verified` | 0.250 (2/8) | 3 | |
+
+On the 33 `passage_verified` cases this run scored 17/33 against 16/33 the day
+before, with five cases changing outcome in opposite directions. First
+Governor-General (now "Lord William Bentinck"), Astros, and end of World War II in
+the Pacific became correct; Puerto Rico and Shadows over Camelot abstained after
+being correct. Two runs of identical settings therefore differ by about ±3 cases
+(±0.09), larger than most configuration effects measured so far.
+
+The 8 cases without `passage_verified` mostly abstain (5 of 8). Kubo answered
+"September 9, 2016", which the corpus article does not contain; the reference is
+the US release date, August 19, 2016.

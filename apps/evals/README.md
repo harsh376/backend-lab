@@ -70,6 +70,9 @@ The case limit defaults to `3` for both local and hosted datasets. Pass
 `limit=null` to run all eligible cases for either source. Local defaults:
 `tags=["page_verified"]`, `timeout=600` for answer evals.
 Tags require all matches; pass `tags=[]` to disable tag filtering.
+`exclude_tags` drops cases with any listed tag, e.g.
+`exclude_tags=["time_sensitive"]`; cases tagged `rejected` are always excluded.
+Local cases carry their [KILT review](datasets/kilt-v1/README.md#review) decisions.
 
 All answer and eval timeouts are fields on `Settings` in `backend/config.py`.
 Consumers construct `Settings()` at runtime. Fields beginning with `timeout_`

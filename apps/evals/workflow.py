@@ -20,6 +20,7 @@ class EvalRunRequest:
     case_id: str | None = None
     limit: int | None = 3
     tags: list[str] = field(default_factory=lambda: ["page_verified"])
+    exclude_tags: list[str] = field(default_factory=list)
     timeout: float | None = None
     trace_context: dict[str, str] | None = None
     experiment_name: str | None = None

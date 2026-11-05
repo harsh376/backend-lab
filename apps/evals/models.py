@@ -1,5 +1,6 @@
 """Evaluation dataset schemas and execution response contracts."""
 
+from datetime import date
 from enum import StrEnum
 from typing import Any, Literal, NotRequired, TypedDict
 
@@ -58,6 +59,16 @@ class Evidence(BaseModel):
         return self
 
 
+class CaseReview(BaseModel):
+    """Review of a case's gold answers and evidence against the corpus snapshot."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    decision: Literal["keep", "amend", "reject"]
+    reason: str = Field(min_length=1)
+    reviewed: date
+
+
 class EvalCase(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -78,6 +89,13 @@ class EvalCase(BaseModel):
             "has not been established. rejected excludes a case from evaluation."
         ),
     )
+    review: CaseReview | None = Field(
+        default=None,
+        description=(
+            "Review decision for this case. Amended cases keep their original gold "
+            "in source.original_output; rejected cases carry the rejected tag."
+        ),
+    )
 
     @model_validator(mode="after")
     def check_gold(self):
@@ -85,4 +103,8 @@ class EvalCase(BaseModel):
             raise ValueError("answerable cases require an accepted answer")
         if any(not evidence_set for evidence_set in self.evidence_sets):
             raise ValueError("evidence sets must not be empty")
+        if self.review is not None and (self.review.decision == "reject") != (
+            "rejected" in self.tags
+        ):
+            raise ValueError("a reject review and the rejected tag must agree")
         return self

@@ -5,17 +5,15 @@ import json
 import logging
 from contextlib import contextmanager
 from functools import lru_cache
-from pathlib import Path
 from urllib.parse import quote
 from uuid import NAMESPACE_URL, uuid5
 
 from opentelemetry import baggage, context, trace
 from temporalio import activity
 
+from apps.evals.datasets.dataset import LOCAL_DATASET
 from apps.mcp import telemetry
 from backend.config import Settings
-
-DATASET_PATH = Path(__file__).parent / "datasets/kilt-v1/dev.json"
 
 
 def experiment_id() -> str:
@@ -65,7 +63,7 @@ def experiment_item(request):
     if source.kind == "local":
         metadata.update(
             local_dataset="kilt-v1/dev",
-            dataset_version=hashlib.sha256(DATASET_PATH.read_bytes()).hexdigest(),
+            dataset_version=hashlib.sha256(LOCAL_DATASET.read_bytes()).hexdigest(),
         )
     else:
         metadata.update(dataset_name=source.dataset, dataset_version=source.version)

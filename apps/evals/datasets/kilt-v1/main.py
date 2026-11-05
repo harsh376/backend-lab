@@ -151,11 +151,30 @@ def identify_corpus(path: Path) -> dict:
     }
 
 
+def reviewed_case_count(path: Path) -> int:
+    try:
+        records = json.loads(path.read_text())
+    except ValueError:
+        return 0
+    if not isinstance(records, list):
+        return 0
+    return sum(
+        isinstance(record, dict) and bool(record.get("review")) for record in records
+    )
+
+
 def build_dataset(args) -> Path:
     destination = args.output_dir / "dev.json"
     manifest_path = args.output_dir / "manifest.json"
     if destination.exists() and not args.overwrite:
         raise ValueError(f"{destination} exists; use --overwrite to replace it")
+    if destination.exists() and not args.discard_reviews:
+        reviewed = reviewed_case_count(destination)
+        if reviewed:
+            raise ValueError(
+                f"{destination} has {reviewed} reviewed cases; rebuilding drops "
+                "their review decisions. Use --discard-reviews to replace them"
+            )
     if args.nq_count + args.hotpotqa_count == 0:
         raise ValueError("request at least one case")
     cases, sources = build_cases(
@@ -374,6 +393,11 @@ def make_parser() -> argparse.ArgumentParser:
         "--output-dir", type=Path, default=Path(__file__).resolve().parent
     )
     build.add_argument("--overwrite", action="store_true")
+    build.add_argument(
+        "--discard-reviews",
+        action="store_true",
+        help="Allow --overwrite to replace cases that carry review decisions",
+    )
     build.add_argument(
         "--verify",
         action="store_true",

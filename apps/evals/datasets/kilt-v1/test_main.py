@@ -216,3 +216,25 @@ def test_missing_corpus_does_not_overwrite_dataset(monkeypatch, tmp_path):
     with pytest.raises(FileNotFoundError):
         verify.build_dataset(args)
     assert dataset.read_text() == "existing dataset"
+
+
+def test_build_refuses_to_discard_reviews(monkeypatch, tmp_path):
+    monkeypatch.setattr(verify, "build_cases", lambda sources, seed: ([], []))
+    dataset = tmp_path / "dev.json"
+    reviewed = json.dumps([{"case_id": "a", "review": {"decision": "keep"}}])
+    dataset.write_text(reviewed)
+    argv = [
+        "build",
+        "--nq",
+        "nq.jsonl",
+        "--hotpotqa",
+        "hotpotqa.jsonl",
+        "--output-dir",
+        str(tmp_path),
+        "--overwrite",
+    ]
+    with pytest.raises(ValueError, match="1 reviewed cases"):
+        verify.build_dataset(verify.make_parser().parse_args(argv))
+    assert dataset.read_text() == reviewed
+    verify.build_dataset(verify.make_parser().parse_args([*argv, "--discard-reviews"]))
+    assert json.loads(dataset.read_text()) == []

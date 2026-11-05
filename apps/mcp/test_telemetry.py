@@ -567,6 +567,7 @@ async def test_eval_tools_enrich_sdk_root_spans(monkeypatch):
             "case_id": None,
             "limit": 1,
             "tags": None,
+            "exclude_tags": None,
             "timeout": None,
             "experiment_name": None,
             "hosted_dataset": None,

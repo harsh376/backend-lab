@@ -3,14 +3,13 @@
 import asyncio
 from dataclasses import asdict
 from datetime import timedelta
-from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 
 from temporalio import activity
 from temporalio.client import Client, WorkflowFailureError
 from temporalio.exceptions import ApplicationError
 
-from apps.evals.datasets.dataset import load_cases, select_cases
+from apps.evals.datasets.dataset import LOCAL_DATASET, load_cases, select_cases
 from apps.evals.datasets.hosted_dataset import HostedDatasetService
 from apps.evals.evaluators.answers import evaluate_correctness
 from apps.evals.evaluators.retrieval import (
@@ -56,6 +55,7 @@ EVALUATORS = [
         "case_id": args["request"].case_id,
         "limit": args["request"].limit,
         "tags": args["request"].tags,
+        "exclude_tags": args["request"].exclude_tags,
         **(
             {"hosted_dataset": args["request"].hosted_dataset}
             if args["request"].hosted_dataset is not None
@@ -75,13 +75,14 @@ async def load_eval_cases(request: EvalRunRequest) -> list[EvalCase]:
         cases = (
             await HostedDatasetService().read(request.hosted_dataset)
             if request.hosted_dataset is not None
-            else load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json")
+            else load_cases(LOCAL_DATASET)
         )
         return select_cases(
             cases=cases,
             case_id=request.case_id,
             limit=request.limit,
             tags=request.tags,
+            exclude_tags=request.exclude_tags,
         )
     except (OSError, ValueError) as error:
         raise ApplicationError(str(error), non_retryable=True) from error

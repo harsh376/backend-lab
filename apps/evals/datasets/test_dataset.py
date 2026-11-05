@@ -53,3 +53,35 @@ def test_group_id_matches_local_builder_normalization():
     for case in load_cases(DATASET):
         assert question_group_id(case.question) == case.group_id
     assert question_group_id("Who?  WROTE it!") == question_group_id("who wrote it")
+
+
+def test_select_cases_excludes_tags():
+    base = load_cases(DATASET)[0]
+    cases = [
+        base.model_copy(update={"case_id": "a", "tags": ["nq"]}),
+        base.model_copy(update={"case_id": "b", "tags": ["nq", "time_sensitive"]}),
+    ]
+    selected = select_cases(
+        cases, limit=None, tags=["nq"], exclude_tags=["time_sensitive"]
+    )
+    assert [case.case_id for case in selected] == ["a"]
+
+
+def test_bundled_cases_are_reviewed():
+    cases = load_cases(DATASET)
+    assert all(case.review is not None for case in cases)
+    rejected = [case for case in cases if case.review.decision == "reject"]
+    assert rejected and all("rejected" in case.tags for case in rejected)
+
+
+def test_reject_review_and_rejected_tag_must_agree():
+    from apps.evals.models import EvalCase
+
+    record = load_cases(DATASET)[0].model_dump()
+    record["review"] = {"decision": "reject", "reason": "x", "reviewed": "2026-11-04"}
+    with pytest.raises(ValueError, match="must agree"):
+        EvalCase.model_validate(record)
+    record["review"]["decision"] = "keep"
+    record["tags"] = [*record["tags"], "rejected"]
+    with pytest.raises(ValueError, match="must agree"):
+        EvalCase.model_validate(record)

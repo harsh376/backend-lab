@@ -7,6 +7,8 @@ from pathlib import Path
 
 from apps.evals.models import EvalCase
 
+LOCAL_DATASET = Path(__file__).parent / "kilt-v1/dev.json"
+
 
 def load_cases(path: Path) -> list[EvalCase]:
     try:
@@ -37,15 +39,20 @@ def select_cases(
     case_id: str | None = None,
     limit: int | None = 1,
     tags: list[str] | None = None,
+    exclude_tags: list[str] | None = None,
 ) -> list[EvalCase]:
-    """Select eligible cases in dataset order, requiring every requested tag."""
+    """Select eligible cases in dataset order.
+
+    Requires every requested tag and none of the excluded tags.
+    """
     if limit is not None and limit <= 0:
         raise ValueError("limit must be positive")
+    excluded = {"rejected", *(exclude_tags or ())}
     selected = [
         case
         for case in cases
         if (case_id is None or case.case_id == case_id)
-        and "rejected" not in case.tags
+        and excluded.isdisjoint(case.tags)
         and set(tags or ()).issubset(case.tags)
     ][:limit]
     if not selected:

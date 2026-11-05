@@ -172,6 +172,7 @@ async def run_evals(
     case_id: str | None = None,
     limit: int | None = 3,
     tags: list[str] | None = None,
+    exclude_tags: list[str] | None = None,
     timeout: float | None = None,
     experiment_name: str | None = None,
     hosted_dataset: str | None = None,
@@ -184,6 +185,8 @@ async def run_evals(
     limit defaults to three cases for either source; pass None for all eligible cases.
     Use case_id to select an item, or tags to filter metadata.
     Pass tags=[] to disable tag filtering. Hosted datasets default to no tag filter.
+    exclude_tags drops cases with any listed tag (e.g. time_sensitive);
+    cases tagged rejected are always excluded.
     Each case has independent, linked eval and answer traces.
     Set verification_enabled=false to evaluate synthesis without verification.
     timeout bounds each answer workflow. Its default is read from Settings
@@ -198,6 +201,7 @@ async def run_evals(
         tags=(["page_verified"] if hosted_dataset is None else [])
         if tags is None
         else tags,
+        exclude_tags=exclude_tags or [],
         timeout=settings.timeout_answer_eval_seconds if timeout is None else timeout,
         timeout_settings=settings.timeout_snapshot(),
         experiment_name=experiment_name,
@@ -213,6 +217,7 @@ async def run_retrieval_evals(
     case_id: str | None = None,
     limit: int | None = 3,
     tags: list[str] | None = None,
+    exclude_tags: list[str] | None = None,
     timeout: float | None = None,
     experiment_name: str | None = None,
     hosted_dataset: str | None = None,
@@ -225,6 +230,7 @@ async def run_retrieval_evals(
     that limit are scored. limit selects dataset cases (default 3; None for all).
     Uses the same local/hosted datasets and filters as run_evals: local cases
     default to page_verified; hosted cases have no default tag filter.
+    exclude_tags drops cases with any listed tag.
     Requires the eval worker and Elasticsearch; no answer worker is needed.
     """
     settings = Settings()
@@ -234,6 +240,7 @@ async def run_retrieval_evals(
         tags=(["page_verified"] if hosted_dataset is None else [])
         if tags is None
         else tags,
+        exclude_tags=exclude_tags or [],
         timeout=settings.timeout_retrieval_eval_seconds if timeout is None else timeout,
         timeout_settings=settings.timeout_snapshot(),
         experiment_name=experiment_name,

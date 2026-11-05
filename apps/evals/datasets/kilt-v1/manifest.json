@@ -13,7 +13,7 @@
   "case_counts": {
     "dev": 45
   },
-  "status": "dev_populated_pending_review",
+  "status": "dev_reviewed",
   "split_seed": 42,
   "split_group_key": "group_id",
   "sampling": {

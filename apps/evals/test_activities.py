@@ -352,13 +352,13 @@ async def test_decorated_evaluators_are_direct_children(
 @pytest.mark.parametrize("tags", [["page_verified"], []])
 @pytest.mark.parametrize("eval_type", ["answer", "retrieval"])
 async def test_load_eval_cases_selects_on_worker(tags, monkeypatch, eval_type):
-    from apps.evals.datasets.dataset import select_cases
+    from apps.evals.datasets.dataset import LOCAL_DATASET, select_cases
 
     monkeypatch.setattr(
         activities.activity, "info", lambda: Mock(workflow_id="eval-run")
     )
     expected = select_cases(
-        load_cases(Path(__file__).parent / "datasets/kilt-v1/dev.json"),
+        load_cases(LOCAL_DATASET),
         limit=3,
         tags=tags,
     )
@@ -397,7 +397,12 @@ async def test_load_eval_cases_observes_selection(monkeypatch):
     assert observed["name"] == "load_eval_cases"
     assert observed["trace_context"] == parent
     assert observed["session_id"] == "eval-run"
-    assert observed["input"] == {"case_id": None, "limit": 3, "tags": ["page_verified"]}
+    assert observed["input"] == {
+        "case_id": None,
+        "limit": 3,
+        "tags": ["page_verified"],
+        "exclude_tags": [],
+    }
     span.update.assert_called_once_with(
         output={
             "count": 3,

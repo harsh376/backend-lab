@@ -211,7 +211,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-343968022755473370",
@@ -369,8 +374,14 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "rejected",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "reject",
+      "reason": "List question; '1900s' is ambiguous (Victoria reigned until Jan 1901) and matching any one monarch scores as correct.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-3311962143974666464",
@@ -546,7 +557,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--7779084475859441741",
@@ -666,7 +682,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-5150934530929664244",
@@ -846,7 +867,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-7311273005529291652",
@@ -998,8 +1024,14 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "rejected",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "reject",
+      "reason": "Gold is wrong: the corpus Data link layer article lists physical (MAC) addressing under layer 2, and the evidence points at the Physical layer article.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-1096973491164113721",
@@ -1173,8 +1205,15 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "ambiguous",
+      "list_answer",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "'Type of legal system' could mean common law/mixed; gold lists the three jurisdictions. Any single jurisdiction scores as correct.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--9141276525854297532",
@@ -1317,7 +1356,8 @@
       "1933",
       "1886",
       "first published in 1890",
-      "c. 1886"
+      "c. 1886",
+      "1840s"
     ],
     "answerable": true,
     "evidence_sets": [
@@ -1428,9 +1468,15 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "ambiguous",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "amend",
+      "reason": "Corpus ¶1: printed versions date back to the 1840s; the question does not say which version.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-8239463385147663167",
@@ -1677,7 +1723,12 @@
       "open_domain_qa",
       "nq",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--3431328641910966671",
@@ -1763,8 +1814,7 @@
       ]
     },
     "accepted_answers": [
-      "Instagram 's own account",
-      "Selena Gomez"
+      "Instagram 's own account"
     ],
     "answerable": true,
     "evidence_sets": [
@@ -1831,9 +1881,15 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "time_sensitive",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "amend",
+      "reason": "Corpus (July 2019): Instagram's own account is most followed; Cristiano Ronaldo is the most followed individual. Selena Gomez is stale.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-8888584875401414044",
@@ -1984,7 +2040,12 @@
       "open_domain_qa",
       "nq",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--4909301147922823976",
@@ -2158,7 +2219,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--2796541333611735730",
@@ -2221,58 +2287,32 @@
       ]
     },
     "accepted_answers": [
-      "2017",
-      "Army"
+      "2018",
+      "December 8, 2018"
     ],
     "answerable": true,
     "evidence_sets": [
       [
         {
           "wikipedia_id": "604299",
-          "title": "Army–Navy Game",
-          "start_paragraph_id": 6,
-          "start_character": 212,
-          "end_paragraph_id": 6,
-          "end_character": 216,
-          "bleu_score": 1.0,
-          "section": "Section::::Series history.\n"
-        }
-      ],
-      [
-        {
-          "wikipedia_id": "604299",
-          "title": "Army–Navy Game",
-          "start_paragraph_id": 0,
-          "start_character": 0,
-          "end_paragraph_id": 0,
-          "end_character": 4,
-          "bleu_score": 1.0,
-          "section": "Section::::Abstract."
-        }
-      ],
-      [
-        {
-          "wikipedia_id": "604299",
-          "title": "ArmyNavy Game",
-          "section": "Section::::Series history.\n",
-          "start_paragraph_id": 6,
-          "end_paragraph_id": 6,
-          "meta": {
-            "evidence_span": [
-              "For much of the first half of the 20th century, both Army and Navy were often national powers, and the game occasionally had national championship implications. However, since 1963, only the 1996, 2010, 2016 and 2017 games have seen both teams enter with winning records.",
-              "For much of the first half of the 20th century, both Army and Navy were",
-              "For much of the first half of the 20th century, both Army and Navy were often national powers, and the game occasionally had national championship implications. However, since 1963, only the 1996, 2010, 2016 and 2017 games have seen both teams enter with winning records."
-            ]
-          }
+          "start_paragraph_id": 13,
+          "end_paragraph_id": 13,
+          "title": "Army–Navy Game"
         }
       ]
     ],
     "tags": [
       "open_domain_qa",
       "nq",
+      "time_sensitive",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "amend",
+      "reason": "Corpus ¶13: Army beat Navy on December 8, 2018. '2017' is stale, 'Army' is not an answer, and the gold evidence (¶6) does not contain the answer.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--6171145136739461013",
@@ -2454,7 +2494,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--5579812134939807145",
@@ -2560,8 +2605,8 @@
     "accepted_answers": [
       "Boston Celtics center Bill Russell",
       "Bill Russell",
-      "Ginóbili , Manu Manu Ginóbili ^",
-      "Parker , Tony Tony Parker ^"
+      "Manu Ginóbili",
+      "Tony Parker"
     ],
     "answerable": true,
     "evidence_sets": [
@@ -2640,8 +2685,15 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "time_sensitive",
+      "ambiguous",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "amend",
+      "reason": "'Right now 2017' may mean active players (Ginóbili/Parker) or all-time (Bill Russell). Clean the table-extraction artifacts.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-9188394543955260450",
@@ -2896,7 +2948,12 @@
       "open_domain_qa",
       "nq",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--4392475526001139368",
@@ -2983,8 +3040,8 @@
       ]
     },
     "accepted_answers": [
-      "Louis Mountbatten",
-      "Warren Hastings"
+      "Warren Hastings",
+      "Lord William Bentinck"
     ],
     "answerable": true,
     "evidence_sets": [
@@ -3052,9 +3109,15 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "ambiguous",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "amend",
+      "reason": "Corpus Governor-General of India ¶5: the first GG of British India was Bentinck; Mountbatten was first GG of the Dominion of India. Hastings was first GG of the Company's dominions (Company rule ¶56), so keep him.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--1413547797481632580",
@@ -3233,7 +3296,12 @@
       "open_domain_qa",
       "nq",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-5098377822521811712",
@@ -3317,9 +3385,15 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "time_sensitive",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Future-tense question, but the corpus answer (March 8, 2018) is fixed.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-1864282688423355455",
@@ -3499,7 +3573,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-2098168902147822379",
@@ -3600,8 +3679,6 @@
       ]
     },
     "accepted_answers": [
-      "Tokyo",
-      "Beijing",
       "Tokyo for the 2020 Summer Olympics , Beijing for the 2022 Winter Olympics"
     ],
     "answerable": true,
@@ -3681,9 +3758,16 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "time_sensitive",
+      "list_answer",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "amend",
+      "reason": "Corpus (2019) lists Tokyo 2020 / Beijing 2022 as upcoming, so gold is corpus-consistent. Lone 'Tokyo' or 'Beijing' answers half the question.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-6229275979490979874",
@@ -3859,7 +3943,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-2545607965679456162",
@@ -3977,8 +4066,14 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "time_sensitive",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Super Bowl LII is still the latest meeting in the 2019 corpus.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--8834996069938989383",
@@ -4098,7 +4193,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev-7210975046317501288",
@@ -4317,7 +4417,12 @@
       "open_domain_qa",
       "nq",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--5864856625806411702",
@@ -4645,8 +4750,14 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "rejected",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "reject",
+      "reason": "'Mentioned on wikipedia' is not a real question; 20-name list where any one name scores as correct.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--6145868466021183224",
@@ -4766,7 +4877,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--8491993331568056625",
@@ -4890,7 +5006,12 @@
       "nq",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--7052052953885262396",
@@ -5037,11 +5158,6 @@
       ]
     },
     "accepted_answers": [
-      "China",
-      "France",
-      "Russia",
-      "United Kingdom",
-      "United States",
       "China ( formerly the Republic of China ) , Russia ( formerly the Soviet Union ) , France , the United Kingdom , and the United States"
     ],
     "answerable": true,
@@ -5158,9 +5274,15 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "list_answer",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "amend",
+      "reason": "The question asks for all five; a single country should not score as correct. Keep the combined answer.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "nq-dev--8947071197382617621",
@@ -5374,8 +5496,14 @@
     "tags": [
       "open_domain_qa",
       "nq",
+      "rejected",
       "page_verified"
-    ]
+    ],
+    "review": {
+      "decision": "reject",
+      "reason": "Corpus has no Australian air date; gold 'Fall 1998' comes from a sentence about a different broadcaster.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5ae0345855429924de1b705f",
@@ -5448,7 +5576,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5a73b2cb55429908901be31a",
@@ -5521,7 +5654,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5a8b50475542997f31a41cd4",
@@ -5594,7 +5732,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5ae2c509554299492dc91c68",
@@ -5685,9 +5828,15 @@
       "open_domain_qa",
       "hotpotqa",
       "multi_evidence",
+      "ambiguous",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Corpus S. Truett Cathy ¶15/¶18 lists several awards (Horatio Alger, Silver Buffalo, ...); only Call to Service is accepted.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5ade51515542992fa25da745",
@@ -5737,7 +5886,8 @@
       ]
     },
     "accepted_answers": [
-      "report Hess's illegal May 1941 flight to Scotland"
+      "He flew solo to Scotland in an attempt to negotiate peace with the United Kingdom",
+      "his May 1941 flight to Scotland"
     ],
     "answerable": true,
     "evidence_sets": [
@@ -5780,7 +5930,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "amend",
+      "reason": "Gold is an extraction artifact; Rudolf Hess ¶1 states the reason directly.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5a80a7f6554299485f598680",
@@ -5913,7 +6068,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5a85ecf25542991dd0999ec6",
@@ -5986,7 +6146,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5a8887a055429938390d3f72",
@@ -6079,7 +6244,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5ab499a55542996a3a969f9f",
@@ -6152,7 +6322,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5a8ba3ff55429971feec4744",
@@ -6225,7 +6400,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5abfaa445542990832d3a18c",
@@ -6318,7 +6498,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5ae17f1e5542990adbacf7a6",
@@ -6391,7 +6576,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5a78b209554299148911f93e",
@@ -6431,7 +6621,8 @@
       ]
     },
     "accepted_answers": [
-      "Edward Franklin Albee III"
+      "Edward Franklin Albee III",
+      "Edward Albee"
     ],
     "answerable": true,
     "evidence_sets": [
@@ -6464,7 +6655,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "amend",
+      "reason": "Add the common name; gold only has the full legal name.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5ae50c345542993aec5ec11f",
@@ -6537,7 +6733,12 @@
       "multi_evidence",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Gold is correct, current in the corpus, and supported by the evidence.",
+      "reviewed": "2026-11-04"
+    }
   },
   {
     "case_id": "hotpotqa-dev-5a7a03225542996c55b2dcd5",
@@ -6608,8 +6809,14 @@
       "open_domain_qa",
       "hotpotqa",
       "multi_evidence",
+      "ambiguous",
       "page_verified",
       "passage_verified"
-    ]
+    ],
+    "review": {
+      "decision": "keep",
+      "reason": "Premise conflicts with corpus: Challengers were most common on Union Pacific (4-6-6-4 ¶8); Clinchfield ran 4-6-6-4s and was completed in 1915.",
+      "reviewed": "2026-11-04"
+    }
   }
 ]

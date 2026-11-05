@@ -9,10 +9,9 @@ Corpus verification has already been run and its tags are saved in `dev.json`:
 - 45/45 cases have `page_verified`.
 - 33/45 cases have `passage_verified` (the tag for paragraph-range and character-offset checks).
 
-Human review of answer correctness and semantic support is still pending;
-the saved verification tags record structural corpus checks. The next step is
-to run a baseline evaluation and inspect its failures. Refresh corpus verification
-when the dataset or corpus changes.
+The verification tags record structural corpus checks only. Answer correctness
+and semantic support are recorded per case in `review` (see [Review](#review)).
+Refresh corpus verification when the dataset or corpus changes.
 
 ## Build
 
@@ -77,10 +76,33 @@ preserved. Rebuilding clears verification tags.
 Exit codes: `0` all cases are answerable and pass passage checks; `1` some do
 not; `2` command or service error. Unanswerable cases require separate review.
 
+## Review
+
+Every case carries a `review` with its decision, reason, and date, checked
+against the case's evidence and the 2019 corpus snapshot. Decisions are applied
+in `dev.json` itself; `source.original_output` keeps the original gold, so each
+amendment can be compared with the source.
+
+- `keep`: gold is correct as built; may add tags.
+- `amend`: accepted answers or evidence were changed; the reason says how.
+- `reject`: the case also carries the `rejected` tag, which evaluation always
+  excludes. Validation requires the decision and the tag to agree.
+
+Policy: gold is aligned with the corpus snapshot, not with today. A question
+whose answer depends on "now" keeps the corpus answer and is tagged
+`time_sensitive`. Other review tags: `ambiguous` (more than one reasonable
+reading, or corpus-supported answers outside the gold) and `list_answer` (the
+question asks for several items; single-item alternatives were removed).
+
+Review of 2026-11-04: 32 keep, 9 amend, 4 reject (none passage-verified), so 41
+cases are eligible and 33 remain `passage_verified` (re-verified after the
+amendments). `build --overwrite` refuses to replace reviewed cases unless
+`--discard-reviews` is also passed; a rebuilt dataset needs a new review.
+
 ## Case format and selection
 
 Each case has `case_id`, `group_id`, `question`, `source`, `accepted_answers`,
-`answerable`, `evidence_sets`, and `tags`. Source metadata retains the dataset,
+`answerable`, `evidence_sets`, `tags`, and an optional `review`. Source metadata retains the dataset,
 split, record ID, filename, and original output. Each evidence set is an
 alternative complete set of passages, identified by Wikipedia ID and inclusive
 paragraph range; evidence may also retain source character offsets.
@@ -93,5 +115,5 @@ builder selects cases with gold evidence, independently of the shared contract.
 Schema validation does not establish semantic support or split isolation.
 
 Evaluation excludes cases tagged `rejected`. `--tags` requires every requested
-tag and filters before `--limit`; verification tags are not required by default.
+tag, `exclude_tags` drops cases with any listed tag, and both filter before `--limit`; verification tags are not required by default.
 See the [eval README](../../README.md) for execution commands.
