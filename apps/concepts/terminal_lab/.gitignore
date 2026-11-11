@@ -1,0 +1,3 @@
+# Local API observations and reports; never commit account data or credentials.
+local_data/
+.env

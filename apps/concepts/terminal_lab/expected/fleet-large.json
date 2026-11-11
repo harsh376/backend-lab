@@ -1,0 +1,1206 @@
+{
+  "start": "2026-11-01T00:00:00Z",
+  "end": "2026-11-11T00:00:00Z",
+  "rows": [
+    {
+      "vehicle_id": "vcl_00000000000000000000000199",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T08:00:00Z",
+      "total_distance": 19955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000198",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T07:00:00Z",
+      "total_distance": 19855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000197",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T06:00:00Z",
+      "total_distance": 19755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000196",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T05:00:00Z",
+      "total_distance": 19655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000195",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T04:00:00Z",
+      "total_distance": 19555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000194",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T03:00:00Z",
+      "total_distance": 19455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000193",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T02:00:00Z",
+      "total_distance": 19355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000192",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T01:00:00Z",
+      "total_distance": 19255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000191",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-11T00:00:00Z",
+      "total_distance": 19155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000190",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T23:00:00Z",
+      "total_distance": 19055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000189",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T22:00:00Z",
+      "total_distance": 18955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000188",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T21:00:00Z",
+      "total_distance": 18855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000187",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T20:00:00Z",
+      "total_distance": 18755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000186",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T19:00:00Z",
+      "total_distance": 18655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000185",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T18:00:00Z",
+      "total_distance": 18555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000184",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T17:00:00Z",
+      "total_distance": 18455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000183",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T16:00:00Z",
+      "total_distance": 18355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000182",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T15:00:00Z",
+      "total_distance": 18255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000181",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T14:00:00Z",
+      "total_distance": 18155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000180",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T13:00:00Z",
+      "total_distance": 18055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000179",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T12:00:00Z",
+      "total_distance": 17955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000178",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T11:00:00Z",
+      "total_distance": 17855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000177",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T10:00:00Z",
+      "total_distance": 17755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000176",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T09:00:00Z",
+      "total_distance": 17655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000175",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T08:00:00Z",
+      "total_distance": 17555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000174",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T07:00:00Z",
+      "total_distance": 17455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000173",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T06:00:00Z",
+      "total_distance": 17355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000172",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T05:00:00Z",
+      "total_distance": 17255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000171",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T04:00:00Z",
+      "total_distance": 17155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000170",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T03:00:00Z",
+      "total_distance": 17055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000169",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T02:00:00Z",
+      "total_distance": 16955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000168",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T01:00:00Z",
+      "total_distance": 16855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000167",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-11T00:00:00Z",
+      "total_distance": 16755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000166",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T23:00:00Z",
+      "total_distance": 16655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000165",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T22:00:00Z",
+      "total_distance": 16555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000164",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T21:00:00Z",
+      "total_distance": 16455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000163",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T20:00:00Z",
+      "total_distance": 16355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000162",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T19:00:00Z",
+      "total_distance": 16255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000161",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T18:00:00Z",
+      "total_distance": 16155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000160",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T17:00:00Z",
+      "total_distance": 16055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000159",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T16:00:00Z",
+      "total_distance": 15955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000158",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T15:00:00Z",
+      "total_distance": 15855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000157",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T14:00:00Z",
+      "total_distance": 15755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000156",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T13:00:00Z",
+      "total_distance": 15655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000155",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T12:00:00Z",
+      "total_distance": 15555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000154",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T11:00:00Z",
+      "total_distance": 15455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000153",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T10:00:00Z",
+      "total_distance": 15355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000152",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T09:00:00Z",
+      "total_distance": 15255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000151",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T08:00:00Z",
+      "total_distance": 15155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000150",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T07:00:00Z",
+      "total_distance": 15055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000149",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T06:00:00Z",
+      "total_distance": 14955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000148",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T05:00:00Z",
+      "total_distance": 14855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000147",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T04:00:00Z",
+      "total_distance": 14755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000146",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T03:00:00Z",
+      "total_distance": 14655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000145",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T02:00:00Z",
+      "total_distance": 14555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000144",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T01:00:00Z",
+      "total_distance": 14455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000143",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-11T00:00:00Z",
+      "total_distance": 14355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000142",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T23:00:00Z",
+      "total_distance": 14255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000141",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T22:00:00Z",
+      "total_distance": 14155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000140",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T21:00:00Z",
+      "total_distance": 14055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000139",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T20:00:00Z",
+      "total_distance": 13955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000138",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T19:00:00Z",
+      "total_distance": 13855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000137",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T18:00:00Z",
+      "total_distance": 13755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000136",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T17:00:00Z",
+      "total_distance": 13655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000135",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T16:00:00Z",
+      "total_distance": 13555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000134",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T15:00:00Z",
+      "total_distance": 13455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000133",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T14:00:00Z",
+      "total_distance": 13355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000132",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T13:00:00Z",
+      "total_distance": 13255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000131",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T12:00:00Z",
+      "total_distance": 13155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000130",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T11:00:00Z",
+      "total_distance": 13055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000129",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T10:00:00Z",
+      "total_distance": 12955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000128",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T09:00:00Z",
+      "total_distance": 12855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000127",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T08:00:00Z",
+      "total_distance": 12755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000126",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T07:00:00Z",
+      "total_distance": 12655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000125",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T06:00:00Z",
+      "total_distance": 12555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000124",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T05:00:00Z",
+      "total_distance": 12455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000123",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T04:00:00Z",
+      "total_distance": 12355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000122",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T03:00:00Z",
+      "total_distance": 12255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000121",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T02:00:00Z",
+      "total_distance": 12155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000120",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T01:00:00Z",
+      "total_distance": 12055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000119",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-11T00:00:00Z",
+      "total_distance": 11955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000118",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T23:00:00Z",
+      "total_distance": 11855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000117",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T22:00:00Z",
+      "total_distance": 11755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000116",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T21:00:00Z",
+      "total_distance": 11655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000115",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T20:00:00Z",
+      "total_distance": 11555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000114",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T19:00:00Z",
+      "total_distance": 11455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000113",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T18:00:00Z",
+      "total_distance": 11355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000112",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T17:00:00Z",
+      "total_distance": 11255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000111",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T16:00:00Z",
+      "total_distance": 11155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000110",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T15:00:00Z",
+      "total_distance": 11055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000109",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T14:00:00Z",
+      "total_distance": 10955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000108",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T13:00:00Z",
+      "total_distance": 10855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000107",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T12:00:00Z",
+      "total_distance": 10755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000106",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T11:00:00Z",
+      "total_distance": 10655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000105",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T10:00:00Z",
+      "total_distance": 10555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000104",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T09:00:00Z",
+      "total_distance": 10455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000103",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T08:00:00Z",
+      "total_distance": 10355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000102",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T07:00:00Z",
+      "total_distance": 10255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000101",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T06:00:00Z",
+      "total_distance": 10155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000100",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T05:00:00Z",
+      "total_distance": 10055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000099",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T04:00:00Z",
+      "total_distance": 9955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000098",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T03:00:00Z",
+      "total_distance": 9855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000097",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T02:00:00Z",
+      "total_distance": 9755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000096",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T01:00:00Z",
+      "total_distance": 9655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000095",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-11T00:00:00Z",
+      "total_distance": 9555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000094",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T23:00:00Z",
+      "total_distance": 9455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000093",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T22:00:00Z",
+      "total_distance": 9355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000092",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T21:00:00Z",
+      "total_distance": 9255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000091",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T20:00:00Z",
+      "total_distance": 9155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000090",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T19:00:00Z",
+      "total_distance": 9055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000089",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T18:00:00Z",
+      "total_distance": 8955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000088",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T17:00:00Z",
+      "total_distance": 8855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000087",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T16:00:00Z",
+      "total_distance": 8755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000086",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T15:00:00Z",
+      "total_distance": 8655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000085",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T14:00:00Z",
+      "total_distance": 8555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000084",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T13:00:00Z",
+      "total_distance": 8455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000083",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T12:00:00Z",
+      "total_distance": 8355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000082",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T11:00:00Z",
+      "total_distance": 8255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000081",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T10:00:00Z",
+      "total_distance": 8155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000080",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T09:00:00Z",
+      "total_distance": 8055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000079",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T08:00:00Z",
+      "total_distance": 7955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000078",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T07:00:00Z",
+      "total_distance": 7855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000077",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T06:00:00Z",
+      "total_distance": 7755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000076",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T05:00:00Z",
+      "total_distance": 7655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000075",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T04:00:00Z",
+      "total_distance": 7555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000074",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T03:00:00Z",
+      "total_distance": 7455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000073",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T02:00:00Z",
+      "total_distance": 7355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000072",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T01:00:00Z",
+      "total_distance": 7255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000071",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-11T00:00:00Z",
+      "total_distance": 7155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000070",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T23:00:00Z",
+      "total_distance": 7055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000069",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T22:00:00Z",
+      "total_distance": 6955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000068",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T21:00:00Z",
+      "total_distance": 6855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000067",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T20:00:00Z",
+      "total_distance": 6755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000066",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T19:00:00Z",
+      "total_distance": 6655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000065",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T18:00:00Z",
+      "total_distance": 6555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000064",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T17:00:00Z",
+      "total_distance": 6455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000063",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T16:00:00Z",
+      "total_distance": 6355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000062",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T15:00:00Z",
+      "total_distance": 6255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000061",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T14:00:00Z",
+      "total_distance": 6155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000060",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T13:00:00Z",
+      "total_distance": 6055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000059",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T12:00:00Z",
+      "total_distance": 5955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000058",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T11:00:00Z",
+      "total_distance": 5855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000057",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T10:00:00Z",
+      "total_distance": 5755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000056",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T09:00:00Z",
+      "total_distance": 5655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000055",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T08:00:00Z",
+      "total_distance": 5555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000054",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T07:00:00Z",
+      "total_distance": 5455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000053",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T06:00:00Z",
+      "total_distance": 5355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000052",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T05:00:00Z",
+      "total_distance": 5255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000051",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T04:00:00Z",
+      "total_distance": 5155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000050",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T03:00:00Z",
+      "total_distance": 5055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000049",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T02:00:00Z",
+      "total_distance": 4955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000048",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T01:00:00Z",
+      "total_distance": 4855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000047",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-11T00:00:00Z",
+      "total_distance": 4755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000046",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T23:00:00Z",
+      "total_distance": 4655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000045",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T22:00:00Z",
+      "total_distance": 4555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000044",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T21:00:00Z",
+      "total_distance": 4455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000043",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T20:00:00Z",
+      "total_distance": 4355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000042",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T19:00:00Z",
+      "total_distance": 4255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000041",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T18:00:00Z",
+      "total_distance": 4155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000040",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T17:00:00Z",
+      "total_distance": 4055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000039",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T16:00:00Z",
+      "total_distance": 3955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000038",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T15:00:00Z",
+      "total_distance": 3855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000037",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T14:00:00Z",
+      "total_distance": 3755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000036",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T13:00:00Z",
+      "total_distance": 3655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000035",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T12:00:00Z",
+      "total_distance": 3555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000034",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T11:00:00Z",
+      "total_distance": 3455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000033",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T10:00:00Z",
+      "total_distance": 3355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000032",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T09:00:00Z",
+      "total_distance": 3255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000031",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T08:00:00Z",
+      "total_distance": 3155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000030",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T07:00:00Z",
+      "total_distance": 3055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000029",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T06:00:00Z",
+      "total_distance": 2955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000028",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T05:00:00Z",
+      "total_distance": 2855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000027",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T04:00:00Z",
+      "total_distance": 2755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000026",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T03:00:00Z",
+      "total_distance": 2655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000025",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T02:00:00Z",
+      "total_distance": 2555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000024",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T01:00:00Z",
+      "total_distance": 2455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000023",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-11T00:00:00Z",
+      "total_distance": 2355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000022",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T23:00:00Z",
+      "total_distance": 2255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000021",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T22:00:00Z",
+      "total_distance": 2155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000020",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T21:00:00Z",
+      "total_distance": 2055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000019",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T20:00:00Z",
+      "total_distance": 1955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000018",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T19:00:00Z",
+      "total_distance": 1855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000017",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T18:00:00Z",
+      "total_distance": 1755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000016",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T17:00:00Z",
+      "total_distance": 1655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000015",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T16:00:00Z",
+      "total_distance": 1555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000014",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T15:00:00Z",
+      "total_distance": 1455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000013",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T14:00:00Z",
+      "total_distance": 1355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000012",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T13:00:00Z",
+      "total_distance": 1255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000011",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T12:00:00Z",
+      "total_distance": 1155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000010",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T11:00:00Z",
+      "total_distance": 1055
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000009",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T10:00:00Z",
+      "total_distance": 955
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000008",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T09:00:00Z",
+      "total_distance": 855
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000007",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T08:00:00Z",
+      "total_distance": 755
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000006",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T07:00:00Z",
+      "total_distance": 655
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000005",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T06:00:00Z",
+      "total_distance": 555
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000004",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T05:00:00Z",
+      "total_distance": 455
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000003",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T04:00:00Z",
+      "total_distance": 355
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000002",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T03:00:00Z",
+      "total_distance": 255
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000001",
+      "trip_count": 10,
+      "latest_ended_at": "2026-11-10T02:00:00Z",
+      "total_distance": 155
+    },
+    {
+      "vehicle_id": "vcl_00000000000000000000000200",
+      "trip_count": 0,
+      "latest_ended_at": null,
+      "total_distance": 0
+    }
+  ]
+}
