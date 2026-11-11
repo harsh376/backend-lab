@@ -1,10 +1,16 @@
 import asyncio
 import datetime
 import os
+from typing import Annotated
 
 import httpx
-from pydantic import AwareDatetime, BaseModel, ConfigDict
+from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
+
+# Normalized to UTC on validation; pydantic serializes UTC as "...Z".
+UtcDatetime = Annotated[
+    AwareDatetime, AfterValidator(lambda dt: dt.astimezone(datetime.UTC))
+]
 
 
 class TerminalModel(BaseModel):
@@ -95,7 +101,7 @@ class ReportRow(TerminalModel):
     trip_count: int
     total_distance: float | int
     missing_distance_trip_count: int
-    latest_ended_at: AwareDatetime | None = None
+    latest_ended_at: UtcDatetime | None = None
 
 
 class Report(TerminalModel):
@@ -253,12 +259,11 @@ class FleetReportService:
                 unmatched_vehicle_trip_count += 1
                 continue
             existing_trip = trips_by_vehicle.get(trip.vehicle, {})
-            ended_at = trip.ended_at.astimezone(datetime.UTC)
             latest_ended_at = existing_trip.get("latest_ended_at")
             if latest_ended_at is None:
-                latest_ended_at = ended_at
+                latest_ended_at = trip.ended_at
             else:
-                latest_ended_at = max(latest_ended_at, ended_at)
+                latest_ended_at = max(latest_ended_at, trip.ended_at)
 
             trips_by_vehicle[trip.vehicle] = {
                 "trip_count": existing_trip.get("trip_count", 0) + 1,

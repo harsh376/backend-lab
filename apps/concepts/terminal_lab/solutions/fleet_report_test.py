@@ -4,7 +4,7 @@ import httpx
 import pydantic
 import pytest
 
-from apps.concepts.terminal_lab.solutions.sequential_fleet_report import (
+from apps.concepts.terminal_lab.solutions.fleet_report import (
     ConflictingTripError,
     FleetReportService,
 )
