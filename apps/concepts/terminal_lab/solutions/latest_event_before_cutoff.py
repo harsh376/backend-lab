@@ -2,6 +2,8 @@ import asyncio
 import datetime
 import logging
 import os
+from collections.abc import AsyncGenerator
+from contextlib import aclosing
 from typing import Annotated
 
 import httpx
@@ -10,6 +12,10 @@ from pydantic import AfterValidator, AwareDatetime, BaseModel
 
 type VehicleID = str
 type EventID = str
+
+# Terminal's docs don't state a max for `limit`; 100 is an unverified guess.
+# Raise it if the API accepts larger pages.
+DEFAULT_PAGE_SIZE = 100
 
 
 logging.basicConfig(level=logging.INFO)
@@ -80,9 +86,11 @@ class Service:
         self,
         client: httpx.AsyncClient,
         api_base_url: str = "https://api.sandbox.withterminal.com",
+        page_size: int = DEFAULT_PAGE_SIZE,
     ):
         self.client = client
         self.api_base_url = api_base_url
+        self.page_size = page_size
 
     async def fetch(self, url: str, params: dict | None = None) -> dict:
         @tenacity.retry(
@@ -100,43 +108,46 @@ class Service:
 
         return await _attempt()
 
-    async def paginate(self, url: str, params: dict | None = None):
+    async def paginate(
+        self, url: str, params: dict | None = None
+    ) -> AsyncGenerator[list[dict]]:
         response = await self.fetch(url, params)
-        results = response["results"]
-        cursor = response.get("next")
+        yield response["results"]
 
+        cursor = response.get("next")
         seen_cursors = set()
         while cursor and cursor not in seen_cursors:
             response = await self.fetch(
                 url=url,
                 params={
-                    **params,
+                    **(params or {}),
                     "cursor": cursor,
                 },
             )
-            results += response["results"]
+            yield response["results"]
             seen_cursors.add(cursor)
             cursor = response.get("next")
-        return results
 
     async def get_latest_events(
         self, vehicle_ids: list[str], cutoff: str
     ) -> dict[VehicleID, Event]:
-        results = await self.paginate(
+        pages = self.paginate(
             url=f"{self.api_base_url}/events",
             params={
                 "vehicleIDs": vehicle_ids,
-                "limit": 10,
+                "limit": self.page_size,
                 "startedBefore": cutoff,
             },
         )
-        events = [Event(**r) for r in results]
         latest_event_by_vehicle: dict[VehicleID, Event] = {}
-        for event in events:
-            vehicle_id = event.vehicle_id
-            prev = latest_event_by_vehicle.get(vehicle_id)
-            if prev is None or event.started_at > prev.started_at:
-                latest_event_by_vehicle[vehicle_id] = event
+        async with aclosing(pages):
+            async for page in pages:
+                events = [Event(**r) for r in page]
+                for event in events:
+                    vehicle_id = event.vehicle_id
+                    prev = latest_event_by_vehicle.get(vehicle_id)
+                    if prev is None or event.started_at > prev.started_at:
+                        latest_event_by_vehicle[vehicle_id] = event
         return latest_event_by_vehicle
 
 

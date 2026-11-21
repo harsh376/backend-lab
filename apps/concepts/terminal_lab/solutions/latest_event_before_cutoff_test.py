@@ -140,3 +140,83 @@ def test_parse_retry_after(now: str, raw: str, expected: float):
         )
         == expected
     )
+
+
+async def test_correct_latest_events_when_multiple_pages():
+    page_size = 2
+    call_count = 0
+    events = [
+        {
+            "vehicle_id": "v1",
+            "event_id": "e1",
+            "started_at": "2026-11-20T15:20:50.000Z",
+        },
+        {
+            "vehicle_id": "v2",
+            "event_id": "e2",
+            "started_at": "2026-11-20T15:20:55.000Z",
+        },
+        {
+            "vehicle_id": "v1",
+            "event_id": "e3",
+            "started_at": "2026-11-20T15:20:52.000Z",
+        },
+        {
+            "vehicle_id": "v2",
+            "event_id": "e4",
+            "started_at": "2026-11-20T15:20:50.000Z",
+        },
+        {
+            "vehicle_id": "v3",
+            "event_id": "e5",
+            "started_at": "2026-11-20T15:20:52.000Z",
+        },
+    ]
+
+    def paginate_handler(request: httpx.Request) -> httpx.Response:
+        nonlocal call_count
+        cursor = int(request.url.params.get("cursor", 0))
+        limit = int(request.url.params["limit"])
+        response_body = {
+            "results": events[cursor : cursor + limit],
+        }
+        if events[cursor + limit :]:
+            response_body["next"] = str(cursor + limit)
+
+        response = httpx.Response(
+            status_code=200,
+            json=response_body,
+        )
+        call_count += 1
+        return response
+
+    async with httpx.AsyncClient(transport=MockTransport(paginate_handler)) as client:
+        service = Service(client=client, page_size=page_size)
+        result = await service.get_latest_events(
+            vehicle_ids=["v1", "v2", "v3"],
+            cutoff="2026-11-20T15:21:00.000Z",
+        )
+        assert call_count == 3
+        assert result == {
+            "v1": Event(
+                vehicle_id="v1",
+                event_id="e3",
+                started_at=datetime.datetime(
+                    2026, 11, 20, 15, 20, 52, tzinfo=datetime.UTC
+                ),
+            ),
+            "v2": Event(
+                vehicle_id="v2",
+                event_id="e2",
+                started_at=datetime.datetime(
+                    2026, 11, 20, 15, 20, 55, tzinfo=datetime.UTC
+                ),
+            ),
+            "v3": Event(
+                vehicle_id="v3",
+                event_id="e5",
+                started_at=datetime.datetime(
+                    2026, 11, 20, 15, 20, 52, tzinfo=datetime.UTC
+                ),
+            ),
+        }
