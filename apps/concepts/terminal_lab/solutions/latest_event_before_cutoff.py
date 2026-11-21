@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import logging
 import os
+import time
 from collections.abc import AsyncGenerator
 from contextlib import aclosing
 from typing import Annotated
@@ -81,6 +82,37 @@ def _wait(retry_state: tenacity.RetryCallState) -> float | int:
     return tenacity.wait_exponential(multiplier=1, min=1, max=60)(retry_state)
 
 
+class TokenBucketRateLimiter:
+    def __init__(self, capacity: float = 5, refill_rate: float = 2.0):
+        if capacity < 1:
+            raise ValueError("capacity must be >= 1")
+        if refill_rate <= 0:
+            raise ValueError("refill_rate must be > 0, division by zero in acquire()")
+
+        self.capacity = capacity
+        self.refill_rate = refill_rate
+        self.last_refill_time = time.monotonic()
+        self.tokens = capacity
+        self.lock = asyncio.Lock()
+
+    def refill(self):
+        now = time.monotonic()
+        self.tokens = min(
+            self.capacity,
+            self.tokens + (now - self.last_refill_time) * self.refill_rate,
+        )
+        self.last_refill_time = now
+
+    async def acquire(self):
+        async with self.lock:
+            self.refill()
+            if self.tokens < 1:
+                wait_time = (1 - self.tokens) / self.refill_rate
+                await asyncio.sleep(wait_time)
+                self.refill()
+            self.tokens -= 1
+
+
 class Service:
     def __init__(
         self,
@@ -93,6 +125,10 @@ class Service:
         self.api_base_url = api_base_url
         self.api_semaphore = asyncio.BoundedSemaphore(value=api_concurrency_limit)
         self.page_size = page_size
+        self.token_bucket_rate_limiter = TokenBucketRateLimiter(
+            capacity=10,
+            refill_rate=2,
+        )
 
     async def fetch(self, url: str, params: dict | None = None) -> dict:
         @tenacity.retry(
@@ -102,6 +138,7 @@ class Service:
             reraise=True,
         )
         async def _attempt():
+            await self.token_bucket_rate_limiter.acquire()
             async with self.api_semaphore:
                 response = await self.client.get(url=url, params=params)
                 if response.status_code in {429}:
