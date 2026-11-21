@@ -59,11 +59,11 @@ MOCK_EVENTS = [
 ]
 
 
-async def test_get_trips_by_vehicle():
+async def test_get_trips():
     def handle(request: httpx.Request) -> httpx.Response:
         vehicle_ids_raw = request.url.params.get("vehicleIDs")
-        vehicle_id = vehicle_ids_raw.split(",")[0]
-        trips = list(filter(lambda t: t["vehicle_id"] == vehicle_id, MOCK_TRIPS))
+        vehicle_ids = vehicle_ids_raw.split(",")
+        trips = list(filter(lambda t: t["vehicle_id"] in vehicle_ids, MOCK_TRIPS))
         return httpx.Response(
             status_code=200,
             json={
@@ -75,78 +75,88 @@ async def test_get_trips_by_vehicle():
         service = Service(
             client=client,
         )
-        results = await service.get_trips_by_vehicle(vehicle_id="v1")
-        assert results == [
-            Trip(
-                trip_id="t1",
-                vehicle_id="v1",
-                started_at=datetime.datetime(2026, 1, 1, 10, 0, tzinfo=datetime.UTC),
-                ended_at=datetime.datetime(2026, 1, 2, 11, 0, tzinfo=datetime.UTC),
-            ),
-            Trip(
-                trip_id="t2",
-                vehicle_id="v1",
-                started_at=datetime.datetime(2026, 1, 3, 10, 0, tzinfo=datetime.UTC),
-                ended_at=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.UTC),
-            ),
-        ]
+        results = await service.get_trips(vehicle_ids=["v1"])
+        assert results == {
+            "v1": [
+                Trip(
+                    trip_id="t1",
+                    vehicle_id="v1",
+                    started_at=datetime.datetime(
+                        2026, 1, 1, 10, 0, tzinfo=datetime.UTC
+                    ),
+                    ended_at=datetime.datetime(2026, 1, 2, 11, 0, tzinfo=datetime.UTC),
+                ),
+                Trip(
+                    trip_id="t2",
+                    vehicle_id="v1",
+                    started_at=datetime.datetime(
+                        2026, 1, 3, 10, 0, tzinfo=datetime.UTC
+                    ),
+                    ended_at=datetime.datetime(2026, 1, 4, 12, 0, tzinfo=datetime.UTC),
+                ),
+            ]
+        }
 
 
 @pytest.mark.parametrize(
-    "vehicle_id, expected",
+    "vehicle_ids, expected",
     [
         (
-            "v1",
-            [
-                Event(
-                    event_id="e1",
-                    vehicle_id="v1",
-                    occurred_at=datetime.datetime(
-                        2026, 1, 1, 10, 10, tzinfo=datetime.UTC
+            ["v1"],
+            {
+                "v1": [
+                    Event(
+                        event_id="e1",
+                        vehicle_id="v1",
+                        occurred_at=datetime.datetime(
+                            2026, 1, 1, 10, 10, tzinfo=datetime.UTC
+                        ),
                     ),
-                ),
-                Event(
-                    event_id="e2",
-                    vehicle_id="v1",
-                    occurred_at=datetime.datetime(
-                        2026, 1, 1, 10, 20, tzinfo=datetime.UTC
+                    Event(
+                        event_id="e2",
+                        vehicle_id="v1",
+                        occurred_at=datetime.datetime(
+                            2026, 1, 1, 10, 20, tzinfo=datetime.UTC
+                        ),
                     ),
-                ),
-            ],
+                ]
+            },
         ),
         (
-            "v2",
-            [
-                Event(
-                    event_id="e3",
-                    vehicle_id="v2",
-                    occurred_at=datetime.datetime(
-                        2026, 1, 3, 10, 0, tzinfo=datetime.UTC
+            ["v2"],
+            {
+                "v2": [
+                    Event(
+                        event_id="e3",
+                        vehicle_id="v2",
+                        occurred_at=datetime.datetime(
+                            2026, 1, 3, 10, 0, tzinfo=datetime.UTC
+                        ),
                     ),
-                ),
-                Event(
-                    event_id="e4",
-                    vehicle_id="v2",
-                    occurred_at=datetime.datetime(
-                        2026, 1, 3, 10, 1, tzinfo=datetime.UTC
+                    Event(
+                        event_id="e4",
+                        vehicle_id="v2",
+                        occurred_at=datetime.datetime(
+                            2026, 1, 3, 10, 1, tzinfo=datetime.UTC
+                        ),
                     ),
-                ),
-                Event(
-                    event_id="e5",
-                    vehicle_id="v2",
-                    occurred_at=datetime.datetime(
-                        2026, 1, 4, 12, 0, tzinfo=datetime.UTC
+                    Event(
+                        event_id="e5",
+                        vehicle_id="v2",
+                        occurred_at=datetime.datetime(
+                            2026, 1, 4, 12, 0, tzinfo=datetime.UTC
+                        ),
                     ),
-                ),
-            ],
+                ]
+            },
         ),
     ],
 )
-async def test_get_events_by_vehicle(vehicle_id, expected):
+async def test_get_events(vehicle_ids, expected):
     def handle(request: httpx.Request) -> httpx.Response:
         vehicle_ids_raw = request.url.params.get("vehicleIDs")
-        vehicle_id = vehicle_ids_raw.split(",")[0]
-        events = list(filter(lambda t: t["vehicle_id"] == vehicle_id, MOCK_EVENTS))
+        v_ids = vehicle_ids_raw.split(",")
+        events = list(filter(lambda t: t["vehicle_id"] in v_ids, MOCK_EVENTS))
         return httpx.Response(
             status_code=200,
             json={
@@ -156,79 +166,144 @@ async def test_get_events_by_vehicle(vehicle_id, expected):
 
     async with httpx.AsyncClient(transport=MockTransport(handle)) as client:
         service = Service(client=client)
-        results = await service.get_events_by_vehicle(vehicle_id)
+        results = await service.get_events(vehicle_ids=vehicle_ids)
         assert results == expected
 
 
 @pytest.mark.parametrize(
-    "vehicle_id, expected",
+    "vehicle_ids, expected",
     [
         (
-            "v1",
-            [
-                {
-                    "ended_at": "2026-01-02T11:00:00Z",
-                    "events": [
-                        {
-                            "event_id": "e1",
-                            "occurred_at": "2026-01-01T10:10:00Z",
-                            "vehicle_id": "v1",
-                        },
-                        {
-                            "event_id": "e2",
-                            "occurred_at": "2026-01-01T10:20:00Z",
-                            "vehicle_id": "v1",
-                        },
-                    ],
-                    "started_at": "2026-01-01T10:00:00Z",
-                    "trip_id": "t1",
-                    "vehicle_id": "v1",
-                },
-                {
-                    "ended_at": "2026-01-04T12:00:00Z",
-                    "events": [],
-                    "started_at": "2026-01-03T10:00:00Z",
-                    "trip_id": "t2",
-                    "vehicle_id": "v1",
-                },
-            ],
+            ["v1"],
+            {
+                "v1": [
+                    Trip(
+                        trip_id="t1",
+                        vehicle_id="v1",
+                        started_at=datetime.datetime(
+                            2026, 1, 1, 10, 0, tzinfo=datetime.UTC
+                        ),
+                        ended_at=datetime.datetime(
+                            2026, 1, 2, 11, 0, tzinfo=datetime.UTC
+                        ),
+                        events=[
+                            Event(
+                                event_id="e1",
+                                vehicle_id="v1",
+                                occurred_at=datetime.datetime(
+                                    2026, 1, 1, 10, 10, tzinfo=datetime.UTC
+                                ),
+                            ),
+                            Event(
+                                event_id="e2",
+                                vehicle_id="v1",
+                                occurred_at=datetime.datetime(
+                                    2026, 1, 1, 10, 20, tzinfo=datetime.UTC
+                                ),
+                            ),
+                        ],
+                    ),
+                    Trip(
+                        trip_id="t2",
+                        vehicle_id="v1",
+                        started_at=datetime.datetime(
+                            2026, 1, 3, 10, 0, tzinfo=datetime.UTC
+                        ),
+                        ended_at=datetime.datetime(
+                            2026, 1, 4, 12, 0, tzinfo=datetime.UTC
+                        ),
+                        events=[],
+                    ),
+                ]
+            },
         ),
         (
-            "v2",
-            [
-                {
-                    "ended_at": "2026-01-04T12:00:00Z",
-                    "events": [
-                        {
-                            "event_id": "e3",
-                            "occurred_at": "2026-01-03T10:00:00Z",
-                            "vehicle_id": "v2",
-                        },
-                        {
-                            "event_id": "e4",
-                            "occurred_at": "2026-01-03T10:01:00Z",
-                            "vehicle_id": "v2",
-                        },
-                        {
-                            "event_id": "e5",
-                            "occurred_at": "2026-01-04T12:00:00Z",
-                            "vehicle_id": "v2",
-                        },
-                    ],
-                    "started_at": "2026-01-03T10:00:00Z",
-                    "trip_id": "t3",
-                    "vehicle_id": "v2",
-                }
-            ],
+            ["v1", "v2"],
+            {
+                "v1": [
+                    Trip(
+                        trip_id="t1",
+                        vehicle_id="v1",
+                        started_at=datetime.datetime(
+                            2026, 1, 1, 10, 0, tzinfo=datetime.UTC
+                        ),
+                        ended_at=datetime.datetime(
+                            2026, 1, 2, 11, 0, tzinfo=datetime.UTC
+                        ),
+                        events=[
+                            Event(
+                                event_id="e1",
+                                vehicle_id="v1",
+                                occurred_at=datetime.datetime(
+                                    2026, 1, 1, 10, 10, tzinfo=datetime.UTC
+                                ),
+                            ),
+                            Event(
+                                event_id="e2",
+                                vehicle_id="v1",
+                                occurred_at=datetime.datetime(
+                                    2026, 1, 1, 10, 20, tzinfo=datetime.UTC
+                                ),
+                            ),
+                        ],
+                    ),
+                    Trip(
+                        trip_id="t2",
+                        vehicle_id="v1",
+                        started_at=datetime.datetime(
+                            2026, 1, 3, 10, 0, tzinfo=datetime.UTC
+                        ),
+                        ended_at=datetime.datetime(
+                            2026, 1, 4, 12, 0, tzinfo=datetime.UTC
+                        ),
+                        events=[],
+                    ),
+                ],
+                "v2": [
+                    Trip(
+                        trip_id="t3",
+                        vehicle_id="v2",
+                        started_at=datetime.datetime(
+                            2026, 1, 3, 10, 0, tzinfo=datetime.UTC
+                        ),
+                        ended_at=datetime.datetime(
+                            2026, 1, 4, 12, 0, tzinfo=datetime.UTC
+                        ),
+                        events=[
+                            Event(
+                                event_id="e3",
+                                vehicle_id="v2",
+                                occurred_at=datetime.datetime(
+                                    2026, 1, 3, 10, 0, tzinfo=datetime.UTC
+                                ),
+                            ),
+                            Event(
+                                event_id="e4",
+                                vehicle_id="v2",
+                                occurred_at=datetime.datetime(
+                                    2026, 1, 3, 10, 1, tzinfo=datetime.UTC
+                                ),
+                            ),
+                            Event(
+                                event_id="e5",
+                                vehicle_id="v2",
+                                occurred_at=datetime.datetime(
+                                    2026, 1, 4, 12, 0, tzinfo=datetime.UTC
+                                ),
+                            ),
+                        ],
+                    )
+                ],
+            },
         ),
     ],
 )
-async def test_get_report(vehicle_id, expected):
+async def test_get_report(vehicle_ids, expected):
     def handle(request: httpx.Request) -> httpx.Response:
         vehicle_ids_raw = request.url.params.get("vehicleIDs")
-        v_id = vehicle_ids_raw.split(",")[0]
+        v_ids = vehicle_ids_raw.split(",")
         if request.url.path == "/v1/trips":
-            trips = list(filter(lambda t: t["vehicle_id"] == v_id, MOCK_TRIPS))
+            trips = list(filter(lambda t: t["vehicle_id"] in v_ids, MOCK_TRIPS))
             return httpx.Response(
                 status_code=200,
                 json={
@@ -236,7 +311,7 @@ async def test_get_report(vehicle_id, expected):
                 },
             )
         elif request.url.path == "/v1/events":
-            events = list(filter(lambda t: t["vehicle_id"] == v_id, MOCK_EVENTS))
+            events = list(filter(lambda t: t["vehicle_id"] in v_ids, MOCK_EVENTS))
             return httpx.Response(
                 status_code=200,
                 json={
@@ -249,5 +324,5 @@ async def test_get_report(vehicle_id, expected):
 
     async with httpx.AsyncClient(transport=MockTransport(handle)) as client:
         service = Service(client=client)
-        results = await service.get_report(vehicle_id=vehicle_id)
-        assert [r.model_dump(mode="json") for r in results] == expected
+        report = await service.get_report(vehicle_ids=vehicle_ids)
+        assert report == expected

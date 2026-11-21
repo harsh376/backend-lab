@@ -1,6 +1,7 @@
 import asyncio
 import bisect
 import datetime
+from collections import defaultdict
 from typing import Annotated
 
 import httpx
@@ -55,42 +56,65 @@ class Service:
 
         return await _attempt()
 
-    async def get_trips_by_vehicle(self, vehicle_id: str) -> list[Trip]:
+    async def get_trips(
+        self, vehicle_ids: list[VehicleID] | None = None
+    ) -> dict[VehicleID, list[Trip]]:
+        params = {}
+        if vehicle_ids:
+            params["vehicleIDs"] = ",".join(vehicle_ids)
+
         response = await self.fetch(
-            url=f"{self.api_base_url}/v1/trips", params={"vehicleIDs": vehicle_id}
+            url=f"{self.api_base_url}/v1/trips",
+            params=params,
         )
-        trips = [Trip.model_validate(t) for t in response["results"]]
+        trips = defaultdict(list)
+        for t in response["results"]:
+            parsed_trip = Trip.model_validate(t)
+            trips[parsed_trip.vehicle_id].append(parsed_trip)
         return trips
 
-    async def get_events_by_vehicle(self, vehicle_id: str) -> list[Event]:
-        response = await self.fetch(
-            url=f"{self.api_base_url}/v1/events", params={"vehicleIDs": vehicle_id}
-        )
-        events = [Event.model_validate(t) for t in response["results"]]
-        sorted_events = sorted(events, key=lambda e: e.occurred_at)
-        return sorted_events
+    async def get_events(
+        self, vehicle_ids: list[VehicleID] | None = None
+    ) -> dict[VehicleID, list[Event]]:
+        params = {}
+        if vehicle_ids:
+            params["vehicleIDs"] = ",".join(vehicle_ids)
 
-    async def get_report(self, vehicle_id: VehicleID) -> list[Trip]:
+        response = await self.fetch(
+            url=f"{self.api_base_url}/v1/events",
+            params=params,
+        )
+        events: dict[VehicleID, list[Event]] = defaultdict(list)
+        for e in response["results"]:
+            parsed_event = Event.model_validate(e)
+            bisect.insort_right(
+                a=events[parsed_event.vehicle_id],
+                x=parsed_event,
+                key=lambda e: e.occurred_at,
+            )
+        return events
+
+    async def get_report(
+        self, vehicle_ids: list[VehicleID] | None = None
+    ) -> dict[VehicleID, list[Trip]]:
         async with asyncio.TaskGroup() as tg:
-            task_trips = tg.create_task(
-                self.get_trips_by_vehicle(vehicle_id=vehicle_id)
-            )
-            task_events = tg.create_task(
-                self.get_events_by_vehicle(vehicle_id=vehicle_id)
-            )
+            task_trips = tg.create_task(self.get_trips(vehicle_ids=vehicle_ids))
+            task_events = tg.create_task(self.get_events(vehicle_ids=vehicle_ids))
 
         trips = task_trips.result()
         events = task_events.result()
-        event_times = [e.occurred_at for e in events]
 
-        enhanced_trips = []
-        for trip in trips:
-            left = bisect.bisect_left(a=event_times, x=trip.started_at)
-            right = bisect.bisect_right(
-                a=event_times,
-                x=trip.ended_at,
-            )
-            trip_events = events[left:right]
-            enhanced_trip = trip.model_copy(update={"events": trip_events})
-            enhanced_trips.append(enhanced_trip)
-        return enhanced_trips
+        report = defaultdict(list)
+        for vehicle_id in trips:
+            vehicle_trips = trips[vehicle_id]
+            vehicle_events = events[vehicle_id]
+            event_times = [e.occurred_at for e in vehicle_events]
+            for t in vehicle_trips:
+                left = bisect.bisect_left(a=event_times, x=t.started_at)
+                right = bisect.bisect_right(
+                    a=event_times,
+                    x=t.ended_at,
+                )
+                trip_events = vehicle_events[left:right]
+                report[vehicle_id].append(t.model_copy(update={"events": trip_events}))
+        return report
