@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 from collections import Counter
 
@@ -259,3 +260,44 @@ async def test_correct_latest_events_when_multiple_pages():
                 ),
             ),
         }
+
+
+@pytest.mark.parametrize("api_concurrency_limit", [1, 2, 5, 10, 25])
+async def test_api_requests_are_bounded(api_concurrency_limit):
+    active = 0
+    max_requests = 0
+
+    async def handle(request: httpx.Request) -> httpx.Response:
+        nonlocal active
+        nonlocal max_requests
+        active += 1
+        max_requests = max(max_requests, active)
+        await asyncio.sleep(0)  # yields
+        active -= 1
+        vehicle_ids_raw = request.url.params.get("vehicleIDs")
+        vehicle_id = vehicle_ids_raw.split(",")[0]
+        return httpx.Response(
+            status_code=200,
+            json={
+                "results": [
+                    {
+                        "vehicle_id": vehicle_id,
+                        "event_id": f"{vehicle_id}-e{i}",
+                        "started_at": "2026-11-20T15:20:52.000Z",
+                    }
+                    for i in range(10)
+                ]
+            },
+        )
+
+    async with httpx.AsyncClient(transport=MockTransport(handle)) as client:
+        service = Service(
+            client=client,
+            api_concurrency_limit=api_concurrency_limit,
+        )
+        result, errors = await service.get_latest_events(
+            vehicle_ids=[f"v{i}" for i in range(200)],
+            cutoff="2026-11-20T15:21:00.000Z",
+        )
+        assert errors == []
+        assert max_requests == api_concurrency_limit

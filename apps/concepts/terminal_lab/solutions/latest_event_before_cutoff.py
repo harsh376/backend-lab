@@ -86,10 +86,12 @@ class Service:
         self,
         client: httpx.AsyncClient,
         api_base_url: str = "https://api.sandbox.withterminal.com",
+        api_concurrency_limit: int = 10,
         page_size: int = DEFAULT_PAGE_SIZE,
     ):
         self.client = client
         self.api_base_url = api_base_url
+        self.api_semaphore = asyncio.BoundedSemaphore(value=api_concurrency_limit)
         self.page_size = page_size
 
     async def fetch(self, url: str, params: dict | None = None) -> dict:
@@ -100,11 +102,12 @@ class Service:
             reraise=True,
         )
         async def _attempt():
-            response = await self.client.get(url=url, params=params)
-            if response.status_code in {429}:
-                raise RateLimitException(response=response)
-            response.raise_for_status()
-            return response.json()
+            async with self.api_semaphore:
+                response = await self.client.get(url=url, params=params)
+                if response.status_code in {429}:
+                    raise RateLimitException(response=response)
+                response.raise_for_status()
+                return response.json()
 
         return await _attempt()
 
