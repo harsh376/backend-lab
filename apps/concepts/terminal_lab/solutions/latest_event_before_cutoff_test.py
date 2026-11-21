@@ -1,4 +1,5 @@
 import datetime
+from collections import Counter
 
 import httpx
 import pytest
@@ -11,38 +12,41 @@ from apps.concepts.terminal_lab.solutions.latest_event_before_cutoff import (
 )
 
 
-async def basic_handler(request: httpx.Request) -> httpx.Response:
-    if request.url.path == "/events":
+async def test_correct_latest_events_by_vehicle():
+    async def basic_handler(request: httpx.Request) -> httpx.Response:
+        events = [
+            {
+                "vehicle_id": "v1",
+                "event_id": "e1",
+                "started_at": "2026-11-20T15:20:54.000Z",
+            },
+            {
+                "vehicle_id": "v1",
+                "event_id": "e2",
+                "started_at": "2026-11-20T15:21:00.000Z",
+            },
+            {
+                "vehicle_id": "v2",
+                "event_id": "e3",
+                "started_at": "2026-11-20T15:22:00.000Z",
+            },
+        ]
+        vehicle_ids = request.url.params.get("vehicleIDs").split(",")
+        results = {
+            "results": list(
+                filter(lambda event: event["vehicle_id"] in vehicle_ids, events)
+            )
+        }
         return httpx.Response(
             200,
-            json={
-                "results": [
-                    {
-                        "vehicle_id": "v1",
-                        "event_id": "e1",
-                        "started_at": "2026-11-20T15:20:54.000Z",
-                    },
-                    {
-                        "vehicle_id": "v1",
-                        "event_id": "e2",
-                        "started_at": "2026-11-20T15:21:00.000Z",
-                    },
-                    {
-                        "vehicle_id": "v2",
-                        "event_id": "e3",
-                        "started_at": "2026-11-20T15:22:00.000Z",
-                    },
-                ]
-            },
+            json=results,
         )
 
-
-async def test_correct_latest_events_by_vehicle():
     async with httpx.AsyncClient(
         transport=httpx.MockTransport(basic_handler)
     ) as client:
         service = Service(client=client)
-        result = await service.get_latest_events(
+        result, _ = await service.get_latest_events(
             vehicle_ids=["v1", "v2"], cutoff="2026-11-20T15:24:54.000Z"
         )
         assert result == {
@@ -59,24 +63,64 @@ async def test_correct_latest_events_by_vehicle():
         }
 
 
-async def test_fetch_error_raises_on_400():
+async def test_fetch_error():
     def handler_400(request: httpx.Request):
-        return httpx.Response(status_code=400)
+        if "v2" in request.url.params.get("vehicleIDs"):
+            return httpx.Response(status_code=400)
+        return httpx.Response(
+            status_code=200,
+            json={
+                "results": [
+                    {
+                        "vehicle_id": "v1",
+                        "event_id": "e1",
+                        "started_at": "2026-11-20T15:20:54.000Z",
+                    },
+                    {
+                        "vehicle_id": "v1",
+                        "event_id": "e2",
+                        "started_at": "2026-11-20T15:21:00.000Z",
+                    },
+                ]
+            },
+        )
 
     async with httpx.AsyncClient(transport=MockTransport(handler_400)) as client:
         service = Service(client=client)
-        with pytest.raises(httpx.HTTPStatusError):
-            await service.get_latest_events(
-                vehicle_ids=["v1", "v2"],
-                cutoff="2026-11-20T15:24:54.000Z",
+        results, errors = await service.get_latest_events(
+            vehicle_ids=["v1", "v2"],
+            cutoff="2026-11-20T15:24:54.000Z",
+        )
+        assert results == {
+            "v1": Event(
+                vehicle_id="v1",
+                event_id="e2",
+                started_at=datetime.datetime(2026, 11, 20, 15, 21, tzinfo=datetime.UTC),
             )
+        }
+        assert errors == ["v2"]
 
 
 async def test_fetch_error_retries_on_429():
-    call_count = 0
+    call_count = Counter()
 
     def rate_limiting_handler(request: httpx.Request):
         nonlocal call_count
+        events = [
+            {
+                "vehicle_id": "v1",
+                "event_id": "e1",
+                "started_at": "2026-11-20T15:20:54.000Z",
+            },
+            {
+                "vehicle_id": "v1",
+                "event_id": "e2",
+                "started_at": "2026-11-20T15:21:00.000Z",
+            },
+        ]
+        vehicle_ids_raw = request.url.params.get("vehicleIDs")
+        vehicle_ids = vehicle_ids_raw.split(",")
+        results = list(filter(lambda event: event["vehicle_id"] in vehicle_ids, events))
         responses = [
             httpx.Response(
                 headers={
@@ -85,43 +129,31 @@ async def test_fetch_error_retries_on_429():
                 status_code=429,
             ),
             httpx.Response(
-                json={
-                    "results": [
-                        {
-                            "vehicle_id": "v1",
-                            "event_id": "e1",
-                            "started_at": "2026-11-20T15:20:54.000Z",
-                        },
-                        {
-                            "vehicle_id": "v1",
-                            "event_id": "e2",
-                            "started_at": "2026-11-20T15:21:00.000Z",
-                        },
-                    ]
-                },
+                json={"results": results},
                 status_code=200,
             ),
         ]
-        response = responses[call_count]
-        call_count += 1
+        response = responses[call_count[vehicle_ids_raw]]
+        call_count[vehicle_ids_raw] += 1
         return response
 
     async with httpx.AsyncClient(
         transport=httpx.MockTransport(rate_limiting_handler)
     ) as client:
         service = Service(client=client)
-        result = await service.get_latest_events(
+        result, errors = await service.get_latest_events(
             vehicle_ids=["v1", "v2"], cutoff="2026-11-20T15:24:54.000Z"
         )
 
-        assert call_count == 2
+        assert call_count == Counter({"v1": 2, "v2": 2})
         assert result == {
             "v1": Event(
                 vehicle_id="v1",
                 event_id="e2",
                 started_at=datetime.datetime(2026, 11, 20, 15, 21, tzinfo=datetime.UTC),
-            )
+            ),
         }
+        assert errors == []
 
 
 @pytest.mark.parametrize(
@@ -143,8 +175,8 @@ def test_parse_retry_after(now: str, raw: str, expected: float):
 
 
 async def test_correct_latest_events_when_multiple_pages():
-    page_size = 2
-    call_count = 0
+    page_size = 1
+    call_count = Counter()
     events = [
         {
             "vehicle_id": "v1",
@@ -175,28 +207,35 @@ async def test_correct_latest_events_when_multiple_pages():
 
     def paginate_handler(request: httpx.Request) -> httpx.Response:
         nonlocal call_count
+
+        vehicle_ids_raw = request.url.params.get("vehicleIDs")
+        vehicle_ids = vehicle_ids_raw.split(",")
+        vehicle_events = list(
+            filter(lambda event: event["vehicle_id"] in vehicle_ids, events)
+        )
+
         cursor = int(request.url.params.get("cursor", 0))
         limit = int(request.url.params["limit"])
         response_body = {
-            "results": events[cursor : cursor + limit],
+            "results": vehicle_events[cursor : cursor + limit],
         }
-        if events[cursor + limit :]:
+        if vehicle_events[cursor + limit :]:
             response_body["next"] = str(cursor + limit)
 
         response = httpx.Response(
             status_code=200,
             json=response_body,
         )
-        call_count += 1
+        call_count[vehicle_ids_raw] += 1
         return response
 
     async with httpx.AsyncClient(transport=MockTransport(paginate_handler)) as client:
         service = Service(client=client, page_size=page_size)
-        result = await service.get_latest_events(
+        result, _ = await service.get_latest_events(
             vehicle_ids=["v1", "v2", "v3"],
             cutoff="2026-11-20T15:21:00.000Z",
         )
-        assert call_count == 3
+        assert call_count == Counter({"v1": 2, "v2": 2, "v3": 1})
         assert result == {
             "v1": Event(
                 vehicle_id="v1",

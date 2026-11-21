@@ -128,27 +128,51 @@ class Service:
             seen_cursors.add(cursor)
             cursor = response.get("next")
 
+    async def get_latest_event(
+        self, vehicle_id: VehicleID, cutoff: str
+    ) -> tuple[VehicleID, Event | None, Exception | None]:
+        try:
+            pages = self.paginate(
+                url=f"{self.api_base_url}/events",
+                params={
+                    "vehicleIDs": [vehicle_id],
+                    "limit": self.page_size,
+                    "startedBefore": cutoff,
+                },
+            )
+            latest = None
+            async with aclosing(pages):
+                async for page in pages:
+                    events = [Event(**r) for r in page]
+                    for event in events:
+                        if latest is None or event.started_at > latest.started_at:
+                            latest = event
+            return vehicle_id, latest, None
+        except Exception as e:
+            logger.exception(
+                "Failed to fetch events for vehicle %r. Exception: %r", vehicle_id, e
+            )
+            return vehicle_id, None, e
+
     async def get_latest_events(
         self, vehicle_ids: list[str], cutoff: str
-    ) -> dict[VehicleID, Event]:
-        pages = self.paginate(
-            url=f"{self.api_base_url}/events",
-            params={
-                "vehicleIDs": vehicle_ids,
-                "limit": self.page_size,
-                "startedBefore": cutoff,
-            },
-        )
-        latest_event_by_vehicle: dict[VehicleID, Event] = {}
-        async with aclosing(pages):
-            async for page in pages:
-                events = [Event(**r) for r in page]
-                for event in events:
-                    vehicle_id = event.vehicle_id
-                    prev = latest_event_by_vehicle.get(vehicle_id)
-                    if prev is None or event.started_at > prev.started_at:
-                        latest_event_by_vehicle[vehicle_id] = event
-        return latest_event_by_vehicle
+    ) -> tuple[dict[VehicleID, Event], list[VehicleID]]:
+        async with asyncio.TaskGroup() as tg:
+            tasks = [
+                tg.create_task(
+                    self.get_latest_event(vehicle_id=vehicle_id, cutoff=cutoff)
+                )
+                for vehicle_id in vehicle_ids
+            ]
+        errors = []
+        result = {}
+        for t in tasks:
+            vehicle_id, event, exc = t.result()
+            if exc:
+                errors.append(vehicle_id)
+            elif event:
+                result[vehicle_id] = event
+        return result, errors
 
 
 async def main():
